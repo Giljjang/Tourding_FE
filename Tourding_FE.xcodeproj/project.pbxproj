@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		14A68D452E32621B0005F2E9 /* NMapsMap in Frameworks */ = {isa = PBXBuildFile; productRef = 14A68D442E32621B0005F2E9 /* NMapsMap */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		146757672E3244E60009354E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				14A68D452E32621B0005F2E9 /* NMapsMap in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = Tourding_FE;
 			packageProductDependencies = (
+				14A68D442E32621B0005F2E9 /* NMapsMap */,
 			);
 			productName = Tourding_FE;
 			productReference = 146757592E3244E30009354E /* Tourding_FE.app */;
@@ -195,6 +201,9 @@
 			);
 			mainGroup = 146757502E3244E30009354E;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				14A68D432E32621B0005F2E9 /* XCRemoteSwiftPackageReference "SPM-NMapsMap" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1467575A2E3244E30009354E /* Products */;
 			projectDirPath = "";
@@ -574,6 +583,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		14A68D432E32621B0005F2E9 /* XCRemoteSwiftPackageReference "SPM-NMapsMap" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/navermaps/SPM-NMapsMap";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.22.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		14A68D442E32621B0005F2E9 /* NMapsMap */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 14A68D432E32621B0005F2E9 /* XCRemoteSwiftPackageReference "SPM-NMapsMap" */;
+			productName = NMapsMap;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 146757512E3244E30009354E /* Project object */;
 }
