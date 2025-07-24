@@ -10,13 +10,18 @@ import Foundation
 enum NetworkService {
     
     // baseUrl 설정
-    enum RequestURL: String{
-        case serverURL = "http://127.0.0.1:8080/api/board"
+    enum RequestURL{
+        static var baseURL: String {
+            return BASE_URL
+        }
+        static var localURL: String {
+            return "http..."
+        }
     }
     
     //MARK: - HTTP 메소드 요청
     static func request<T: Codable>(
-        url: RequestURL = RequestURL.serverURL,
+        url: String = RequestURL.baseURL,
         endpoint: String,
         parameters: [String: String]? = nil,
         body: Codable? = nil,
@@ -27,11 +32,11 @@ enum NetworkService {
     }
     
     //MARK: - URL 생성
-    private static func makeURL(url: RequestURL,
+    private static func makeURL(url: String,
                                 endpoint: String,
                                 parameters: [String: String]? = nil) throws -> URL {
         
-        var urlString = url.rawValue + endpoint
+        var urlString = url + endpoint
         
         if let parameters = parameters {
             let queryItems = parameters.map { URLQueryItem(name: $0.key, value: $0.value) }
