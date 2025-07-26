@@ -17,6 +17,7 @@ struct Tourding_FEApp: App {
         // 레파지토리 및 뷰모델 의존성 주입
         let viewModels = DependencyProvider.makeTabViewModels()
         
+        
         WindowGroup {
             if showSplash {
                 SplashView()
@@ -25,7 +26,7 @@ struct Tourding_FEApp: App {
                             withAnimation {
                                 showSplash = false
                             }
-                            
+                            //TODo: 로그인 분기처리 필요
                             // 로그인X인 경우 처리
                             navigationManager.push(.LoginView)
                         }
@@ -38,6 +39,7 @@ struct Tourding_FEApp: App {
                             // case 추가해서 탭뷰 제외 뷰 넣으면 됨
                             case .LoginView:
                                 LoginView()
+                                
                             default :
                                 EmptyView()
                             }
