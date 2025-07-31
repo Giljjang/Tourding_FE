@@ -17,7 +17,6 @@ struct TourRecommendationView: View {
             
             Spacer()
         } // VStack
-        .frame(width:.infinity)
     }
 }
 
