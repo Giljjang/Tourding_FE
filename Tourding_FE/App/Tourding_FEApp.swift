@@ -7,10 +7,31 @@
 
 import SwiftUI
 
+import KakaoSDKCommon
+import KakaoSDKAuth
+import KakaoSDKUser
+
 @main
 struct Tourding_FEApp: App {
     @StateObject private var navigationManager = NavigationManager()
     @State private var showSplash = true
+    
+    init() {
+            // kakao sdk 초기화
+            let kakaoNativeAppKey = (Bundle.main.infoDictionary?["KAKAO_NATIVE_APP_KEY"] as? String) ?? ""
+            KakaoSDK.initSDK(appKey: kakaoNativeAppKey)
+            print("🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨\(kakaoNativeAppKey)")
+            
+            loadKakaoToken { isLoggedIn in
+                if isLoggedIn {
+                    print("✅ 자동 로그인 성공!")
+                    // → 로그인 성공시 UI 전환 등 처리
+                } else {
+                    print("❌ 자동 로그인 실패. 로그인 화면으로 이동")
+                    // → 로그인 화면으로 이동
+                }
+            }
+        }
     
     var body: some Scene {
 
@@ -31,6 +52,12 @@ struct Tourding_FEApp: App {
                             navigationManager.push(.LoginView)
                         }
                     } // : onAppear
+                    .onOpenURL { url in
+                        if AuthApi.isKakaoTalkLoginUrl(url) {
+                            _ = AuthController.handleOpenUrl(url: url)
+                        }
+                    }
+                
             } else {
                 NavigationStack(path: $navigationManager.path) {
                     TabContentView(viewModel: viewModels)
@@ -46,6 +73,11 @@ struct Tourding_FEApp: App {
                         } // : navigationDestination
                 } // : NavigationStack
                 .environmentObject(navigationManager)
+                .onOpenURL { url in
+                    if AuthApi.isKakaoTalkLoginUrl(url) {
+                        _ = AuthController.handleOpenUrl(url: url)
+                    }
+                }
             } // : if-else
         }
     }
