@@ -26,7 +26,7 @@ struct HomeView: View {
             
             Spacer()
         } // VStack
-        .frame(width:.infinity)
+//        .frame(width:.infinity)
     }
 }
 
