@@ -21,12 +21,10 @@ struct HomeView: View {
             Spacer()
             
             Text("HomeView")
-//            NaverMapView()
-//                .frame(width: 400, height: 400)
+                .foregroundStyle(Color.main)
             
             Spacer()
         } // VStack
-//        .frame(width:.infinity)
     }
 }
 

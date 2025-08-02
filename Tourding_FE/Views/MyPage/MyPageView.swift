@@ -48,7 +48,6 @@ struct MyPageView: View {
             
             Spacer()
         } // VStack
-        .frame(width:.infinity)
     }
 }
 
