@@ -13,7 +13,9 @@ struct TourRecommendationView: View {
             
             Spacer()
             
-            Text("TourRecommendationView")
+            Text("여행스팟검색")
+            
+           
             
             Spacer()
         } // VStack

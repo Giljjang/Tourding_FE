@@ -10,13 +10,25 @@ import SwiftUI
 struct SplashView: View {
     var body: some View {
         ZStack {
-            Color.yellow.ignoresSafeArea()
+            Color.white.ignoresSafeArea()
 
-            VStack {
-                Text("Tourding")
-                    .font(.largeTitle)
-                    .bold()
-            }
+            HStack(spacing: 0) {
+                Image("bike")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: 55)
+                    .padding(.leading, 35)
+                
+                Spacer()
+                
+                    .frame(width: 12)
+                Image("logo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: 222)
+                    .padding(.trailing, 35)
+            } // HStack
+            .frame(maxWidth: .infinity)
         } // ZStack
     }
 }
