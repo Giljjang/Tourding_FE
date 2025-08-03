@@ -14,6 +14,7 @@ import KakaoSDKUser
 @main
 struct Tourding_FEApp: App {
     @StateObject private var navigationManager = NavigationManager()
+    
     @State private var showSplash = true
     
     init() {
