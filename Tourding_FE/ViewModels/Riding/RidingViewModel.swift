@@ -1,5 +1,5 @@
 //
-//  HomeViewModel.swift
+//  RidingViewModel.swift
 //  Tourding_FE
 //
 //  Created by 이유현 on 7/24/25.
@@ -7,7 +7,12 @@
 
 import Foundation
 
-final class HomeViewModel: ObservableObject {
+final class RidingViewModel: ObservableObject {
+    
+    @Published var startPoint: String = ""
+    @Published var endPoint: String = ""
+    
+    @Published var abendFlag: Bool = true
     
     private let testRepository: TestRepositoryProtocol
     
@@ -25,4 +30,8 @@ final class HomeViewModel: ObservableObject {
             return []
         }
     } // getTestList func
+    
+    func hasValidPoints() -> Bool {
+        !startPoint.isEmpty && !endPoint.isEmpty
+    }
 }
