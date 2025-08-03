@@ -38,7 +38,7 @@ struct MyPageView: View {
                     } else {
                         print("✅ 회원탈퇴 성공")
                         clearKakaoTokens()  // Keychain에서 토큰 삭제
-                        // 로그아웃 후 화면 전환, 상태 초기화 등 추가 작업
+                        // 회원탈퇴 후 화면 전환, 상태 초기화 등 추가 작업
                     }
                 }
             }) {
