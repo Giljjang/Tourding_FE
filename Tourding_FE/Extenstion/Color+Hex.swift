@@ -41,6 +41,7 @@ extension Color {
     static let gray4 = Color(hex: "#87929D")
     static let gray5 = Color(hex: "#4B535B") // Secondary
     static let gray6 = Color(hex: "#2F353A")
+    static let yellowkakao = Color(hex: "#FEE820")
     static let customblack = Color(hex: "#000000")
 
     static let main = Color(hex: "#00D8FF")       // 밝은 청록색
