@@ -9,6 +9,11 @@ import Foundation
 
 final class RidingViewModel: ObservableObject {
     
+    @Published var startPoint: String = ""
+    @Published var endPoint: String = ""
+    
+    @Published var abendFlag: Bool = true
+    
     private let testRepository: TestRepositoryProtocol
     
     init(testRepository: TestRepositoryProtocol) {
@@ -25,4 +30,8 @@ final class RidingViewModel: ObservableObject {
             return []
         }
     } // getTestList func
+    
+    func hasValidPoints() -> Bool {
+        !startPoint.isEmpty && !endPoint.isEmpty
+    }
 }
