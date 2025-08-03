@@ -30,6 +30,7 @@ struct TabContentView: View {
             }
             
             CustomTabView(currentView: navigationManager.currentTab)
+                .padding(.bottom, 52)
         } // : Zstack
         .edgesIgnoringSafeArea(.bottom)
     }

@@ -70,7 +70,7 @@ struct RidingView: View {
     
     private var header: some View {
         HStack(alignment: .top) {
-            Image("logo")
+            Image("home_logo")
                 .padding(.top, 26)
             
             Spacer()
