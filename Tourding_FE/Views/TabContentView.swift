@@ -19,14 +19,14 @@ struct TabContentView: View {
         ZStack(alignment: .bottom){
             
             switch navigationManager.currentTab {
-            case .HomeView:
-                HomeView(viewModel: viewModel.homeViewModel)
+            case .RidingView:
+                RidingView(viewModel: viewModel.ridingViewModel)
             case .MyPageView :
                 MyPageView()
-            case .TourRecommendationView:
-                TourRecommendationView()
+            case .SpotSearchView:
+                SpotSearchView()
             default:
-                HomeView(viewModel: viewModel.homeViewModel)
+                RidingView(viewModel: viewModel.ridingViewModel)
             }
             
             CustomTabView(currentView: navigationManager.currentTab)
@@ -38,14 +38,14 @@ struct TabContentView: View {
 #Preview {
     let repository = TestRepository()
     
-    let homeViewModel = HomeViewModel(testRepository: repository)
+    let ridingViewModel = RidingViewModel(testRepository: repository)
     let myPageViewModel = MyPageViewModel()
-    let tourRecommendationViewModel = TourRecommendationViewModel()
+    let spotSearchViewModel = SpotSearchViewModel()
 
     let viewModels = TabViewModelsContainer(
-        homeViewModel: homeViewModel,
+        ridingViewModel: ridingViewModel,
         myPageViewModel: myPageViewModel,
-        tourRecommendationViewModel: tourRecommendationViewModel
+        spotSearchViewModel: spotSearchViewModel
     )
     
     TabContentView(viewModel: viewModels)

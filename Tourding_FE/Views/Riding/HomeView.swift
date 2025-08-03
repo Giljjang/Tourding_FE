@@ -1,5 +1,5 @@
 //
-//  HomeView.swift
+//  RidingView.swift
 //  Tourding_FE
 //
 //  Created by 이유현 on 7/24/25.
@@ -7,11 +7,11 @@
 
 import SwiftUI
 
-struct HomeView: View {
+struct RidingView: View {
     @EnvironmentObject var navigationManager: NavigationManager
-    @ObservedObject private var viewModel: HomeViewModel
+    @ObservedObject private var viewModel: RidingViewModel
         
-    init(viewModel: HomeViewModel) {
+    init(viewModel: RidingViewModel) {
         self.viewModel = viewModel
     }
     
@@ -29,6 +29,6 @@ struct HomeView: View {
 }
 
 #Preview {
-    HomeView(viewModel: HomeViewModel(testRepository: TestRepository()))
+    RidingView(viewModel: RidingViewModel(testRepository: TestRepository()))
             .environmentObject(NavigationManager())
 }

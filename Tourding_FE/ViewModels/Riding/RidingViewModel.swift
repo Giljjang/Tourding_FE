@@ -1,5 +1,5 @@
 //
-//  HomeViewModel.swift
+//  RidingViewModel.swift
 //  Tourding_FE
 //
 //  Created by 이유현 on 7/24/25.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-final class HomeViewModel: ObservableObject {
+final class RidingViewModel: ObservableObject {
     
     private let testRepository: TestRepositoryProtocol
     

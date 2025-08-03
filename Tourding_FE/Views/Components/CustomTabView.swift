@@ -17,30 +17,30 @@ struct CustomTabView: View {
             Spacer()
             
             Button(action: {
-                navigationManager.currentTab = .HomeView
+                navigationManager.currentTab = .RidingView
             }){
                 VStack{
                     Image(systemName: "person.circle.fill")
                         .font(.system(size: 30))
-                        .foregroundStyle(Color(hex: currentView == .HomeView ? "fea443" : "DEDEDE"))
+                        .foregroundStyle(Color(hex: currentView == .RidingView ? "fea443" : "DEDEDE"))
                     
                     Text("코스 찾기")
-                        .foregroundStyle(Color(hex: currentView == .HomeView ? "fea443" : "DEDEDE"))
+                        .foregroundStyle(Color(hex: currentView == .RidingView ? "fea443" : "DEDEDE"))
                 }
             }
             
             Spacer()
             
             Button(action: {
-                navigationManager.currentTab = .TourRecommendationView
+                navigationManager.currentTab = .SpotSearchView
             }){
                 VStack{
                     Image(systemName: "house.fill")
                         .font(.system(size: 30))
-                        .foregroundStyle(Color(hex: currentView == .TourRecommendationView ? "fea443" : "DEDEDE"))
+                        .foregroundStyle(Color(hex: currentView == .SpotSearchView ? "fea443" : "DEDEDE"))
                     
                     Text("여행지 탐색")
-                        .foregroundStyle(Color(hex: currentView == .TourRecommendationView ? "fea443" : "DEDEDE"))
+                        .foregroundStyle(Color(hex: currentView == .SpotSearchView ? "fea443" : "DEDEDE"))
                 }
             }
             
@@ -70,6 +70,6 @@ struct CustomTabView: View {
 }
 
 #Preview {
-    CustomTabView(currentView: .HomeView)
+    CustomTabView(currentView: .RidingView)
         .environmentObject(NavigationManager())
 }
