@@ -21,10 +21,10 @@ struct TabContentView: View {
             switch navigationManager.currentTab {
             case .RidingView:
                 RidingView(viewModel: viewModel.ridingViewModel)
-            case .MyPageView :
-                MyPageView()
             case .SpotSearchView:
                 SpotSearchView()
+            case .MyPageView :
+                MyPageView()
             default:
                 RidingView(viewModel: viewModel.ridingViewModel)
             }

@@ -13,21 +13,22 @@ struct CustomTabView: View {
     let currentView: ViewType
     
     var body: some View {
-        HStack{
-            Spacer()
+        HStack(alignment: .top, spacing: 0){
             
             Button(action: {
                 navigationManager.currentTab = .RidingView
             }){
                 VStack{
-                    Image(systemName: "person.circle.fill")
-                        .font(.system(size: 30))
-                        .foregroundStyle(Color(hex: currentView == .RidingView ? "fea443" : "DEDEDE"))
+                    Image(currentView == .RidingView ? "riding_on": "riding_off")
                     
-                    Text("코스 찾기")
-                        .foregroundStyle(Color(hex: currentView == .RidingView ? "fea443" : "DEDEDE"))
+                    Text("라이딩")
+                        .foregroundStyle(currentView == .RidingView ? Color.gray6 : Color.gray3)
+                        .font(.pretendardMedium(size: 14))
+                    
+                    Spacer()
                 }
-            }
+            } // : Button
+            .padding(.leading, 53)
             
             Spacer()
             
@@ -35,14 +36,15 @@ struct CustomTabView: View {
                 navigationManager.currentTab = .SpotSearchView
             }){
                 VStack{
-                    Image(systemName: "house.fill")
-                        .font(.system(size: 30))
-                        .foregroundStyle(Color(hex: currentView == .SpotSearchView ? "fea443" : "DEDEDE"))
+                    Image(currentView == .SpotSearchView ? "spot_on" : "spot_off")
                     
-                    Text("여행지 탐색")
-                        .foregroundStyle(Color(hex: currentView == .SpotSearchView ? "fea443" : "DEDEDE"))
+                    Text("스팟 탐색")
+                        .foregroundStyle(currentView == .SpotSearchView ? Color.gray6 : Color.gray3)
+                        .font(.pretendardMedium(size: 14))
+                    
+                    Spacer()
                 }
-            }
+            } // : Button
             
             Spacer()
             
@@ -50,22 +52,29 @@ struct CustomTabView: View {
                 navigationManager.currentTab = .MyPageView
             }){
                 VStack{
-                    Image(systemName: "ellipsis.circle.fill")
-                        .font(.system(size: 30))
-                        .foregroundStyle(Color(hex: currentView == .MyPageView ? "fea443" : "DEDEDE"))
-                
-                    Text("마이페이지")
-                        .foregroundStyle(Color(hex: currentView == .MyPageView ? "fea443" : "DEDEDE"))
+                    Image(currentView == .MyPageView ? "user_on" : "user_off")
+                    
+                    Text("내 정보")
+                        .foregroundStyle(currentView == .MyPageView ? Color.gray6 : Color.gray3)
+                        .font(.pretendardMedium(size: 14))
+                    
+                    Spacer()
                 }
-            }
-            
-            Spacer()
+            } // :  Button
+            .padding(.trailing, 53)
             
         } // : HStack
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
+        .padding(.top, 10)
+        .frame(height:106)
         .background(.white)
-        .cornerRadius(20, corners: [.topLeft, .topRight])
+        .cornerRadius(22, corners: [.topLeft, .topRight])
+        .shadow(color: Color(red: 0.45, green: 0.52, blue: 0.59).opacity(0.06), radius: 18, x: 4, y: 0)
+        .overlay(
+            RoundedRectangle(cornerRadius: 22)
+                .inset(by: 0.5)
+                .stroke(Color.gray1, lineWidth: 1)
+            
+        )
     }
 }
 
