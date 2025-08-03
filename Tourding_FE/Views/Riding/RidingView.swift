@@ -16,15 +16,19 @@ struct RidingView: View {
     }
     
     var body: some View {
-        VStack(spacing:0){
+        VStack(alignment: .leading,spacing:0){
+            
+            HStack(alignment: .top) {
+                Image("logo")
+                    .padding(.top, 26)
+                
+                Spacer()
+            } // : HStack
             
             Spacer()
-            
-            Text("HomeView")
-                .foregroundStyle(Color.main)
-            
-            Spacer()
-        } // VStack
+        } // : VStack
+        .padding(.horizontal, 16)
+        .background(Color.gray1)
     }
 }
 
