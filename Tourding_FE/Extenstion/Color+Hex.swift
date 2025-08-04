@@ -35,13 +35,17 @@ extension Color {
     
     //디자인 시스템
     static let customwhite = Color(hex: "#FFFFFF")
-    static let gray1 = Color(hex: "#F7F9FC")
-    static let gray2 = Color(hex: "#DEE4EA")
-    static let gray3 = Color(hex: "#B6C2CF")
-    static let gray4 = Color(hex: "#738496")
-    static let gray5 = Color(hex: "#2C333A")
-    static let gray6 = Color(hex: "#1D2125")
+
+    static let gray1 = Color(hex: "#F5F5F5")
+    static let gray2 = Color(hex: "#E1E5EB")
+    static let gray3 = Color(hex: "#C4CDD5")
+    static let gray4 = Color(hex: "#87929D")
+    static let gray5 = Color(hex: "#4B535B") // Secondary
+    static let gray6 = Color(hex: "#2F353A")
+    
     static let customblack = Color(hex: "#000000")
+    
+    static let yellowkakao = Color(hex: "#FEE820")
 
     static let main = Color(hex: "#00E1FF")       // 밝은 청록색
     static let mainCalm = Color(hex: "#00D7F3")   // 차분한 청록색
