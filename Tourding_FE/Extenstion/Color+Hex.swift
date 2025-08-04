@@ -49,4 +49,6 @@ extension Color {
 
     static let main = Color(hex: "#00E1FF")       // 밝은 청록색
     static let mainCalm = Color(hex: "#00D7F3")   // 차분한 청록색
+    
+    static let warningRed = Color(hex: "FF4949")
 }
