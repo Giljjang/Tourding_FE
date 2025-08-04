@@ -9,6 +9,8 @@ import SwiftUI
 
 struct RidingView: View {
     @EnvironmentObject var navigationManager: NavigationManager
+    @EnvironmentObject var modalManager: ModalManager
+    
     @ObservedObject private var viewModel: RidingViewModel
     
     init(viewModel: RidingViewModel) {
@@ -52,17 +54,6 @@ struct RidingView: View {
             .padding(.horizontal, 16)
             .background(Color.gray1)
             
-            if viewModel.abendFlag{
-                overlayBackground
-                
-                RouteContinueModal(
-                    onCancel: {
-                        viewModel.abendFlag = false                    },
-                    onStart: {
-                        viewModel.abendFlag = false
-                    }
-                ) // : RouteContinueModal
-            } // : if
         } // :Zstack
     }
     
@@ -70,7 +61,7 @@ struct RidingView: View {
     
     private var header: some View {
         HStack(alignment: .top) {
-            Image("logo")
+            Image("home_logo")
                 .padding(.top, 26)
             
             Spacer()
@@ -172,7 +163,20 @@ struct RidingView: View {
     } // : routeMaking
     
     private var routeContinue: some View {
-        Button(action: {}) {
+        Button(action: {
+            //modal test code
+            modalManager.showModal(
+                title: "알림",
+                subText: "정말로 시작하시겠습니까?",
+                activeText: "종료하기",
+                onCancel: {
+                    print("취소됨")
+                },
+                onActive: {
+                    print("시작됨")
+                }
+            )
+        }) {
             HStack(alignment: .top, spacing: 0) {
                 Image("route")
                     .padding(.vertical, 29)
