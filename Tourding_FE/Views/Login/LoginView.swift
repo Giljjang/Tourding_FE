@@ -12,9 +12,10 @@ import KakaoSDKAuth
 import KakaoSDKUser
 
 struct LoginView: View {
+    @EnvironmentObject var viewModel: LoginViewModel
     @State private var currentPage = 0
-    @Binding var isLoggedIn: Bool
-
+    
+    
     var body: some View {
         ZStack{
             VStack(spacing: 0){
@@ -40,28 +41,7 @@ struct LoginView: View {
                 )
                 
                 Button(action: {
-                    if UserApi.isKakaoTalkLoginAvailable() {
-                        UserApi.shared.loginWithKakaoTalk { oauthToken, error in
-                            if let error = error {
-                                print("❌ 로그인 실패: \(error)")
-                            } else if let token = oauthToken {
-                                print("✅ 로그인 성공!")
-                                print("accessToken: \(token.accessToken)")
-                                saveKakaoToken(token: token)
-                                // 👉 여기서 로그인 상태 변경 등 추가 처리
-                                isLoggedIn = true  // ✅ 메인화면으로 자동 전환됨
-                            }
-                        }
-                    } else {
-                        UserApi.shared.loginWithKakaoAccount { oauthToken, error in
-                            if let error = error {
-                                print("❌ 로그인 실패: \(error)")
-                            } else if let token = oauthToken {
-                                print("✅ 로그인 성공!")
-                                print("accessToken: \(token.accessToken)")
-                            }
-                        }
-                    }
+                    viewModel.loginWithKakao()
                 }) {
                     HStack {
                         Image("kakao")  // 카카오 로고 이미지를 프로젝트에 추가했을 때!
@@ -82,27 +62,7 @@ struct LoginView: View {
                 }
                 //애플 로그인 구현하기...
                 Button(action: {
-                    if UserApi.isKakaoTalkLoginAvailable() {
-                        UserApi.shared.loginWithKakaoTalk { oauthToken, error in
-                            if let error = error {
-                                print("❌ 로그인 실패: \(error)")
-                            } else if let token = oauthToken {
-                                print("✅ 로그인 성공!")
-                                print("accessToken: \(token.accessToken)")
-                                saveKakaoToken(token: token)
-                                // 👉 여기서 로그인 상태 변경 등 추가 처리
-                            }
-                        }
-                    } else {
-                        UserApi.shared.loginWithKakaoAccount { oauthToken, error in
-                            if let error = error {
-                                print("❌ 로그인 실패: \(error)")
-                            } else if let token = oauthToken {
-                                print("✅ 로그인 성공!")
-                                print("accessToken: \(token.accessToken)")
-                            }
-                        }
-                    }
+                    viewModel.loginWithKakao()
                 }) {
                     HStack() {
                         Image("apple")  // 카카오 로고 이미지를 프로젝트에 추가했을 때!
@@ -121,9 +81,6 @@ struct LoginView: View {
                     .padding(.horizontal, 16)  // 양쪽 여백
                     .padding(.bottom, 106)
                 }
-                
-                
-                
             }
         } //Zstack
         .ignoresSafeArea(edges: .bottom)  // SafeArea 무시하고 아래에 붙임
@@ -131,5 +88,6 @@ struct LoginView: View {
 }
 
 #Preview {
-    LoginView(isLoggedIn: .constant(true))
+    LoginView()
+        .environmentObject(LoginViewModel())  // ✅ ViewModel을 주입
 }
