@@ -6,51 +6,36 @@
 //
 
 import SwiftUI
-import KakaoSDKUser
 
 struct MyPageView: View {
+    @EnvironmentObject var loginViewModel: LoginViewModel  // ✅ 글로벌 로그인 상태 ViewModel
+    @EnvironmentObject var myPageViewModel: MyPageViewModel  // ✅ 마이페이지 ViewModel
+
     var body: some View {
-        VStack(spacing:0){
-            
+        VStack(spacing: 0) {
             Spacer()
-            
-            Text("MyPageView")
-            
-            
+
+            Text("내 정보")
+
             Button(action: {
-                UserApi.shared.logout { error in
-                    if let error = error {
-                        print("❌ 로그아웃 실패: \(error)")
-                    } else {
-                        print("✅ 로그아웃 성공")
-                        clearKakaoTokens()  // Keychain에서 토큰 삭제
-                        // 로그아웃 후 화면 전환, 상태 초기화 등 추가 작업
-                    }
-                }
+                myPageViewModel.logout(globalLoginViewModel: loginViewModel)
             }) {
                 Text("로그아웃")
             }
-            
+
             Button(action: {
-                UserApi.shared.unlink { error in
-                    if let error = error {
-                        print("❌ 회원탈퇴 실패: \(error)")
-                    } else {
-                        print("✅ 회원탈퇴 성공")
-                        clearKakaoTokens()  // Keychain에서 토큰 삭제
-                        // 회원탈퇴 후 화면 전환, 상태 초기화 등 추가 작업
-                    }
-                }
+                myPageViewModel.withdraw(globalLoginViewModel: loginViewModel)
             }) {
-                Text("회원탍쾨")
+                Text("회원탈퇴")
             }
-                
-            
+
             Spacer()
-        } // VStack
+        }
     }
 }
 
 #Preview {
     MyPageView()
+        .environmentObject(LoginViewModel())
+        .environmentObject(MyPageViewModel())
 }

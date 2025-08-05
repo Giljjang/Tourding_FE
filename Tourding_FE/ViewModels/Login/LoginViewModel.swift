@@ -38,7 +38,7 @@ class LoginViewModel: ObservableObject {
         }
     }
 
-    private func fetchUserInfo() {
+    func fetchUserInfo() {
         UserApi.shared.me { user, error in
             if let error = error {
                 print("❌ 사용자 정보 요청 실패: \(error)")

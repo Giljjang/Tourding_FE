@@ -29,64 +29,68 @@ struct Tourding_FEApp: App {
         // 레파지토리 및 뷰모델 의존성 주입
         let viewModels = DependencyProvider.makeTabViewModels()
         
-        
         WindowGroup {
-                if showSplash {
-                    SplashView()
-                        .onAppear {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                loadKakaoToken { success in
-                                    withAnimation {
-                                        loginViewModel.isLoggedIn = success
-                                        showSplash = false
-                                    }
-                                    if !loginViewModel.isLoggedIn {
-                                        //                                    navigationManager.push(.LoginView)
-                                    }
+            if showSplash {
+                SplashView()
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            loadKakaoToken { success in
+                                withAnimation {
+                                    loginViewModel.fetchUserInfo()
+                                    loginViewModel.isLoggedIn = success
+                                    showSplash = false
+                                }
+                                if !loginViewModel.isLoggedIn {
+                                    //                                    navigationManager.push(.LoginView)
                                 }
                             }
-                        } // : onAppear
-                        .onOpenURL { url in
-                            if AuthApi.isKakaoTalkLoginUrl(url) {
-                                _ = AuthController.handleOpenUrl(url: url)
-                            }
                         }
-                    
-                } else {
-                    if loginViewModel.isLoggedIn{
-                        NavigationStack(path: $navigationManager.path) {
-                            TabContentView(viewModel: viewModels)
-                                .navigationDestination(for: ViewType.self) { path in
-                                    switch path{
-                                        // case 추가해서 탭뷰 제외 뷰 넣으면 됨
-                                    case .LoginView:
-                                        LoginView()
+                    } // : onAppear
+                    .onOpenURL { url in
+                        if AuthApi.isKakaoTalkLoginUrl(url) {
+                            _ = AuthController.handleOpenUrl(url: url)
+                        }
+                    }
+                
+            } else {
+                if loginViewModel.isLoggedIn{
+                    NavigationStack(path: $navigationManager.path) {
+                        TabContentView(viewModel: viewModels)
+                            .navigationDestination(for: ViewType.self) { path in
+                                switch path{
+                                    // case 추가해서 탭뷰 제외 뷰 넣으면 됨
+                                case .LoginView:
+                                    LoginView()
+                                case .MyPageView:
+                                    MyPageView()
                                         
-                                    default :
-                                        EmptyView()
-                                    }
-                                } // : navigationDestination
-                        } // : NavigationStack
-                        .environmentObject(navigationManager)
-                        .environmentObject(loginViewModel)  //  여기서 주입
-                        .onOpenURL { url in
-                            if AuthApi.isKakaoTalkLoginUrl(url) {
-                                _ = AuthController.handleOpenUrl(url: url)
-                            }
+                                    
+                                default :
+                                    EmptyView()
+                                }
+                            } // : navigationDestination
+                    } // : NavigationStack
+                    .environmentObject(navigationManager)
+                    .environmentObject(loginViewModel)  //  여기서 주입
+                    .environmentObject(viewModels.myPageViewModel)
+                    .onOpenURL { url in
+                        if AuthApi.isKakaoTalkLoginUrl(url) {
+                            _ = AuthController.handleOpenUrl(url: url)
                         }
-                    } else {
-                        NavigationStack(path: $navigationManager.path) {
-                            LoginView()
+                    }
+                } else {
+                    NavigationStack(path: $navigationManager.path) {
+                        LoginView()
+                    }
+                    .environmentObject(navigationManager)
+                    .environmentObject(loginViewModel)  //  여기서 주입
+                    .onOpenURL { url in
+                        if AuthApi.isKakaoTalkLoginUrl(url) {
+                            _ = AuthController.handleOpenUrl(url: url)
                         }
-                        .environmentObject(navigationManager)
-                        .environmentObject(loginViewModel)  //  여기서 주입
-                        .onOpenURL { url in
-                            if AuthApi.isKakaoTalkLoginUrl(url) {
-                                _ = AuthController.handleOpenUrl(url: url)
-                            }
-                        }
-                    }// : if-else
-                }
+                    }
+                }// : if-else
+            }
         }
     }
 }
