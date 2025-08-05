@@ -8,7 +8,7 @@
 import Foundation
 
 struct TabViewModelsContainer {
-    let ridingViewModel: RidingViewModel
+    let homeViewModel: HomeViewModel
     let myPageViewModel: MyPageViewModel
     let spotSearchViewModel: SpotSearchViewModel
 }

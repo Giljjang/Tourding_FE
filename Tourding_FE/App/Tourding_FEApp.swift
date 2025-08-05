@@ -28,7 +28,7 @@ struct Tourding_FEApp: App {
         
         // 레파지토리 및 뷰모델 의존성 주입
         let viewModels = DependencyProvider.makeTabViewModels()
-        
+        let ridingViewModel = DependencyProvider.makeRidingViewModel()
         
         WindowGroup {
                 if showSplash {
@@ -58,7 +58,9 @@ struct Tourding_FEApp: App {
                             TabContentView(viewModel: viewModels)
                                 .navigationDestination(for: ViewType.self) { path in
                                     switch path{
-                                        // case 추가해서 탭뷰 제외 뷰 넣으면 됨
+                                    
+                                    case .RidingView:
+                                        RidingView(viewModel: ridingViewModel)
                                     case .LoginView:
                                         LoginView()
                                         
