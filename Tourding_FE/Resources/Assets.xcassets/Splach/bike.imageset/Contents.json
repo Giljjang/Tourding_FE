@@ -1,17 +1,15 @@
 {
   "images" : [
     {
-      "filename" : "bike.png",
+      "filename" : "logo_symbol.svg",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "bike 1.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
-      "filename" : "bike 2.png",
       "idiom" : "universal",
       "scale" : "3x"
     }

@@ -1,17 +1,15 @@
 {
   "images" : [
     {
-      "filename" : "illust_onboarding_1.png",
+      "filename" : "illust_onboarding_1.svg",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "illust_onboarding_1 1.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
-      "filename" : "illust_onboarding_1 2.png",
       "idiom" : "universal",
       "scale" : "3x"
     }
