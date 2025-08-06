@@ -2,36 +2,41 @@
 //  RidingViewModel.swift
 //  Tourding_FE
 //
-//  Created by 이유현 on 7/24/25.
+//  Created by 이유현 on 8/5/25.
 //
 
 import Foundation
+import Combine
 
 final class RidingViewModel: ObservableObject {
+    @Published var start: String = "한동대학교"
+    @Published var end: String = "영남대학교"
+    @Published var spotList: [RidingSpotModel]  = []
     
-    @Published var startPoint: String = ""
-    @Published var endPoint: String = ""
+    @Published var nthLineHeight: Double = 0 // spotRow 왼쪽 라인 길이
     
-    @Published var abendFlag: Bool = true
+    private var cancellables = Set<AnyCancellable>()
     
-    private let testRepository: TestRepositoryProtocol
-    
-    init(testRepository: TestRepositoryProtocol) {
-        self.testRepository = testRepository
+    init() {
+        showMockSpotList()
+        
+        // spotList 변경 감지 후 nthLineHeight 계산
+        $spotList
+            .sink { [weak self] _ in
+                self?.calculateNthLineHeight()
+            }
+            .store(in: &cancellables)
     }
     
-    // 예시 코드 - 서버로부터 test list를 불러옴
-    func getTestList() async -> [TestModel] {
-        do {
-            let tests = try await testRepository.getTest()
-            return tests
-            
-        } catch {
-            return []
-        }
-    } // getTestList func
+    private func showMockSpotList(){
+        let mock1 = RidingSpotModel(name: "태화강공원", themeType: .humanities)
+        let mock2 = RidingSpotModel(name: "어딘가.. 맛있는 곳", themeType: .food)
+        
+        spotList.append(contentsOf: [mock1, mock2])
+        
+    } // : func showMockSpotList
     
-    func hasValidPoints() -> Bool {
-        !startPoint.isEmpty && !endPoint.isEmpty
-    }
+    private func calculateNthLineHeight() {
+        nthLineHeight = Double((spotList.count * 66) + (spotList.count + 1) * 8)
+    } // : func calculateNthLineHeight
 }

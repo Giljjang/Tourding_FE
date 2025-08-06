@@ -14,7 +14,9 @@ import KakaoSDKUser
 @main
 struct Tourding_FEApp: App {
     @StateObject private var navigationManager = NavigationManager()
-    @StateObject private var loginViewModel = LoginViewModel()  // ✅ ViewModel 생성
+    @StateObject private var loginViewModel = LoginViewModel()
+    @StateObject private var modalManager = ModalManager()
+    
     @State private var showSplash = true
     
     init() {
@@ -28,6 +30,7 @@ struct Tourding_FEApp: App {
         
         // 레파지토리 및 뷰모델 의존성 주입
         let viewModels = DependencyProvider.makeTabViewModels()
+        let ridingViewModel = DependencyProvider.makeRidingViewModel()
         
         WindowGroup {
             if showSplash {
@@ -67,6 +70,8 @@ struct Tourding_FEApp: App {
                                     MyPageView()
                                 case .ServiceView:
                                     ServiceView()
+                                case .RidingView:
+                                    RidingView(ridingViewModel: ridingViewModel)
                                 default:
                                     EmptyView()
                                 }
@@ -76,6 +81,7 @@ struct Tourding_FEApp: App {
                     }
                 }   // : NavigationStack
                 .environmentObject(navigationManager)
+                .environmentObject(modalManager)
                 .environmentObject(loginViewModel)
                 .environmentObject(viewModels.myPageViewModel)
                 .onOpenURL { url in

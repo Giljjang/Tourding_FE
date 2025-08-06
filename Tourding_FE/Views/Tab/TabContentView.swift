@@ -9,7 +9,8 @@ import SwiftUI
 
 struct TabContentView: View {
     @EnvironmentObject var navigationManager: NavigationManager
-    @StateObject private var modalManager = ModalManager()
+    @EnvironmentObject var modalManager: ModalManager
+    
     private var viewModel: TabViewModelsContainer
     
     init(viewModel: TabViewModelsContainer) {
@@ -20,21 +21,21 @@ struct TabContentView: View {
         ZStack {
             
             switch navigationManager.currentTab {
-            case .RidingView:
-                RidingView(viewModel: viewModel.ridingViewModel)
+            case .HomewView:
+                HomeView(viewModel: viewModel.homeViewModel)
             case .SpotSearchView:
                 SpotSearchView()
             case .MyPageView :
                 MyPageView()
             default:
-                RidingView(viewModel: viewModel.ridingViewModel)
+                HomeView(viewModel: viewModel.homeViewModel)
             }
             
             CustomTabView(currentView: navigationManager.currentTab)
                 .padding(.bottom, 52)
             
             // 커스텀 모달 뷰
-            if modalManager.isPresented {
+            if modalManager.isPresented && modalManager.showView == .tabView {
                 Color.black.opacity(0.3)
                     .ignoresSafeArea()
                     .onTapGesture {
@@ -46,19 +47,18 @@ struct TabContentView: View {
             
         } // : Zstack
         .edgesIgnoringSafeArea(.bottom)
-        .environmentObject(modalManager)
     }
 }
 
 #Preview {
     let repository = TestRepository()
     
-    let ridingViewModel = RidingViewModel(testRepository: repository)
+    let homeViewModel = HomeViewModel(testRepository: repository)
     let myPageViewModel = MyPageViewModel()
     let spotSearchViewModel = SpotSearchViewModel()
     
     let viewModels = TabViewModelsContainer(
-        ridingViewModel: ridingViewModel,
+        homeViewModel: homeViewModel,
         myPageViewModel: myPageViewModel,
         spotSearchViewModel: spotSearchViewModel
     )

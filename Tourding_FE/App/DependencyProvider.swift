@@ -10,14 +10,20 @@ import Foundation
 struct DependencyProvider {
     static func makeTabViewModels() -> TabViewModelsContainer {
         let repository = TestRepository()
-        let ridingViewModel = RidingViewModel(testRepository: repository)
+        let homeViewModel = HomeViewModel(testRepository: repository)
         let myPageViewModel = MyPageViewModel()
         let spotSearchViewModel = SpotSearchViewModel()
         
         return TabViewModelsContainer(
-            ridingViewModel: ridingViewModel,
+            homeViewModel: homeViewModel,
             myPageViewModel: myPageViewModel,
             spotSearchViewModel: spotSearchViewModel
         )
+    }
+    
+    static func makeRidingViewModel() -> RidingViewModel {
+        let ridingViewModel = RidingViewModel()
+        
+        return ridingViewModel
     }
 }

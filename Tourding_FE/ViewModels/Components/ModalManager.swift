@@ -7,12 +7,18 @@
 
 import Foundation
 
+enum ShowViewType {
+    case tabView
+    case ridingView
+}
+
 final class ModalManager: ObservableObject {
     @Published var isPresented: Bool = false
     
     @Published var title: String = ""
     @Published var subText: String = ""
     @Published var activeText: String = ""
+    @Published var showView: ShowViewType = .tabView
     
     @Published var onCancel: (() -> Void)?
     @Published var onActive: (() -> Void)?
@@ -21,12 +27,14 @@ final class ModalManager: ObservableObject {
         title: String,
         subText: String,
         activeText: String,
+        showView: ShowViewType,
         onCancel: @escaping () -> Void,
         onActive: @escaping () -> Void
     ) {
         self.title = title
         self.subText = subText
         self.activeText = activeText
+        self.showView = showView
         self.onCancel = onCancel
         self.onActive = onActive
         self.isPresented = true

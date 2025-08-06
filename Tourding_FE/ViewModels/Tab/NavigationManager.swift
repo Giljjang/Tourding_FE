@@ -9,17 +9,18 @@ import Foundation
 
 enum ViewType : Hashable {
     case SplashView
-    case RidingView
+    case HomewView
     case SpotSearchView
     case MyPageView
     
     case LoginView
+    case RidingView
     case ServiceView
 }
 
 final class NavigationManager: ObservableObject {
     @Published var path: [ViewType] = [] // 탭바 X -> stack
-    @Published var currentTab: ViewType = .RidingView // 탭바 O 상태관리
+    @Published var currentTab: ViewType = .HomewView // 탭바 O 상태관리
     
     func push(_ view: ViewType) {
         path.append(view)
