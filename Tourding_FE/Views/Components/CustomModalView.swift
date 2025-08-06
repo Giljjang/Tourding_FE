@@ -49,7 +49,11 @@ struct CustomModalView: View {
                         .frame(height: 22)
                         .padding(.vertical, 12)
                         .padding(.horizontal, 41)
-                        .background(modalManager.activeText == "탈퇴하기" || modalManager.activeText == "종료하기" ? Color.warningRed : Color.gray5)
+                        .background(
+                            ["삭제하기", "종료하기", "탈퇴하기"].contains(modalManager.activeText)
+                            ? Color.warningRed
+                            : Color.gray5
+                        )
                         .cornerRadius(10)
                 } // : Button
             } // : HStack

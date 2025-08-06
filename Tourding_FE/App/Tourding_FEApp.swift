@@ -53,43 +53,36 @@ struct Tourding_FEApp: App {
                     }
                 
             } else {
-                if loginViewModel.isLoggedIn{
-                    NavigationStack(path: $navigationManager.path) {
+                // ✅ NavigationStack을 한 번만 사용하고 조건문을 내부에서 처리
+                NavigationStack(path: $navigationManager.path) {
+                    // 🎯 조건문을 NavigationStack 내부로 이동
+                    if loginViewModel.isLoggedIn {
                         TabContentView(viewModel: viewModels)
-                            .navigationDestination(for: ViewType.self) { path in
-                                switch path{
-                                    // case 추가해서 탭뷰 제외 뷰 넣으면 됨
-                                case .LoginView:
-                                    LoginView()
-                                case .MyPageView:
-                                    MyPageView()
-                                        
-                                    
-                                default :
-                                    EmptyView()
-                                }
-                            } // : navigationDestination
-                    } // : NavigationStack
-                    .environmentObject(navigationManager)
-                    .environmentObject(loginViewModel)  //  여기서 주입
-                    .environmentObject(viewModels.myPageViewModel)
-                    .onOpenURL { url in
-                        if AuthApi.isKakaoTalkLoginUrl(url) {
-                            _ = AuthController.handleOpenUrl(url: url)
-                        }
-                    }
-                } else {
-                    NavigationStack(path: $navigationManager.path) {
+                    } else {
                         LoginView()
                     }
-                    .environmentObject(navigationManager)
-                    .environmentObject(loginViewModel)  //  여기서 주입
-                    .onOpenURL { url in
-                        if AuthApi.isKakaoTalkLoginUrl(url) {
-                            _ = AuthController.handleOpenUrl(url: url)
-                        }
+                }   // : NavigationStack
+                .navigationDestination(for: ViewType.self) { path in
+                    switch path {
+                        // case 추가해서 탭뷰 제외 뷰 넣으면 됨
+                    case .LoginView:
+                        LoginView()
+                    case .MyPageView:
+                        MyPageView()
+                    case .ServiceView:
+                        ServiceView()
+                    default:
+                        EmptyView()
                     }
-                }// : if-else
+                } // : navigationDestination
+                .environmentObject(navigationManager)
+                .environmentObject(loginViewModel)
+                .environmentObject(viewModels.myPageViewModel)
+                .onOpenURL { url in
+                    if AuthApi.isKakaoTalkLoginUrl(url) {
+                        _ = AuthController.handleOpenUrl(url: url)
+                    }
+                }
             }
         }
     }
