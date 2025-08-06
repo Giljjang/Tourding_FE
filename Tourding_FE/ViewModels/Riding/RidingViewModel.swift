@@ -8,5 +8,6 @@
 import Foundation
 
 final class RidingViewModel: ObservableObject {
-    
+    @Published var start: String = "한동대학교"
+    @Published var end: String = "영남대학교"
 }

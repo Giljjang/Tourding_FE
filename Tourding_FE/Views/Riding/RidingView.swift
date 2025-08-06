@@ -9,7 +9,11 @@ import SwiftUI
 
 struct RidingView: View {
     @EnvironmentObject var navigationManager: NavigationManager
+    @EnvironmentObject var modalManager: ModalManager
+    
     @ObservedObject private var viewModel: RidingViewModel
+    
+    @State private var currentPosition: BottomSheetPosition = .medium
     
     init(viewModel: RidingViewModel) {
         self.viewModel = viewModel
@@ -26,9 +30,17 @@ struct RidingView: View {
                 )
                 .ignoresSafeArea()
                 
+                if currentPosition == .large {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                        .animation(.easeInOut(duration: 0.3), value: currentPosition)
+                }
+                
+                // 바텀 시트
                 CustomBottomSheet(
                     content: sheetContent,
-                    screenHeight: geometry.size.height
+                    screenHeight: geometry.size.height,
+                    currentPosition: $currentPosition
                 )
                 
                 backButton
@@ -56,7 +68,19 @@ struct RidingView: View {
     } // : backButton
     
     private var ridingStartButtom: some View {
-        Button(action:{}){
+        Button(action:{
+            modalManager.showModal(
+                title: "라이딩을 시작할까요?",
+                subText: "현재 제작된 코스로 라이딩을 진행해요",
+                activeText: "시작하기",
+                onCancel: {
+                    print("취소됨")
+                },
+                onActive: {
+                    print("시작됨")
+                }
+            )
+        }){
             Text("라이딩 시작하기")
                 .foregroundColor(.white)
                 .font(.pretendardSemiBold(size: 16))
@@ -87,7 +111,7 @@ struct RidingView: View {
                     .foregroundColor(.gray6)
                     .font(.pretendardSemiBold(size: 20))
                     .padding(.leading, 17)
-                    
+                
                 Spacer()
                 
                 Button(action:{}){
@@ -104,10 +128,62 @@ struct RidingView: View {
             
             Divider()
                 .frame(maxWidth:.infinity)
+                .frame(height:1)
                 .foregroundColor(.gray1)
                 .padding(.horizontal, 16)
+                .padding(.bottom, 20)
             
             // 컨텐츠
+            
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    
+                    // 출발
+                    HStack(alignment: .top, spacing: 0) {
+                        VStack(spacing: 1.72) {
+                            Image("icon_point")
+                                .padding(.horizontal, 2.9)
+                                .padding(.top, 3.5)
+                            
+                            Text("출발")
+                                .foregroundColor(Color.main)
+                                .font(.pretendardRegular(size: 12))
+                        } // : VStack
+                        .padding(.horizontal, 4)
+                        .padding(.trailing, 6)
+                        
+                        Text(viewModel.start)
+                            .foregroundColor(.gray6)
+                            .font(.pretendardSemiBold(size: 16))
+                            .padding(.vertical, 11)
+                            .padding(.horizontal, 14)
+                    } // : HStack
+                    .padding(.horizontal, 16)
+                    
+                    // 도착
+                    HStack(alignment: .top, spacing: 0) {
+                        VStack(spacing: 2.96) {
+                            Image("icon_destination")
+                                .padding(.horizontal, 3)
+                                .padding(.top, 3.5)
+                            
+                            Text("도착")
+                                .foregroundColor(Color.main)
+                                .font(.pretendardRegular(size: 12))
+                        } // : VStack
+                        .padding(.horizontal, 4)
+                        .padding(.trailing, 6)
+                        
+                        Text(viewModel.end)
+                            .foregroundColor(.gray6)
+                            .font(.pretendardSemiBold(size: 16))
+                            .padding(.vertical, 11)
+                            .padding(.horizontal, 14)
+                    } // : HStack
+                    .padding(.horizontal, 16)
+                    
+                } // : VStack
+            } // : ScrollView
             
             Spacer()
         } // : VStack
@@ -118,4 +194,5 @@ struct RidingView: View {
 #Preview {
     RidingView(viewModel: RidingViewModel())
         .environmentObject(NavigationManager())
+        .environmentObject(ModalManager())
 }

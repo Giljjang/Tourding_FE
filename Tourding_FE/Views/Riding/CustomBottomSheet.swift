@@ -30,7 +30,7 @@ struct CustomBottomSheet<Content: View>: View {
     let screenHeight: CGFloat
     
     @State private var offset: CGFloat = 0
-    @State private var currentPosition: BottomSheetPosition = .medium
+    @Binding private var currentPosition: BottomSheetPosition
     @State private var isDragging = false
     @State private var dragStartOffset: CGFloat = 0
     
@@ -41,9 +41,14 @@ struct CustomBottomSheet<Content: View>: View {
     private let dragButtonWidth: CGFloat = 40
     
     // MARK: - Initializer
-    init(content: Content, screenHeight: CGFloat) {
+    init(
+        content: Content,
+        screenHeight: CGFloat,
+        currentPosition: Binding<BottomSheetPosition>
+    ) {
         self.content = content
         self.screenHeight = screenHeight
+        self._currentPosition = currentPosition
     }
     
     // MARK: - Body
