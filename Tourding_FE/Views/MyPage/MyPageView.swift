@@ -40,6 +40,7 @@ struct MyPageView: View {
                         title: "로그아웃하시겠어요?",
                         subText: "회원 정보는 그대로 보관돼요.",
                         activeText: "로그아웃",
+                        showView: .tabView,
                         onCancel: {
                             print("취소됨")
                         },
@@ -66,6 +67,7 @@ struct MyPageView: View {
                         title: "탈퇴하시겠어요?",
                         subText: "탈퇴시 삭제되는 정보는 복구 불가능해요.",
                         activeText: "탈퇴하기",
+                        showView: .tabView,
                         onCancel: {
                             print("취소됨")
                         },

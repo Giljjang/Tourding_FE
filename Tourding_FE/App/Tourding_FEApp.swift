@@ -70,6 +70,8 @@ struct Tourding_FEApp: App {
                                     MyPageView()
                                 case .ServiceView:
                                     ServiceView()
+                                case .RidingView:
+                                    RidingView(ridingViewModel: ridingViewModel)
                                 default:
                                     EmptyView()
                                 }
@@ -79,6 +81,7 @@ struct Tourding_FEApp: App {
                     }
                 }   // : NavigationStack
                 .environmentObject(navigationManager)
+                .environmentObject(modalManager)
                 .environmentObject(loginViewModel)
                 .environmentObject(viewModels.myPageViewModel)
                 .onOpenURL { url in
