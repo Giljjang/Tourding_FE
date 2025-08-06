@@ -45,6 +45,7 @@ struct MyPageView: View {
                         },
                         onActive: {
                             myPageViewModel.logout(globalLoginViewModel: loginViewModel)
+                            navigationManager.currentTab = .RidingView
                             print("로그아웃됨")
                         }
                     )
@@ -70,6 +71,7 @@ struct MyPageView: View {
                         },
                         onActive: {
                             myPageViewModel.withdraw(globalLoginViewModel: loginViewModel)
+                            navigationManager.currentTab = .RidingView
                             print("회원탈퇴됨")
                         }
                     )
@@ -125,4 +127,5 @@ struct MyPageView: View {
     MyPageView()
         .environmentObject(LoginViewModel())
         .environmentObject(MyPageViewModel())
+        .environmentObject(NavigationManager())
 }

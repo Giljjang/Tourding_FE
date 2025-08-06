@@ -58,23 +58,23 @@ struct Tourding_FEApp: App {
                     // 🎯 조건문을 NavigationStack 내부로 이동
                     if loginViewModel.isLoggedIn {
                         TabContentView(viewModel: viewModels)
+                            .navigationDestination(for: ViewType.self) { path in
+                                switch path {
+                                    // case 추가해서 탭뷰 제외 뷰 넣으면 됨
+                                case .LoginView:
+                                    LoginView()
+                                case .MyPageView:
+                                    MyPageView()
+                                case .ServiceView:
+                                    ServiceView()
+                                default:
+                                    EmptyView()
+                                }
+                            } // : navigationDestination
                     } else {
                         LoginView()
                     }
                 }   // : NavigationStack
-                .navigationDestination(for: ViewType.self) { path in
-                    switch path {
-                        // case 추가해서 탭뷰 제외 뷰 넣으면 됨
-                    case .LoginView:
-                        LoginView()
-                    case .MyPageView:
-                        MyPageView()
-                    case .ServiceView:
-                        ServiceView()
-                    default:
-                        EmptyView()
-                    }
-                } // : navigationDestination
                 .environmentObject(navigationManager)
                 .environmentObject(loginViewModel)
                 .environmentObject(viewModels.myPageViewModel)
