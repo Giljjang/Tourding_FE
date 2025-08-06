@@ -13,6 +13,8 @@ struct SheetContentView: View {
     
     @ObservedObject private var ridingViewModel: RidingViewModel
     
+    @State private var draggedSpot: RidingSpotModel?
+    
     init(ridingViewModel: RidingViewModel) {
         self.ridingViewModel = ridingViewModel
     }
@@ -42,6 +44,14 @@ struct SheetContentView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             ForEach(ridingViewModel.spotList){ item in
                                 spotRow(item: item)
+                                    .onDrag({
+                                        self.draggedSpot = item
+                                        return NSItemProvider(item: nil, typeIdentifier: item.id)
+                                    }) // : onDrag
+                                    .onDrop(
+                                        of: [item.id],
+                                        delegate: SpotDropDelegate(ridingViewModel: ridingViewModel, currentItem: item, draggedSpot: $draggedSpot)
+                                    ) // : onDrop
                             } // : ForEach
                         } // : VStack
                         .padding(.leading, 54)
@@ -150,6 +160,7 @@ struct SheetContentView: View {
                     title: "스팟을 삭제할까요?",
                     subText: "제작 중인 코스에서 스팟이 삭제돼요",
                     activeText: "삭제하기",
+                    showView: .ridingView,
                     onCancel: {
                         print("취소됨")
                     },

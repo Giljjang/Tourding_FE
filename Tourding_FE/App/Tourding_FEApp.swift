@@ -14,7 +14,9 @@ import KakaoSDKUser
 @main
 struct Tourding_FEApp: App {
     @StateObject private var navigationManager = NavigationManager()
-    @StateObject private var loginViewModel = LoginViewModel()  // ✅ ViewModel 생성
+    @StateObject private var loginViewModel = LoginViewModel()
+    @StateObject private var modalManager = ModalManager()
+    
     @State private var showSplash = true
     
     init() {
@@ -70,7 +72,8 @@ struct Tourding_FEApp: App {
                                 } // : navigationDestination
                         } // : NavigationStack
                         .environmentObject(navigationManager)
-                        .environmentObject(loginViewModel)  //  여기서 주입
+                        .environmentObject(loginViewModel)
+                        .environmentObject(modalManager)
                         .onOpenURL { url in
                             if AuthApi.isKakaoTalkLoginUrl(url) {
                                 _ = AuthController.handleOpenUrl(url: url)
@@ -81,7 +84,8 @@ struct Tourding_FEApp: App {
                             LoginView()
                         }
                         .environmentObject(navigationManager)
-                        .environmentObject(loginViewModel)  //  여기서 주입
+                        .environmentObject(loginViewModel)
+                        .environmentObject(modalManager)
                         .onOpenURL { url in
                             if AuthApi.isKakaoTalkLoginUrl(url) {
                                 _ = AuthController.handleOpenUrl(url: url)

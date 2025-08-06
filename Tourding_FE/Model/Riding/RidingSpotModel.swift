@@ -8,7 +8,7 @@
 import Foundation
 
 struct RidingSpotModel: Hashable, Identifiable {
-    let id: UUID = UUID()
+    let id: String = UUID().uuidString
     let name: String
     let themeType: ThemeType
 }

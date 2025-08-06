@@ -47,6 +47,21 @@ struct RidingView: View {
                 
                 ridingStartButtom
                 
+                // 커스텀 모달 뷰
+                if modalManager.isPresented && modalManager.showView == .ridingView {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            modalManager.hideModal()
+                        }
+                    
+                    CustomModalView(modalManager: modalManager)
+                        .position(
+                            x: geometry.size.width / 2,
+                            y: geometry.size.height / 2
+                        )
+                } // : if
+                
             } // : ZStack
         } // : GeometryReader
         .navigationBarBackButtonHidden()
@@ -73,6 +88,7 @@ struct RidingView: View {
                 title: "라이딩을 시작할까요?",
                 subText: "현재 제작된 코스로 라이딩을 진행해요",
                 activeText: "시작하기",
+                showView: .ridingView,
                 onCancel: {
                     print("취소됨")
                 },

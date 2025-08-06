@@ -9,7 +9,8 @@ import SwiftUI
 
 struct TabContentView: View {
     @EnvironmentObject var navigationManager: NavigationManager
-    @StateObject private var modalManager = ModalManager()
+    @EnvironmentObject var modalManager: ModalManager
+    
     private var viewModel: TabViewModelsContainer
     
     init(viewModel: TabViewModelsContainer) {
@@ -34,7 +35,7 @@ struct TabContentView: View {
                 .padding(.bottom, 52)
             
             // 커스텀 모달 뷰
-            if modalManager.isPresented {
+            if modalManager.isPresented && modalManager.showView == .tabView {
                 Color.black.opacity(0.3)
                     .ignoresSafeArea()
                     .onTapGesture {
@@ -46,7 +47,6 @@ struct TabContentView: View {
             
         } // : Zstack
         .edgesIgnoringSafeArea(.bottom)
-        .environmentObject(modalManager)
     }
 }
 
