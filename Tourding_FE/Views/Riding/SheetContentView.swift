@@ -13,8 +13,8 @@ struct SheetContentView: View {
     
     @ObservedObject private var ridingViewModel: RidingViewModel
     
-    @State private var draggedSpot: RidingSpotModel?
-    
+    @State private var draggedSpot: RidingSpotModel? // 드래그된 아이템
+
     init(ridingViewModel: RidingViewModel) {
         self.ridingViewModel = ridingViewModel
     }
@@ -29,13 +29,14 @@ struct SheetContentView: View {
                 .frame(height:1)
                 .foregroundColor(.gray1)
                 .padding(.horizontal, 16)
-                .padding(.bottom, 20)
+//                .padding(.bottom, 20)
             
             // 컨텐츠
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
                     
                     startPointView
+                        .padding(.top, 20)
                     
                     if ridingViewModel.spotList.isEmpty {
                         Spacer()
@@ -46,10 +47,10 @@ struct SheetContentView: View {
                                 spotRow(item: item)
                                     .onDrag({
                                         self.draggedSpot = item
-                                        return NSItemProvider(item: nil, typeIdentifier: item.id)
+                                        return NSItemProvider(item: nil, typeIdentifier: item.id) // id가 string이어야함
                                     }) // : onDrag
                                     .onDrop(
-                                        of: [item.id],
+                                        of: [item.id], // id가 string이어야함
                                         delegate: SpotDropDelegate(ridingViewModel: ridingViewModel, currentItem: item, draggedSpot: $draggedSpot)
                                     ) // : onDrop
                             } // : ForEach
@@ -57,7 +58,29 @@ struct SheetContentView: View {
                         .padding(.leading, 54)
                         .padding(.trailing, 16)
                         .padding(.vertical, 12)
-                    } // if - else
+                        .overlay {
+                            Divider()
+                                .frame(
+                                    width: 1, 
+                                    height: ridingViewModel.nthLineHeight)
+                                .background(Color(hex: "#EDF0F6"))
+                                .position(x: 32, y: 6+(ridingViewModel.nthLineHeight/2))
+
+                        } // : overlay
+                        .overlay {
+                            ForEach(1...ridingViewModel.spotList.count, id: \.self) { index in
+                                Text("\(index)")
+                                    .foregroundColor(.white)
+                                    .font(.pretendardMedium(size: 10.5))
+                                    .frame(height:17)
+                                    .padding(.horizontal, 6.5)
+                                    .padding(.vertical, 0.5)
+                                    .background(Color(hex: "#2C333A"))
+                                    .clipShape(Circle())
+                                    .position(x: 32, y: 45 + Double((index-1) * (56+18)))
+                            } // : ForEach
+                        } // : overlay
+                    } // : if - else
                     
                     endPointView
                 } // : VStack
