@@ -15,6 +15,7 @@ enum ViewType : Hashable {
     
     case LoginView
     case RidingView
+    case ServiceView
 }
 
 final class NavigationManager: ObservableObject {

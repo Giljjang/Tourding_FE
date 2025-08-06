@@ -33,66 +33,60 @@ struct Tourding_FEApp: App {
         let ridingViewModel = DependencyProvider.makeRidingViewModel()
         
         WindowGroup {
-                if showSplash {
-                    SplashView()
-                        .onAppear {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                loadKakaoToken { success in
-                                    withAnimation {
-                                        loginViewModel.isLoggedIn = success
-                                        showSplash = false
-                                    }
-                                    if !loginViewModel.isLoggedIn {
-                                        //                                    navigationManager.push(.LoginView)
-                                    }
+            if showSplash {
+                SplashView()
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            loadKakaoToken { success in
+                                withAnimation {
+                                    loginViewModel.fetchUserInfo()
+                                    loginViewModel.isLoggedIn = success
+                                    showSplash = false
+                                }
+                                if !loginViewModel.isLoggedIn {
+                                    //                                    navigationManager.push(.LoginView)
                                 }
                             }
-                        } // : onAppear
-                        .onOpenURL { url in
-                            if AuthApi.isKakaoTalkLoginUrl(url) {
-                                _ = AuthController.handleOpenUrl(url: url)
-                            }
                         }
-                    
-                } else {
-                    if loginViewModel.isLoggedIn{
-                        NavigationStack(path: $navigationManager.path) {
-                            TabContentView(viewModel: viewModels)
-                                .navigationDestination(for: ViewType.self) { path in
-                                    switch path{
-                                    
-                                    case .RidingView:
-                                        RidingView(ridingViewModel: ridingViewModel)
-                                    case .LoginView:
-                                        LoginView()
-                                        
-                                    default :
-                                        EmptyView()
-                                    }
-                                } // : navigationDestination
-                        } // : NavigationStack
-                        .environmentObject(navigationManager)
-                        .environmentObject(loginViewModel)
-                        .environmentObject(modalManager)
-                        .onOpenURL { url in
-                            if AuthApi.isKakaoTalkLoginUrl(url) {
-                                _ = AuthController.handleOpenUrl(url: url)
-                            }
+                    } // : onAppear
+                    .onOpenURL { url in
+                        if AuthApi.isKakaoTalkLoginUrl(url) {
+                            _ = AuthController.handleOpenUrl(url: url)
                         }
+                    }
+                
+            } else {
+                // ✅ NavigationStack을 한 번만 사용하고 조건문을 내부에서 처리
+                NavigationStack(path: $navigationManager.path) {
+                    // 🎯 조건문을 NavigationStack 내부로 이동
+                    if loginViewModel.isLoggedIn {
+                        TabContentView(viewModel: viewModels)
+                            .navigationDestination(for: ViewType.self) { path in
+                                switch path {
+                                    // case 추가해서 탭뷰 제외 뷰 넣으면 됨
+                                case .LoginView:
+                                    LoginView()
+                                case .MyPageView:
+                                    MyPageView()
+                                case .ServiceView:
+                                    ServiceView()
+                                default:
+                                    EmptyView()
+                                }
+                            } // : navigationDestination
                     } else {
-                        NavigationStack(path: $navigationManager.path) {
-                            LoginView()
-                        }
-                        .environmentObject(navigationManager)
-                        .environmentObject(loginViewModel)
-                        .environmentObject(modalManager)
-                        .onOpenURL { url in
-                            if AuthApi.isKakaoTalkLoginUrl(url) {
-                                _ = AuthController.handleOpenUrl(url: url)
-                            }
-                        }
-                    }// : if-else
+                        LoginView()
+                    }
+                }   // : NavigationStack
+                .environmentObject(navigationManager)
+                .environmentObject(loginViewModel)
+                .environmentObject(viewModels.myPageViewModel)
+                .onOpenURL { url in
+                    if AuthApi.isKakaoTalkLoginUrl(url) {
+                        _ = AuthController.handleOpenUrl(url: url)
+                    }
                 }
+            }
         }
     }
 }
