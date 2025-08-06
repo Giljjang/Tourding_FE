@@ -46,7 +46,7 @@ struct MyPageView: View {
                         },
                         onActive: {
                             myPageViewModel.logout(globalLoginViewModel: loginViewModel)
-                            navigationManager.currentTab = .RidingView
+                            navigationManager.currentTab = .HomewView
                             print("로그아웃됨")
                         }
                     )
@@ -73,7 +73,7 @@ struct MyPageView: View {
                         },
                         onActive: {
                             myPageViewModel.withdraw(globalLoginViewModel: loginViewModel)
-                            navigationManager.currentTab = .RidingView
+                            navigationManager.currentTab = .HomewView
                             print("회원탈퇴됨")
                         }
                     )
