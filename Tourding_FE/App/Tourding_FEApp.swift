@@ -60,7 +60,7 @@ struct Tourding_FEApp: App {
                                     switch path{
                                     
                                     case .RidingView:
-                                        RidingView(viewModel: ridingViewModel)
+                                        RidingView(ridingViewModel: ridingViewModel)
                                     case .LoginView:
                                         LoginView()
                                         

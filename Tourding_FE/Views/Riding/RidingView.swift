@@ -11,12 +11,12 @@ struct RidingView: View {
     @EnvironmentObject var navigationManager: NavigationManager
     @EnvironmentObject var modalManager: ModalManager
     
-    @ObservedObject private var viewModel: RidingViewModel
+    @ObservedObject private var ridingViewModel: RidingViewModel
     
     @State private var currentPosition: BottomSheetPosition = .medium
     
-    init(viewModel: RidingViewModel) {
-        self.viewModel = viewModel
+    init(ridingViewModel: RidingViewModel) {
+        self.ridingViewModel = ridingViewModel
     }
     
     var body: some View {
@@ -38,7 +38,7 @@ struct RidingView: View {
                 
                 // 바텀 시트
                 CustomBottomSheet(
-                    content: sheetContent,
+                    content: SheetContentView(ridingViewModel: ridingViewModel),
                     screenHeight: geometry.size.height,
                     currentPosition: $currentPosition
                 )
@@ -102,97 +102,10 @@ struct RidingView: View {
             )
         ) // : background
     } // : ridingStartButtom
-    
-    private var sheetContent: some View {
-        VStack(alignment: .leading,spacing: 0) {
-            // 헤더
-            HStack(alignment: .top , spacing: 0) {
-                Text("라이딩 코스")
-                    .foregroundColor(.gray6)
-                    .font(.pretendardSemiBold(size: 20))
-                    .padding(.leading, 17)
-                
-                Spacer()
-                
-                Button(action:{}){
-                    Image("icon_plus")
-                    Text("스팟 추가")
-                        .foregroundColor(.gray6)
-                        .font(.pretendardSemiBold(size: 16))
-                }
-                .padding(.top, 1)
-                .padding(.trailing, 16)
-            } // : HStack
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.bottom, 19)
-            
-            Divider()
-                .frame(maxWidth:.infinity)
-                .frame(height:1)
-                .foregroundColor(.gray1)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 20)
-            
-            // 컨텐츠
-            
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 0) {
-                    
-                    // 출발
-                    HStack(alignment: .top, spacing: 0) {
-                        VStack(spacing: 1.72) {
-                            Image("icon_point")
-                                .padding(.horizontal, 2.9)
-                                .padding(.top, 3.5)
-                            
-                            Text("출발")
-                                .foregroundColor(Color.main)
-                                .font(.pretendardRegular(size: 12))
-                        } // : VStack
-                        .padding(.horizontal, 4)
-                        .padding(.trailing, 6)
-                        
-                        Text(viewModel.start)
-                            .foregroundColor(.gray6)
-                            .font(.pretendardSemiBold(size: 16))
-                            .padding(.vertical, 11)
-                            .padding(.horizontal, 14)
-                    } // : HStack
-                    .padding(.horizontal, 16)
-                    
-                    // 도착
-                    HStack(alignment: .top, spacing: 0) {
-                        VStack(spacing: 2.96) {
-                            Image("icon_destination")
-                                .padding(.horizontal, 3)
-                                .padding(.top, 3.5)
-                            
-                            Text("도착")
-                                .foregroundColor(Color.main)
-                                .font(.pretendardRegular(size: 12))
-                        } // : VStack
-                        .padding(.horizontal, 4)
-                        .padding(.trailing, 6)
-                        
-                        Text(viewModel.end)
-                            .foregroundColor(.gray6)
-                            .font(.pretendardSemiBold(size: 16))
-                            .padding(.vertical, 11)
-                            .padding(.horizontal, 14)
-                    } // : HStack
-                    .padding(.horizontal, 16)
-                    
-                } // : VStack
-            } // : ScrollView
-            
-            Spacer()
-        } // : VStack
-        .padding(.top, 8)
-    } // : sheetContent
 }
 
 #Preview {
-    RidingView(viewModel: RidingViewModel())
+    RidingView(ridingViewModel: RidingViewModel())
         .environmentObject(NavigationManager())
         .environmentObject(ModalManager())
 }
