@@ -66,12 +66,12 @@ struct Tourding_FEApp: App {
                                     // case 추가해서 탭뷰 제외 뷰 넣으면 됨
                                 case .LoginView:
                                     LoginView()
-                                case .MyPageView:
-                                    MyPageView()
                                 case .ServiceView:
                                     ServiceView()
                                 case .RidingView:
                                     RidingView(ridingViewModel: ridingViewModel)
+                                case .DestinationSearchView:
+                                    DestinationSearchView()
                                 default:
                                     EmptyView()
                                 }
@@ -83,7 +83,6 @@ struct Tourding_FEApp: App {
                 .environmentObject(navigationManager)
                 .environmentObject(modalManager)
                 .environmentObject(loginViewModel)
-                .environmentObject(viewModels.myPageViewModel)
                 .onOpenURL { url in
                     if AuthApi.isKakaoTalkLoginUrl(url) {
                         _ = AuthController.handleOpenUrl(url: url)

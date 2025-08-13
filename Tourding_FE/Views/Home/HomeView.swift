@@ -95,7 +95,7 @@ struct HomeView: View {
             .padding(.leading, 20)
             
             VStack(alignment: .leading) {
-                Button(action:{}){
+                Button(action:{navigationManager.push(.DestinationSearchView)}){
                     Text(viewModel.endPoint.isEmpty ? "출발지를 입력해주세요" : "\(viewModel.endPoint)")
                         .foregroundColor(viewModel.endPoint.isEmpty ? .gray2 : .gray6)
                         .font(.pretendardMedium(size: 18))
@@ -124,7 +124,7 @@ struct HomeView: View {
             .padding(.leading, 20)
             
             VStack(alignment: .leading) {
-                Button(action:{}){
+                Button(action:{navigationManager.push(.DestinationSearchView)}){
                     Text(viewModel.startPoint.isEmpty ? "도착지를 입력해주세요" : "\(viewModel.startPoint)")
                         .foregroundColor(viewModel.startPoint.isEmpty ? .gray2 : .gray6)
                         .font(.pretendardMedium(size: 18))
