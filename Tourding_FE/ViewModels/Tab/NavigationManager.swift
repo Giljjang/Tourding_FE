@@ -27,7 +27,11 @@ final class NavigationManager: ObservableObject {
         path.append(view)
     }
     
-    func pop(){
+    func pop() {
+        guard !path.isEmpty else {
+            print("⚠️ Cannot pop: Navigation path is empty")
+            return
+        }
         path.removeLast()
     }
     

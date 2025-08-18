@@ -16,6 +16,7 @@ struct Tourding_FEApp: App {
     @StateObject private var navigationManager = NavigationManager()
     @StateObject private var loginViewModel = LoginViewModel()
     @StateObject private var modalManager = ModalManager()
+    @StateObject private var routeManager = RouteSharedManager()
     
     @State private var showSplash = true
     
@@ -83,6 +84,7 @@ struct Tourding_FEApp: App {
                 .environmentObject(navigationManager)
                 .environmentObject(modalManager)
                 .environmentObject(loginViewModel)
+                .environmentObject(routeManager)
                 .onOpenURL { url in
                     if AuthApi.isKakaoTalkLoginUrl(url) {
                         _ = AuthController.handleOpenUrl(url: url)
