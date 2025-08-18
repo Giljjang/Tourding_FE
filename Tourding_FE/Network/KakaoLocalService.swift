@@ -1,49 +1,9 @@
-////
-////  KakaoAPI.swift
-////  Tourding_FE
-////
-////  Created by 유재혁 on 8/15/25.
-////
-//
-//// KakaoAPI+NetworkService.swift
-//import Foundation
-//
-//extension NetworkService {
-//    func kakaoKeyword(
-//        query: String,
-//        x: Double? = nil,
-//        y: Double? = nil,
-//        radius: Int? = nil,
-//        page: Int = 1,
-//        size: Int = 15
-//    ) async throws -> KakaoKeywordResponse {
-//        var items: [URLQueryItem] = [
-//            .init(name: "query", value: query),
-//            .init(name: "page", value: String(page)),
-//            .init(name: "size", value: String(size))
-//        ]
-//        if let x { items.append(.init(name: "x", value: String(x))) }
-//        if let y { items.append(.init(name: "y", value: String(y))) }
-//        if let radius { items.append(.init(name: "radius", value: String(radius))) }
-//
-//        let headers = [
-//            "Authorization": "KakaoAK \(AppConfig.kakaoRestKey)"
-//        ]
-//        return try await request(
-//            host: .kakao,
-//            path: "/v2/local/search/keyword.json",
-//            query: items,
-//            headers: headers,
-//            decode: KakaoKeywordResponse.self
-//        )
-//    }
-//}
 
 //
 //  KakaoLocalService.swift
 //  Tourding_FE
 //
-//  Created by AI on 8/15/25.
+//  Created by 유재혁 on 8/15/25.
 //
 
 import Foundation

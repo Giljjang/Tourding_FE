@@ -1,64 +1,9 @@
-//
-//  SearchListModel.swift
-//  Tourding_FE
-//
-//  Created by 유재혁 on 8/13/25.
-//
-//
-//import Foundation
-//
-//struct SearchListModel: Hashable, Identifiable {
-//    let id: String = UUID().uuidString
-//    let Title: String
-//    let SubTitle: String
-//    let distance: Int
-//    let longitude: Double
-//    let latitude: Double
-//}
-//
-//
-//
-//
-//
-//// KakaoKeywordSearchDTO.swift
-//struct KakaoKeywordSearchResponse: Decodable {
-//    let documents: [KakaoPlace]
-//    let meta: KakaoMeta
-//}
-//
-//struct KakaoMeta: Decodable {
-//    let is_end: Bool
-//    let pageable_count: Int
-//    let total_count: Int
-//}
-//
-//struct KakaoPlace: Decodable {
-//    let id: String
-//    let place_name: String          // 장소명
-//    let address_name: String        // 지번주소
-//    let road_address_name: String   // 도로명주소
-//    let x: String                   // 경도 (String으로 옴)
-//    let y: String                   // 위도 (String으로 옴)
-//    let distance: String?           // 중심좌표 기준 거리(미터). x,y 주면 내려옴
-//}
-//
-//extension SearchListModel {
-//    init(from dto: KakaoPlace) {
-//        self.init(
-//            Title: dto.place_name,
-//            SubTitle: dto.road_address_name.isEmpty ? dto.address_name : dto.road_address_name,
-//            distance: Int(dto.distance ?? "0") ?? 0,
-//            longitude: Double(dto.x) ?? 0,
-//            latitude: Double(dto.y) ?? 0
-//        )
-//    }
-//}
 
 //
 //  KakaoLocalModels.swift
 //  Tourding_FE
 //
-//  Created by AI on 8/15/25.
+//  Created by 유재혁 on 8/15/25.
 //
 
 import Foundation

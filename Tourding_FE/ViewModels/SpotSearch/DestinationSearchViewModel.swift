@@ -1,15 +1,8 @@
 //
-//  dd.swift
-//  Tourding_FE
-//
-//  Created by 유재혁 on 8/15/25.
-//
-
-//
 //  DestinationSearchViewModel.swift
 //  Tourding_FE
 //
-//  Created by AI on 8/15/25.
+//  Created by 유재혁 on 8/15/25.
 //
 
 //카카오 통신으로 검색 할 때 주로 사용,
