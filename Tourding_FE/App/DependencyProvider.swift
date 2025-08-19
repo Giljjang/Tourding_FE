@@ -26,4 +26,7 @@ struct DependencyProvider {
         
         return ridingViewModel
     }
+    static func makeRouteSharedManager() -> RouteSharedManager {
+        return RouteSharedManager()
+    }
 }

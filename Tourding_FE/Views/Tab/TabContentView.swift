@@ -26,7 +26,7 @@ struct TabContentView: View {
             case .SpotSearchView:
                 SpotSearchView()
             case .MyPageView :
-                MyPageView()
+                MyPageView(viewModel: viewModel.myPageViewModel)
             default:
                 HomeView(viewModel: viewModel.homeViewModel)
             }

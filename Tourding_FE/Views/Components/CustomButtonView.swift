@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-// MARK: - 커스텀 메뉴 버튼 컴포넌트
+// MARK: - 커스텀 메뉴 버튼 컴포넌트_MY뷰에서 사용
 struct CustomButtonView: View {
     let title: String
     let action: () -> Void

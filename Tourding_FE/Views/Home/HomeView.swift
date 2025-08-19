@@ -10,7 +10,8 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject var navigationManager: NavigationManager
     @EnvironmentObject var modalManager: ModalManager
-    
+    @EnvironmentObject var routeSharedManager: RouteSharedManager
+
     @ObservedObject private var viewModel: HomeViewModel
     
     init(viewModel: HomeViewModel) {
@@ -95,9 +96,12 @@ struct HomeView: View {
             .padding(.leading, 20)
             
             VStack(alignment: .leading) {
-                Button(action:{}){
-                    Text(viewModel.endPoint.isEmpty ? "출발지를 입력해주세요" : "\(viewModel.endPoint)")
-                        .foregroundColor(viewModel.endPoint.isEmpty ? .gray2 : .gray6)
+                Button(action:{
+                    routeSharedManager.currentSelectionMode = .startLocation
+                    navigationManager.push(.DestinationSearchView)
+                }){
+                    Text(routeSharedManager.routeData.startLocation.isEmpty ? "출발지를 입력해주세요" : "\(routeSharedManager.routeData.startLocation.name)")
+                        .foregroundColor(routeSharedManager.routeData.startLocation.isEmpty ? .gray2 : .gray6)
                         .font(.pretendardMedium(size: 18))
                 }
                 .padding(.top, 11)
@@ -124,9 +128,12 @@ struct HomeView: View {
             .padding(.leading, 20)
             
             VStack(alignment: .leading) {
-                Button(action:{}){
-                    Text(viewModel.startPoint.isEmpty ? "도착지를 입력해주세요" : "\(viewModel.startPoint)")
-                        .foregroundColor(viewModel.startPoint.isEmpty ? .gray2 : .gray6)
+                Button(action:{
+                    routeSharedManager.currentSelectionMode = .endLocation
+                    navigationManager.push(.DestinationSearchView)
+                }){
+                    Text(routeSharedManager.routeData.endLocation.isEmpty ? "도착지를 입력해주세요" : "\(routeSharedManager.routeData.endLocation.name)")
+                        .foregroundColor(routeSharedManager.routeData.endLocation.isEmpty ? .gray2 : .gray6)
                         .font(.pretendardMedium(size: 18))
                 }
                 .padding(.top, 11)
@@ -141,16 +148,18 @@ struct HomeView: View {
             .padding(.leading, 48)
             .padding(.bottom, 31)
             
-            Button(action: {}){
+            Button(action: {
+                routeSharedManager.printCurrentRouteState()
+            }){
                 Text("코스 만들기")
-                    .foregroundColor(viewModel.hasValidPoints() ? .white : .gray3)
+                    .foregroundColor(routeSharedManager.hasValidPoints ? .white : .gray3)
                     .font(.pretendardSemiBold(size: 16))
                     .padding(.vertical, 15)
                     .padding(.horizontal, 124)
-                    .background(viewModel.hasValidPoints() ? .gray5 : Color.gray2)
+                    .background(routeSharedManager.hasValidPoints ? .gray5 : Color.gray2)
                     .cornerRadius(10)
             } // :Button
-            .disabled(!viewModel.hasValidPoints())
+            .disabled(!routeSharedManager.hasValidPoints)
             .padding(.leading, 20)
             .padding(.bottom, 20)
             
@@ -218,4 +227,5 @@ struct HomeView: View {
 #Preview {
     HomeView(viewModel: HomeViewModel(testRepository: TestRepository()))
         .environmentObject(NavigationManager())
+        .environmentObject(RouteSharedManager())
 }

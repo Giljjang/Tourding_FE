@@ -8,10 +8,14 @@
 import SwiftUI
 
 struct MyPageView: View {
-    @EnvironmentObject var loginViewModel: LoginViewModel  // ✅ 글로벌 로그인 상태 ViewModel
-    @EnvironmentObject var myPageViewModel: MyPageViewModel  // ✅ 마이페이지 ViewModel
+    @EnvironmentObject var loginViewModel: LoginViewModel  // 글로벌 로그인 상태 ViewModel
+    @ObservedObject var myPageViewModel: MyPageViewModel // 마이페이지 ViewModel
     @EnvironmentObject var modalManager: ModalManager
     @EnvironmentObject var navigationManager: NavigationManager
+    
+    init(viewModel: MyPageViewModel) {
+        self.myPageViewModel = viewModel
+    }
     
     var body: some View {
         ZStack{
@@ -124,10 +128,9 @@ struct MyPageView: View {
         
     }
 }
-
-#Preview {
-    MyPageView()
-        .environmentObject(LoginViewModel())
-        .environmentObject(MyPageViewModel())
-        .environmentObject(NavigationManager())
-}
+//
+//#Preview {
+//    MyPageView(Mypa)
+//        .environmentObject(MyPageViewModel())
+//        .environmentObject(NavigationManager())
+//}
