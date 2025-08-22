@@ -1,13 +1,13 @@
 //
-//  RidingView.swift
+//  RidingNextView.swift
 //  Tourding_FE
 //
-//  Created by 이유현 on 8/5/25.
+//  Created by 이유현 on 8/22/25.
 //
 
 import SwiftUI
 
-struct RidingView: View {
+struct RidingNextView: View {
     @EnvironmentObject var navigationManager: NavigationManager
     @EnvironmentObject var modalManager: ModalManager
     
@@ -37,18 +37,23 @@ struct RidingView: View {
                 }
                 
                 backButton
+                    .zIndex(1)
+                
+                toiletButton
+                    .zIndex(1)
+                
+                csButton
+                    .zIndex(1) 
                 
                 // 바텀 시트
                 CustomBottomSheet(
-                    content: SheetContentView(ridingViewModel: ridingViewModel),
+                    content: SheetGuideView(ridingViewModel: ridingViewModel),
                     screenHeight: geometry.size.height,
                     currentPosition: $currentPosition
                 )
                 
-                ridingStartButtom
-                
                 // 커스텀 모달 뷰
-                if modalManager.isPresented && modalManager.showView == .ridingView {
+                if modalManager.isPresented && modalManager.showView == .ridingNextView {
                     Color.black.opacity(0.3)
                         .ignoresSafeArea()
                         .onTapGesture {
@@ -82,47 +87,49 @@ struct RidingView: View {
         .position(x: 36, y: 53)
     } // : backButton
     
-    private var ridingStartButtom: some View {
+    private var toiletButton: some View {
         Button(action:{
-            modalManager.showModal(
-                title: "라이딩을 시작할까요?",
-                subText: "현재 제작된 코스로 라이딩을 진행해요",
-                activeText: "시작하기",
-                showView: .ridingView,
-                onCancel: {
-                    print("취소됨")
-                },
-                onActive: {
-                    print("시작됨")
-                    navigationManager.push(.RidingNextView)
-                }
-            )
+            ridingViewModel.toggleToilet()
         }){
-            Text("라이딩 시작하기")
-                .foregroundColor(.white)
-                .font(.pretendardSemiBold(size: 16))
-                .frame(height: 22)
-                .padding(.vertical, 16)
-                .padding(.horizontal, 130.5)
-                .background(Color.gray5)
-                .cornerRadius(10)
+            HStack(spacing: 2){
+                Image(ridingViewModel.showToilet ? "toilet_on": "toilet_off")
+                    .padding(.vertical, 8)
+                    .padding(.leading, 12)
+                
+                Text("화장실")
+                    .foregroundColor(ridingViewModel.showToilet ? .white : .gray5)
+                    .font(.pretendardMedium(size: 14))
+                    .padding(.trailing, 14)
+            } // : HStack
+            .background(ridingViewModel.showToilet ? Color.gray5 : Color.white)
+            .cornerRadius(12)
         }
-        .padding(.bottom, 18)
-        .background(
-            LinearGradient(
-                stops: [
-                    Gradient.Stop(color: .white.opacity(0), location: 0.00),
-                    Gradient.Stop(color: .white, location: 0.15),
-                ],
-                startPoint: UnitPoint(x: 0.5, y: 0),
-                endPoint: UnitPoint(x: 0.5, y: 1)
-            )
-        ) // : background
-    } // : ridingStartButtom
+        .position(x: 110, y: 53)
+    } // : toiletButton
+    
+    private var csButton: some View {
+        Button(action:{
+            ridingViewModel.toggleConvenienceStore()
+        }){
+            HStack(spacing: 2){
+                Image(ridingViewModel.showConvenienceStore ? "cs_on": "cs_off")
+                    .padding(.vertical, 8)
+                    .padding(.leading, 12)
+                
+                Text("편의점")
+                    .foregroundColor(ridingViewModel.showConvenienceStore ? .white : .gray5)
+                    .font(.pretendardMedium(size: 14))
+                    .padding(.trailing, 14)
+            } // : HStack
+            .background(ridingViewModel.showConvenienceStore ? Color.gray5 : Color.white)
+            .cornerRadius(12)
+        }
+        .position(x: 208, y: 53)
+    } // : csButton
 }
 
 #Preview {
-    RidingView(ridingViewModel: RidingViewModel())
+    RidingNextView(ridingViewModel: RidingViewModel())
         .environmentObject(NavigationManager())
         .environmentObject(ModalManager())
 }

@@ -10,6 +10,7 @@ import Foundation
 enum ShowViewType {
     case tabView
     case ridingView
+    case ridingNextView
 }
 
 final class ModalManager: ObservableObject {
