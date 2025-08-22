@@ -15,7 +15,6 @@ enum ViewType : Hashable {
     
     case LoginView
     case RidingView
-    case RidingNextView
     case ServiceView
     case DestinationSearchView
 }

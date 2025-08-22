@@ -9,13 +9,16 @@ import SwiftUI
 
 // MARK: - 바텀 시트 위치 열거형
 enum BottomSheetPosition: CaseIterable {
-    case small   // 188
-    case medium  // 455 (기본값)
-    case large   // 706
+    case loading  // 로딩 상태
+    case small    // 188 (beforeStart) / 101 (afterStart)
+    case medium   // 455 (기본값)
+    case large    // 706
     
-    var height: CGFloat {
+    func height(for ridingMode: RidingMode) -> CGFloat {
         switch self {
-        case .small: return 188
+        case .loading: return 188
+        case .small: 
+            return ridingMode == .beforeStart ? 188 : 101
         case .medium: return 455
         case .large: return 706
         }
@@ -28,6 +31,8 @@ struct CustomBottomSheet<Content: View>: View {
     // MARK: - Properties
     let content: Content
     let screenHeight: CGFloat
+    let ridingMode: RidingMode
+    let isLoading: Bool
     
     @State private var offset: CGFloat = 0
     @Binding private var currentPosition: BottomSheetPosition
@@ -44,11 +49,15 @@ struct CustomBottomSheet<Content: View>: View {
     init(
         content: Content,
         screenHeight: CGFloat,
-        currentPosition: Binding<BottomSheetPosition>
+        currentPosition: Binding<BottomSheetPosition>,
+        ridingMode: RidingMode,
+        isLoading: Bool = false
     ) {
         self.content = content
         self.screenHeight = screenHeight
         self._currentPosition = currentPosition
+        self.ridingMode = ridingMode
+        self.isLoading = isLoading
     }
     
     // MARK: - Body
@@ -81,7 +90,20 @@ struct CustomBottomSheet<Content: View>: View {
         .ignoresSafeArea(.all, edges: .bottom)
         .onAppear {
             // 초기 위치 설정
-            offset = screenHeight - currentPosition.height
+            offset = screenHeight - currentPosition.height(for: ridingMode)
+        }
+        .onChange(of: isLoading) { newIsLoading in
+            if !newIsLoading && currentPosition == .loading {
+                // 로딩이 끝나면 medium으로 애니메이션
+                animateToPosition(.medium)
+            }
+        }
+        .onChange(of: ridingMode) { newRidingMode in
+            // ridingMode가 변경되면 현재 위치의 높이 재계산
+            let targetOffset = screenHeight - currentPosition.height(for: newRidingMode)
+            withAnimation(.easeInOut(duration: animationDuration)) {
+                offset = targetOffset
+            }
         }
     }
     
@@ -92,7 +114,6 @@ struct CustomBottomSheet<Content: View>: View {
             RoundedRectangle(cornerRadius: 6)
                 .fill(Color.gray2)
                 .frame(width: dragButtonWidth, height: dragButtonHeight)
-            
         }
         .padding(.top, 13)
         .padding(.bottom, 11)
@@ -109,7 +130,8 @@ struct CustomBottomSheet<Content: View>: View {
                 
                 // 드래그 시작 시점의 offset에서 변화량만큼 이동
                 let newOffset = dragStartOffset + value.translation.height
-                offset = max(0, min(screenHeight - BottomSheetPosition.small.height, newOffset))
+                let minHeight = BottomSheetPosition.small.height(for: ridingMode)
+                offset = max(0, min(screenHeight - minHeight, newOffset))
             }
             .onEnded { value in
                 isDragging = false
@@ -131,6 +153,11 @@ struct CustomBottomSheet<Content: View>: View {
     private func determineTargetPosition(translation: CGFloat, velocity: CGFloat, currentPosition: BottomSheetPosition) -> BottomSheetPosition {
         let positions = BottomSheetPosition.allCases
         let currentIndex = positions.firstIndex(of: currentPosition) ?? 1
+        
+        // 로딩 중에는 드래그 비활성화
+        if currentPosition == .loading {
+            return .loading
+        }
         
         // 드래그 방향과 속도에 따른 위치 결정
         if abs(translation) < dragThreshold {
@@ -156,7 +183,7 @@ struct CustomBottomSheet<Content: View>: View {
     // MARK: - Animation
     private func animateToPosition(_ position: BottomSheetPosition) {
         currentPosition = position
-        let targetOffset = screenHeight - position.height
+        let targetOffset = screenHeight - position.height(for: ridingMode)
         
         withAnimation(.easeInOut(duration: animationDuration)) {
             offset = targetOffset
