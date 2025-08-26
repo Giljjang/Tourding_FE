@@ -8,15 +8,7 @@
 import Foundation
 import Combine
 
-enum RidingMode {
-    case beforeStart
-    case afterStart
-}
-
 final class RidingViewModel: ObservableObject {
-    @Published var ridingMode: RidingMode = .beforeStart // 바텀 시트 콘텐츠 타입
-    @Published var isLoading: Bool = true // 데이터 불러올 때까지 로딩 표시
-    
     @Published var start: String = "한동대학교"
     @Published var end: String = "영남대학교"
     @Published var spotList: [RidingSpotModel]  = []

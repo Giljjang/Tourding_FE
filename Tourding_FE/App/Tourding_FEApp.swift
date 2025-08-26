@@ -73,6 +73,8 @@ struct Tourding_FEApp: App {
                                     RidingView(ridingViewModel: ridingViewModel)
                                 case .DestinationSearchView:
                                     DestinationSearchView()
+                                case .RidingNextView:
+                                    RidingNextView(ridingViewModel: ridingViewModel)
                                 default:
                                     EmptyView()
                                 }
