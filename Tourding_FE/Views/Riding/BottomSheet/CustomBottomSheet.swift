@@ -15,9 +15,9 @@ enum BottomSheetPosition: CaseIterable {
     
     var height: CGFloat {
         switch self {
-        case .small: return 188
-        case .medium: return 455
-        case .large: return 706
+        case .small: return 158 //188
+        case .medium: return 425 // 455
+        case .large: return 676 // 706
         }
     }
 }

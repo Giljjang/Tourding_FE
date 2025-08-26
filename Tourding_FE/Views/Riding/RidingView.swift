@@ -25,7 +25,6 @@ struct RidingView: View {
                 // 배경 컨텐츠
                 NMapView()
                     .ignoresSafeArea(edges: .top)
-                    .padding(.bottom, 188) 
                  
                 if currentPosition == .large {
                     Color.black.opacity(0.3)
@@ -34,7 +33,6 @@ struct RidingView: View {
                 }
                 
                 backButton
-                    .zIndex(1)
                 
                 // 바텀 시트
                 CustomBottomSheet(
@@ -52,14 +50,12 @@ struct RidingView: View {
                         .onTapGesture {
                             modalManager.hideModal()
                         }
-                        .zIndex(1)
                     
                     CustomModalView(modalManager: modalManager)
                         .position(
                             x: geometry.size.width / 2,
                             y: geometry.size.height / 2
                         )
-                        .zIndex(1)
                 } // : if
                 
             } // : ZStack

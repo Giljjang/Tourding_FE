@@ -145,7 +145,7 @@ class MapViewController: UIViewController {
         
         locationButton.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            locationButton.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: 60),
+            locationButton.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             locationButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 21),
             locationButton.widthAnchor.constraint(equalToConstant: 40),
             locationButton.heightAnchor.constraint(equalToConstant: 40)

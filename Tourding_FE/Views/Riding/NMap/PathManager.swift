@@ -40,7 +40,7 @@ class PathManager {
         // 패턴 이미지 설정
         if let patternImage = UIImage(named: "pattern") {
             innerPathOverlay.patternIcon = NMFOverlayImage(image: patternImage)
-            innerPathOverlay.patternInterval = 8 // 패턴 간격
+            innerPathOverlay.patternInterval = 16 // 패턴 간격
         } else {
             print("❌ 패턴 이미지 로드 실패: pattern")
         }
@@ -126,7 +126,7 @@ class PathManager {
         // 패턴 이미지 재설정
         if let patternImage = UIImage(named: "pattern") {
             innerPathOverlay.patternIcon = NMFOverlayImage(image: patternImage)
-            innerPathOverlay.patternInterval = 8 // 패턴 간격
+            innerPathOverlay.patternInterval = 16 // 패턴 간격
             print("✅ 패턴 재설정 완료 (pattern)")
         } else {
             print("❌ 패턴 이미지 로드 실패: pattern")
