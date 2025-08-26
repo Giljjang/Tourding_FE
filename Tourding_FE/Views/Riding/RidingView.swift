@@ -62,19 +62,8 @@ struct RidingView: View {
             } // : ZStack
         } // : GeometryReader
         .navigationBarBackButtonHidden()
-        onAppear{
-            let routeData = routeSharedManager.routeData
-            let startData = RidingSpotModel(
-                name: routeData.startLocation.name,
-                latitude: routeData.startLocation.latitude,
-                longitude: routeData.startLocation.longitude)
-            let goalData = RidingSpotModel(
-                name: routeData.endLocation.name,
-                latitude: routeData.endLocation.latitude,
-                longitude: routeData.endLocation.longitude)
-            
-            ridingViewModel.start = startData
-            ridingViewModel.end = goalData
+        .onAppear{
+            // api 데이터 추가
         }// : onAppear
     }
     

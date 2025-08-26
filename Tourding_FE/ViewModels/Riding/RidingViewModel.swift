@@ -10,8 +10,8 @@ import Combine
 import NMapsMap
 
 final class RidingViewModel: ObservableObject {
-    @Published var start: RidingSpotModel = RidingSpotModel()
-    @Published var end: RidingSpotModel = RidingSpotModel()
+    @Published var start: RidingSpotModel = RidingSpotModel(name: "출발지")
+    @Published var end: RidingSpotModel = RidingSpotModel(name: "도착지")
     
     @Published var spotList: [RidingSpotModel]  = []
     
