@@ -94,14 +94,22 @@ struct RidingView: View {
                 }
             )
         }){
-            Text("라이딩 시작하기")
-                .foregroundColor(.white)
-                .font(.pretendardSemiBold(size: 16))
-                .frame(height: 22)
-                .padding(.vertical, 16)
-                .padding(.horizontal, 130.5)
-                .background(Color.gray5)
-                .cornerRadius(10)
+            
+            HStack(spacing: 0){
+                
+                Spacer()
+                
+                Text("라이딩 시작하기")
+                    .foregroundColor(.white)
+                    .font(.pretendardSemiBold(size: 16))
+                    .frame(height: 22)
+                
+                Spacer()
+            }
+            .padding(.vertical, 16)
+            .background(Color.gray5)
+            .cornerRadius(10)
+            .padding(.horizontal, 16)
         }
         .padding(.bottom, 18)
         .background(
