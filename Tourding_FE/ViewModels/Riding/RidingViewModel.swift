@@ -10,8 +10,9 @@ import Combine
 import NMapsMap
 
 final class RidingViewModel: ObservableObject {
-    @Published var start: String = "한동대학교"
-    @Published var end: String = "영남대학교"
+    @Published var start: RidingSpotModel = RidingSpotModel()
+    @Published var end: RidingSpotModel = RidingSpotModel()
+    
     @Published var spotList: [RidingSpotModel]  = []
     
     @Published var showToilet: Bool = false
@@ -57,7 +58,7 @@ final class RidingViewModel: ObservableObject {
         let mock1 = RidingSpotModel(name: "태화강공원", themeType: .humanities)
         let mock2 = RidingSpotModel(name: "어딘가.. 맛있는 곳", themeType: .food)
         
-        spotList.append(contentsOf: [mock1, mock2])
+        spotList.insert(contentsOf: [mock1, mock2], at: 0)
         
     } // : func showMockSpotList
     

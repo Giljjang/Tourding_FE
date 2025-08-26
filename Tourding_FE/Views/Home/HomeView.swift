@@ -11,6 +11,8 @@ struct HomeView: View {
     @EnvironmentObject var navigationManager: NavigationManager
     @EnvironmentObject var modalManager: ModalManager
     @EnvironmentObject var routeSharedManager: RouteSharedManager
+    @EnvironmentObject private var ridingViewModel: RidingViewModel
+    
 
     @ObservedObject private var viewModel: HomeViewModel
     
@@ -150,6 +152,7 @@ struct HomeView: View {
             
             Button(action: {
                 routeSharedManager.printCurrentRouteState()
+                navigationManager.push(.RidingView)
             }){
                 Text("코스 만들기")
                     .foregroundColor(routeSharedManager.hasValidPoints ? .white : .gray3)

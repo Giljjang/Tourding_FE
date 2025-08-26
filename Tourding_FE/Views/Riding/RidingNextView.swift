@@ -132,4 +132,5 @@ struct RidingNextView: View {
     RidingNextView(ridingViewModel: RidingViewModel())
         .environmentObject(NavigationManager())
         .environmentObject(ModalManager())
+        .environmentObject(RouteSharedManager())
 }
