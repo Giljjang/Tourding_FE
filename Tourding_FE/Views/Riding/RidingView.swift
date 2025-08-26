@@ -23,7 +23,7 @@ struct RidingView: View {
         GeometryReader { geometry in
             ZStack(alignment: .bottom) {
                 // 배경 컨텐츠
-                NMapView()
+                NMapView(ridingViewModel: ridingViewModel)
                     .ignoresSafeArea(edges: .top)
                  
                 if currentPosition == .large {

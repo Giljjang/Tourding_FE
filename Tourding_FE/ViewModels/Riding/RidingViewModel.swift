@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import NMapsMap
 
 final class RidingViewModel: ObservableObject {
     @Published var start: String = "한동대학교"
@@ -17,8 +18,25 @@ final class RidingViewModel: ObservableObject {
     @Published var showConvenienceStore: Bool = false
     @Published var guideList: [GuideModel] = []
     
-    
     @Published var nthLineHeight: Double = 0 // spotRow 왼쪽 라인 길이
+    
+    // MARK: - 지도 관련 프로퍼티
+    @Published var pathCoordinates: [NMGLatLng] = [
+        NMGLatLng(lat: 37.5665, lng: 126.9780),
+        NMGLatLng(lat: 35.1796, lng: 129.0756),
+        NMGLatLng(lat: 35.9078, lng: 127.7669),
+        NMGLatLng(lat: 37.4563, lng: 126.7052)
+    ]
+    
+    // 특정 좌표에 marker 넣기
+    @Published var markerCoordinates: [NMGLatLng] = [
+        NMGLatLng(lat: 37.5665, lng: 126.9780),  // 첫 번째 위치
+        NMGLatLng(lat: 35.9078, lng: 127.7669)   // 세 번째 위치
+    ]
+    @Published var markerIcons: [NMFOverlayImage] = [
+        MarkerIcons.goalMarker,
+        MarkerIcons.startMarker
+    ]
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -68,7 +86,6 @@ final class RidingViewModel: ObservableObject {
         nthLineHeight = Double((spotList.count * 66) + (spotList.count + 1) * 8)
     } // : func calculateNthLineHeight
     
-    //MARK: - 이 밑에부터 지도 함수
 }
 
 //MARK: -  Riding 시작하기 이후 라이딩 뷰 함수
