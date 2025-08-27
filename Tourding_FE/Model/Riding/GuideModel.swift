@@ -19,6 +19,7 @@ struct GuideModel: Decodable, Hashable {
         case rightTurn = "우회전"
         case leftTurn = "좌회전"
         case straight = "직진"
+        case stopOver = "경유지"
     }
 
     // instructions 내용 기반으로 guideType 반환
@@ -29,7 +30,10 @@ struct GuideModel: Decodable, Hashable {
             return .leftTurn
         } else if instructions.contains("직진") {
             return .straight
-        } else {
+        } else if instructions.contains("경유지") {
+            return .stopOver
+        }
+        else {
             return nil
         }
     }
