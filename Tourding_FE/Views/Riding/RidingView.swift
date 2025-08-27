@@ -35,6 +35,14 @@ struct RidingView: View {
                 
                 backButton
                 
+                if ridingViewModel.flag {
+                    
+                    toiletButton
+                    
+                    csButton
+                    
+                } // : if
+                
                 // 바텀 시트
                 CustomBottomSheet(
                     content: SheetContentView(ridingViewModel: ridingViewModel),
@@ -70,7 +78,11 @@ struct RidingView: View {
     //MARK: - View
     private var backButton: some View {
         Button(action:{
-            navigationManager.pop()
+            if !ridingViewModel.flag {
+                navigationManager.pop()
+            } else {
+                ridingViewModel.flag = false
+            } //: if-else
         }){
             Image("riding_back")
                 .padding(.vertical, 8)
@@ -94,7 +106,7 @@ struct RidingView: View {
                 },
                 onActive: {
                     print("시작됨")
-                    navigationManager.push(.RidingNextView)
+                    ridingViewModel.flag = true
                 }
             )
         }){
@@ -127,6 +139,47 @@ struct RidingView: View {
             )
         ) // : background
     } // : ridingStartButtom
+    
+    //MARK: - Riding 중
+    private var toiletButton: some View {
+        Button(action:{
+            ridingViewModel.toggleToilet()
+        }){
+            HStack(spacing: 2){
+                Image(ridingViewModel.showToilet ? "toilet_on": "toilet_off")
+                    .padding(.vertical, 8)
+                    .padding(.leading, 12)
+                
+                Text("화장실")
+                    .foregroundColor(ridingViewModel.showToilet ? .white : .gray5)
+                    .font(.pretendardMedium(size: 14))
+                    .padding(.trailing, 14)
+            } // : HStack
+            .background(ridingViewModel.showToilet ? Color.gray5 : Color.white)
+            .cornerRadius(12)
+        }
+        .position(x: 110, y: 53)
+    } // : toiletButton
+    
+    private var csButton: some View {
+        Button(action:{
+            ridingViewModel.toggleConvenienceStore()
+        }){
+            HStack(spacing: 2){
+                Image(ridingViewModel.showConvenienceStore ? "cs_on": "cs_off")
+                    .padding(.vertical, 8)
+                    .padding(.leading, 12)
+                
+                Text("편의점")
+                    .foregroundColor(ridingViewModel.showConvenienceStore ? .white : .gray5)
+                    .font(.pretendardMedium(size: 14))
+                    .padding(.trailing, 14)
+            } // : HStack
+            .background(ridingViewModel.showConvenienceStore ? Color.gray5 : Color.white)
+            .cornerRadius(12)
+        }
+        .position(x: 208, y: 53)
+    } // : csButton
 }
 
 #Preview {

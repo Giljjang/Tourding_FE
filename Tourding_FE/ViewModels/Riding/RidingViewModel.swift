@@ -10,7 +10,7 @@ import Combine
 import NMapsMap
 
 final class RidingViewModel: ObservableObject {
-    @Published var flag: Bool = false
+    @Published var flag: Bool = false // 라이딩 전 <-> 라이딩 후
     
     //라이딩 시작 전
     @Published var start: RidingSpotModel = RidingSpotModel(name: "출발지")
@@ -54,6 +54,13 @@ final class RidingViewModel: ObservableObject {
                 self?.calculateNthLineHeight()
             }
             .store(in: &cancellables)
+        
+        // flag 변경 감지
+        $flag
+            .sink { [weak self] newValue in
+                print("flag 변경됨: \(newValue)")
+            }
+            .store(in: &cancellables)
     }
     
     //MARK: - mock
@@ -94,6 +101,7 @@ final class RidingViewModel: ObservableObject {
 
 //MARK: -  Riding 시작하기 이후 라이딩 뷰 함수
 extension RidingViewModel {
+    
     func toggleToilet(){
         showToilet.toggle()
     }

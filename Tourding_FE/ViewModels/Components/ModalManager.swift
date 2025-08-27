@@ -21,8 +21,8 @@ final class ModalManager: ObservableObject {
     @Published var activeText: String = ""
     @Published var showView: ShowViewType = .tabView
     
-    @Published var onCancel: (() -> Void)?
-    @Published var onActive: (() -> Void)?
+    var onCancel: (() -> Void)?
+    var onActive: (() -> Void)?
     
     func showModal(
         title: String,
@@ -43,5 +43,7 @@ final class ModalManager: ObservableObject {
     
     func hideModal() {
         self.isPresented = false
+        self.onCancel = nil
+        self.onActive = nil
     }
 }
