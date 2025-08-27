@@ -32,6 +32,7 @@ struct Tourding_FEApp: App {
         // 레파지토리 및 뷰모델 의존성 주입
         let viewModels = DependencyProvider.makeTabViewModels()
         let ridingViewModel = DependencyProvider.makeRidingViewModel()
+        let spotAddViewModel = DependencyProvider.makespotAddViewModel()
         
         WindowGroup {
             if showSplash {
@@ -71,6 +72,8 @@ struct Tourding_FEApp: App {
                                     ServiceView()
                                 case .RidingView:
                                     RidingView(ridingViewModel: ridingViewModel)
+                                case .SpotAddView:
+                                    SpotAddView(spotAddViewModel: spotAddViewModel)
                                 case .DestinationSearchView:
                                     DestinationSearchView()
                                 default:

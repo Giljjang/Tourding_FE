@@ -103,7 +103,9 @@ struct SheetContentView: View {
             
             Spacer()
             
-            Button(action:{}){
+            Button(action:{
+                navigationManager.push(.SpotAddView)
+            }){
                 Image("icon_plus")
                 Text("스팟 추가")
                     .foregroundColor(.gray6)
