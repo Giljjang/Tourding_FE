@@ -49,13 +49,22 @@ struct RidingView: View {
                 } // : if
                 
                 // 바텀 시트
-                CustomBottomSheet(
-                    content: SheetContentView(ridingViewModel: ridingViewModel),
-                    screenHeight: geometry.size.height,
-                    currentPosition: $currentPosition
-                )
-                
-                ridingStartButtom
+                if !ridingViewModel.flag {
+                    CustomBottomSheet(
+                        content: SheetContentView(ridingViewModel: ridingViewModel),
+                        screenHeight: geometry.size.height,
+                        currentPosition: $currentPosition
+                    )
+                    
+                    ridingStartButtom
+                    
+                } else {
+                    CustomBottomSheet(
+                        content: SheetGuideView(ridingViewModel: ridingViewModel),
+                        screenHeight: geometry.size.height,
+                        currentPosition: $currentPosition
+                    )
+                } // : if-else
                 
                 // 커스텀 모달 뷰
                 if modalManager.isPresented && modalManager.showView == .ridingView {
@@ -70,7 +79,19 @@ struct RidingView: View {
                             x: geometry.size.width / 2,
                             y: geometry.size.height / 2
                         )
-                } // : if
+                } else if modalManager.isPresented && modalManager.showView == .ridingNextView {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            modalManager.hideModal()
+                        }
+                    
+                    CustomModalView(modalManager: modalManager)
+                        .position(
+                            x: geometry.size.width / 2,
+                            y: geometry.size.height / 2
+                        )
+                } // : if - else if
                 
             } // : ZStack
         } // : GeometryReader

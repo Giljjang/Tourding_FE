@@ -77,7 +77,7 @@ struct CustomBottomSheet<Content: View>: View {
         .ignoresSafeArea(.all, edges: .bottom)
         .onAppear {
             // 초기 위치 설정
-            offset = screenHeight - currentPosition.height - 90
+            offset = screenHeight - currentPosition.height
         }
     }
     
