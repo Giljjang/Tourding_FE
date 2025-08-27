@@ -12,12 +12,13 @@ struct RidingView: View {
     @EnvironmentObject var modalManager: ModalManager
     @EnvironmentObject var routeSharedManager: RouteSharedManager
     
-    @ObservedObject private var ridingViewModel: RidingViewModel
+    @StateObject private var ridingViewModel: RidingViewModel
     
     @State private var currentPosition: BottomSheetPosition = .medium
+    @State private var forceUpdate: Bool = false
     
     init(ridingViewModel: RidingViewModel) {
-        self.ridingViewModel = ridingViewModel
+        self._ridingViewModel = StateObject(wrappedValue: ridingViewModel)
     }
     
     var body: some View {
