@@ -10,16 +10,19 @@ import Combine
 import NMapsMap
 
 final class RidingViewModel: ObservableObject {
+    @Published var flag: Bool = false
+    
+    //라이딩 시작 전
     @Published var start: RidingSpotModel = RidingSpotModel(name: "출발지")
     @Published var end: RidingSpotModel = RidingSpotModel(name: "도착지")
-    
     @Published var spotList: [RidingSpotModel]  = []
+    @Published var nthLineHeight: Double = 0 // spotRow 왼쪽 라인 길이
     
+    // 라이딩 시작 후
     @Published var showToilet: Bool = false
     @Published var showConvenienceStore: Bool = false
     @Published var guideList: [GuideModel] = []
     
-    @Published var nthLineHeight: Double = 0 // spotRow 왼쪽 라인 길이
     
     // MARK: - 지도 관련 프로퍼티
     @Published var pathCoordinates: [NMGLatLng] = [
