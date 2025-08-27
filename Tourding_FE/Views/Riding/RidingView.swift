@@ -12,6 +12,10 @@ struct RidingView: View {
     @EnvironmentObject var modalManager: ModalManager
     @EnvironmentObject var routeSharedManager: RouteSharedManager
     
+    // @ObservedObject가 아닌 이유 -> @StateObject 사용한 이유
+    // 부모 뷰가 다시 렌더링되지 않음: @ObservedObject는 부모 뷰가 다시 렌더링될 때만 업데이트됨.
+    //객체 참조 문제: 모달이 열리고 닫힐 때 부모 뷰가 다시 렌더링되지 않아서 @ObservedObject가 업데이트를 감지하지 못합
+    // 즉, 부모 뷰의 렌더링과 관계없이 @Published 속성 변경을 즉시 감지해야함
     @StateObject private var ridingViewModel: RidingViewModel
     
     @State private var currentPosition: BottomSheetPosition = .medium
