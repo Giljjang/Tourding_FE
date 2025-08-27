@@ -53,7 +53,8 @@ struct RidingView: View {
                     CustomBottomSheet(
                         content: SheetContentView(ridingViewModel: ridingViewModel),
                         screenHeight: geometry.size.height,
-                        currentPosition: $currentPosition
+                        currentPosition: $currentPosition,
+                        isRiding: false
                     )
                     
                     ridingStartButtom
@@ -62,7 +63,8 @@ struct RidingView: View {
                     CustomBottomSheet(
                         content: SheetGuideView(ridingViewModel: ridingViewModel),
                         screenHeight: geometry.size.height,
-                        currentPosition: $currentPosition
+                        currentPosition: $currentPosition,
+                        isRiding: true
                     )
                 } // : if-else
                 
