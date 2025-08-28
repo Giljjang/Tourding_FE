@@ -58,6 +58,7 @@ struct RidingView: View {
                     )
                     
                     ridingStartButtom
+                        .padding(.bottom, 21)
                     
                 } else {
                     CustomBottomSheet(
@@ -97,6 +98,7 @@ struct RidingView: View {
                 
             } // : ZStack
         } // : GeometryReader
+        .ignoresSafeArea()
         .navigationBarBackButtonHidden()
         .onAppear{
             // api 데이터 추가
@@ -119,7 +121,7 @@ struct RidingView: View {
                 .background(Color.white)
                 .cornerRadius(30)
         }
-        .position(x: 36, y: 53)
+        .position(x: 36, y: 83)
     } // : backButton
     
     private var ridingStartButtom: some View {
@@ -186,7 +188,7 @@ struct RidingView: View {
             .background(ridingViewModel.showToilet ? Color.gray5 : Color.white)
             .cornerRadius(12)
         }
-        .position(x: 110, y: 53)
+        .position(x: 110, y: 83)
     } // : toiletButton
     
     private var csButton: some View {
@@ -206,7 +208,7 @@ struct RidingView: View {
             .background(ridingViewModel.showConvenienceStore ? Color.gray5 : Color.white)
             .cornerRadius(12)
         }
-        .position(x: 208, y: 53)
+        .position(x: 208, y: 83)
     } // : csButton
 }
 

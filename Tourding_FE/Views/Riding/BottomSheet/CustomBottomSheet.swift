@@ -15,9 +15,9 @@ enum BottomSheetPosition: CaseIterable {
     
     func height(isRiding: Bool = false) -> CGFloat {
         switch self {
-        case .small: return isRiding ? 67 : 158 // flag가 true면 101, false면 158
-        case .medium: return 425 // 455
-        case .large: return 676 // 706
+        case .small: return isRiding ? 101 : 188 // flag가 true면 101, false면 158
+        case .medium: return 455 // 455
+        case .large: return 706 // 706
         }
     }
 }
