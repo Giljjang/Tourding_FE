@@ -20,6 +20,8 @@ struct SpotAddView: View {
             
             header
             
+            section
+            
             Spacer()
         } // : VStack
         .navigationBarBackButtonHidden()
@@ -54,6 +56,26 @@ struct SpotAddView: View {
         .frame(height: 56)
         .padding(.top, 24)
     } // : header
+    
+    private var section: some View {
+        HStack(alignment: .top, spacing: 0) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("들르기 좋은 스팟")
+                    .foregroundColor(.gray6)
+                    .font(.pretendardSemiBold(size: 26))
+                
+                Text("출발지와 도착지 사이 스팟을 모았어요")
+                    .foregroundColor(.gray4)
+                    .font(.pretendardMedium(size: 16))
+            } // : VStack
+            .padding(.top, 46)
+            .padding(.trailing, 27)
+            
+            Image("illust_Recommended spot")
+                .padding(.top, 14)
+        } // : HStack
+        .padding(.leading, 16)
+    }
 }
 
 #Preview {
