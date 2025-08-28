@@ -14,6 +14,7 @@ enum ShowViewType {
 }
 
 final class ModalManager: ObservableObject {
+    // 일반적인 모달
     @Published var isPresented: Bool = false
     
     @Published var title: String = ""
@@ -23,6 +24,9 @@ final class ModalManager: ObservableObject {
     
     var onCancel: (() -> Void)?
     var onActive: (() -> Void)?
+    
+    // 토스트 메시지
+    @Published var isToastMessage: Bool = false
     
     func showModal(
         title: String,

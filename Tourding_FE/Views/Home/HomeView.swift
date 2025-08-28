@@ -13,7 +13,7 @@ struct HomeView: View {
     @EnvironmentObject var routeSharedManager: RouteSharedManager
     @EnvironmentObject private var ridingViewModel: RidingViewModel
     
-
+    
     @ObservedObject private var viewModel: HomeViewModel
     
     init(viewModel: HomeViewModel) {
@@ -57,7 +57,20 @@ struct HomeView: View {
             .padding(.horizontal, 16)
             .background(Color.gray1)
             
+            if modalManager.isToastMessage {
+                ToastMessageView()
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .offset(y: 243)
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                            withAnimation(.easeInOut) {
+                                modalManager.isToastMessage = false
+                            }
+                        }
+                    }
+            } // : if modalManager.isToastMessage
         } // :Zstack
+        .animation(.easeInOut, value: modalManager.isToastMessage)
     }
     
     //MARK: - View

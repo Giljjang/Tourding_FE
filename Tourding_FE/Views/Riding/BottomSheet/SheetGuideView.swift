@@ -55,20 +55,23 @@ struct SheetGuideView: View {
                     onActive: {
                         print("종료됨")
                         navigationManager.popToRoot()
+                        modalManager.isToastMessage = true
                     }
                 )
             }){
-                Image("icon_close")
-                    .padding(.vertical, 6)
-                    .padding(.leading, 6)
-                
-                Text("종료")
-                    .foregroundColor(.white)
-                    .font(.pretendardSemiBold(size: 16))
-                    .padding(.trailing, 12)
+                HStack(spacing: 0) {
+                    Image("icon_close")
+                    
+                    Text("종료")
+                        .foregroundColor(.white)
+                        .font(.pretendardSemiBold(size: 16))
+                } // : HStack
+                .padding(.vertical, 6)
+                .padding(.leading, 6)
+                .padding(.trailing, 12)
+                .background(Color(hex: "#FF4949"))
+                .cornerRadius(10)
             }
-            .background(Color(hex: "#FF4949"))
-            .cornerRadius(10)
             .padding(.top, 3)
             .padding(.trailing, 16)
         } // : HStack
