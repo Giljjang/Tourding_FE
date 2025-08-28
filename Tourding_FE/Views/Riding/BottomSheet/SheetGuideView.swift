@@ -22,6 +22,10 @@ struct SheetGuideView: View {
             
             header
             
+            ScrollView(showsIndicators: false) {
+                guideRowView()
+            } // :ScrollView
+            
             Spacer()
             
         } // : VStack
@@ -71,6 +75,58 @@ struct SheetGuideView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.bottom, 19)
     } // : header
+}
+
+//MARK: - guide View
+struct guideRowView: View {
+    let text: String = "도착지"
+    let guideType: GuideModel.GuideType = .rightTurn
+    let time: Int? = nil
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 0) {
+            
+            switch guideType {
+            case .rightTurn:
+                Image("right")
+                    .padding(.vertical, 13)
+                    .padding(.horizontal, 16)
+            case .leftTurn:
+                Image("left")
+                    .padding(.vertical, 13)
+                    .padding(.horizontal, 16)
+            case .straight:
+                Image("straight")
+                    .padding(.vertical, 13)
+                    .padding(.horizontal, 16)
+            case .stopOver:
+                Image("icon_stopover")
+                    .padding(.vertical, 13)
+                    .padding(.horizontal, 16)
+            }
+            
+            VStack(alignment: .leading, spacing: 0) {
+                Text(text)
+                    .foregroundColor(.gray6)
+                    .font(.pretendardSemiBold(size: 16))
+                    .padding(.top, time == nil ? 24 : 13)
+                    .padding(.bottom, time == nil ? 24 : 4)
+                
+                if let t = time {
+                    let minutes = Int(t / 1000 / 60)   // 밀리초 → 분 변환
+                        Text("\(minutes)분")
+                        .font(.pretendardRegular(size: 14))
+                        .foregroundColor(.gray4)
+                }
+                
+            } // : VStack
+            
+            Spacer()
+            
+        } // : HStack
+        .frame(height: 70)
+        .background(Color.white)
+    }
 }
 
 #Preview {

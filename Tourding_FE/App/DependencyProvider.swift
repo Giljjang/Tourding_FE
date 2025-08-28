@@ -8,6 +8,8 @@
 import Foundation
 
 struct DependencyProvider {
+    let repository = TestRepository()
+    
     static func makeTabViewModels() -> TabViewModelsContainer {
         let repository = TestRepository()
         let homeViewModel = HomeViewModel(testRepository: repository)

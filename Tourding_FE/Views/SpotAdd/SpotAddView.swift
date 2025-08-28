@@ -39,6 +39,12 @@ struct SpotAddView: View {
             
             Spacer()
             
+            Text("스팟 추가")
+                .foregroundColor(.gray5)
+                .font(.pretendardMedium(size: 18))
+            
+            Spacer()
+            
             Button(action:{}){
                 Image("spotAdd_search")
                     .padding(.trailing, 16)
