@@ -100,6 +100,19 @@ struct RidingView: View {
                         )
                 } // : if - else if
                 
+                if ridingViewModel.isLoading {
+                    Color.white.opacity(0.5)
+                        .ignoresSafeArea()
+                    
+                    VStack{
+                        Spacer()
+                        
+                        DotsLoadingView()
+                        
+                        Spacer()
+                    }
+                }// if 로딩 상태
+                
             } // : ZStack
         } // : GeometryReader
         .ignoresSafeArea()

@@ -10,7 +10,8 @@ import Combine
 import NMapsMap
 
 final class RidingViewModel: ObservableObject {
-    @Published var flag: Bool = false // 라이딩 전 <-> 라이딩 후
+    @Published var isLoading: Bool = false
+    @Published var flag: Bool = false // 라이딩 전 <-> 라이딩 후 화면 변경
     
     //라이딩 시작 전
     @Published var start: RidingSpotModel = RidingSpotModel(name: "출발지")
