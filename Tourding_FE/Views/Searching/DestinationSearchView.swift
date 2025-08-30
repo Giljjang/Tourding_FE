@@ -16,6 +16,8 @@ struct DestinationSearchView: View {
     
     @StateObject private var dsViewModel = DestinationSearchViewModel()
     
+    
+    
     @State private var searchText = ""
     @State private var shouldShowRecentSearches = true  // 최근 검색어 표시 여부를 직접 제어
     @State private var suppressNextOnChange = false     // 칩 누를 때 onchange 무시하기위해서
