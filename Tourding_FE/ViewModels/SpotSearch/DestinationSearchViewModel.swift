@@ -65,6 +65,7 @@ class DestinationSearchViewModel: NSObject, ObservableObject {
             // 검색어가 여전히 유효한지 확인
             if query == self.currentSearchQuery {
                 Task {
+                    print("searchPlaces:\(query)")
                     await self.performSearch(query: query, loadMore: false)
                 }
             }
@@ -235,7 +236,22 @@ extension DestinationSearchViewModel: CLLocationManagerDelegate {
     }
 
     
-    
+    // MARK: - 내 위치로 주소값 불러오기
+    func refreshLocation() {
+        let status = locationManager.authorizationStatus
+        switch status {
+        case .authorizedAlways, .authorizedWhenInUse:
+            // 한 번 얻으면 stopUpdatingLocation() 하도록 돼 있으니 다시 요청
+            locationManager.requestLocation()
+        case .notDetermined:
+            locationManager.requestWhenInUseAuthorization()
+        case .denied, .restricted:
+            // 설정 이동 안내 등 처리(옵션)
+            break
+        @unknown default:
+            break
+        }
+    }
     
     
     

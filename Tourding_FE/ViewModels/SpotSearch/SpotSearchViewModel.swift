@@ -6,7 +6,42 @@
 //
 
 import Foundation
+import CoreLocation
+import Combine
 
-final class SpotSearchViewModel:ObservableObject {
+@MainActor
+class SpotSearchViewModel: ObservableObject {
+    @Published var spots: [SpotData] = []
+    @Published var isLoading = false
+    @Published var errorMessage: String?
     
+    private let tourRepository: TourRepositoryProtocol
+    
+    init(tourRepository: TourRepositoryProtocol) {
+        self.tourRepository = tourRepository
+    }
+    
+    func fetchNearbySpots(lat: Double, lng: Double) async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            spots = try await tourRepository.searchLocationSpots(
+                pageNum: 0,
+                mapX: String(lng),
+                mapY: String(lat),
+                radius: "20000"
+            )
+        } catch {
+            errorMessage = "스팟을 불러오는데 실패했습니다."
+            print("API 오류: \(error)")
+        }
+        
+        isLoading = false
+    }
+    
+    func refreshLocationAndFetchSpots() async {
+        isLoading = true
+        // DestinationSearchViewModel의 refreshLocation() 호출은 View에서
+    }
 }

@@ -7,4 +7,5 @@
 
 import Foundation
 
-let BASE_URL = Bundle.main.infoDictionary?["BASE_URL"] as? String ?? ""
+private let BASE_URL_RAW = Bundle.main.infoDictionary?["BASE_URL"] as? String ?? ""
+let BASE_URL = BASE_URL_RAW.isEmpty ? "" : "http://\(BASE_URL_RAW)"
