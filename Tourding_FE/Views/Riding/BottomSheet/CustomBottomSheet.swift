@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import NMapsMap
 
 // MARK: - 바텀 시트 위치 열거형
 enum BottomSheetPosition: CaseIterable {
@@ -13,11 +14,11 @@ enum BottomSheetPosition: CaseIterable {
     case medium  // 455 (기본값)
     case large   // 706
     
-    var height: CGFloat {
+    func height(isRiding: Bool = false) -> CGFloat {
         switch self {
-        case .small: return 188
-        case .medium: return 455
-        case .large: return 706
+        case .small: return isRiding ? 101 : 188 // flag가 true면 101, false면 158
+        case .medium: return 455 // 455
+        case .large: return 706 // 706
         }
     }
 }
@@ -28,6 +29,9 @@ struct CustomBottomSheet<Content: View>: View {
     // MARK: - Properties
     let content: Content
     let screenHeight: CGFloat
+    let isRiding: Bool
+    let locationManager: LocationManager?
+    let mapView: NMFMapView?
     
     @State private var offset: CGFloat = 0
     @Binding private var currentPosition: BottomSheetPosition
@@ -44,21 +48,23 @@ struct CustomBottomSheet<Content: View>: View {
     init(
         content: Content,
         screenHeight: CGFloat,
-        currentPosition: Binding<BottomSheetPosition>
+        currentPosition: Binding<BottomSheetPosition>,
+        isRiding: Bool = false,
+        locationManager: LocationManager? = nil,
+        mapView: NMFMapView? = nil
     ) {
         self.content = content
         self.screenHeight = screenHeight
         self._currentPosition = currentPosition
+        self.isRiding = isRiding
+        self.locationManager = locationManager
+        self.mapView = mapView
     }
     
     // MARK: - Body
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .bottom) {
-                // 배경 오버레이 (드래그 영역)
-                Color.black.opacity(0.001)
-                    .ignoresSafeArea()
-                
                 // 바텀 시트
                 VStack(spacing: 0) {
                     // 드래그 핸들
@@ -76,12 +82,40 @@ struct CustomBottomSheet<Content: View>: View {
                 )
                 .offset(y: offset)
                 .gesture(dragGesture(geometry: geometry))
+                
+                // moveToLocationButton - 바텀시트 외부에 배치
+                if currentPosition != .large {
+                    moveToLocationButton
+                        .position(
+                            x: 40,
+                            y: offset - 30 // offset 사용으로 실시간 반영
+                        )
+                        .animation(.easeInOut(duration: animationDuration), value: currentPosition)
+                } //: if
             }
         }
         .ignoresSafeArea(.all, edges: .bottom)
         .onAppear {
             // 초기 위치 설정
-            offset = screenHeight - currentPosition.height
+            offset = screenHeight - currentPosition.height(isRiding: isRiding)
+        }
+    }
+    
+    //MARK: - View
+    private var moveToLocationButton: some View {
+        Button(action: {
+            // 위치 이동 액션
+            if let locationManager = locationManager, let mapView = mapView {
+                locationManager.moveToCurrentLocation(on: mapView)
+            }
+        }) {
+            VStack(spacing: 0) {
+                Image("myPosition")
+            }
+            .frame(width: 40, height: 40)
+            .background(.white)
+            .clipShape(Circle())
+            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
         }
     }
     
@@ -109,7 +143,7 @@ struct CustomBottomSheet<Content: View>: View {
                 
                 // 드래그 시작 시점의 offset에서 변화량만큼 이동
                 let newOffset = dragStartOffset + value.translation.height
-                offset = max(0, min(screenHeight - BottomSheetPosition.small.height, newOffset))
+                offset = max(0, min(screenHeight - BottomSheetPosition.small.height(isRiding: isRiding), newOffset))
             }
             .onEnded { value in
                 isDragging = false
@@ -156,7 +190,7 @@ struct CustomBottomSheet<Content: View>: View {
     // MARK: - Animation
     private func animateToPosition(_ position: BottomSheetPosition) {
         currentPosition = position
-        let targetOffset = screenHeight - position.height
+        let targetOffset = screenHeight - position.height(isRiding: isRiding)
         
         withAnimation(.easeInOut(duration: animationDuration)) {
             offset = targetOffset

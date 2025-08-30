@@ -103,7 +103,9 @@ struct SheetContentView: View {
             
             Spacer()
             
-            Button(action:{}){
+            Button(action:{
+                navigationManager.push(.SpotAddView)
+            }){
                 Image("icon_plus")
                 Text("스팟 추가")
                     .foregroundColor(.gray6)
@@ -129,7 +131,7 @@ struct SheetContentView: View {
             .padding(.horizontal, 4)
             .padding(.trailing, 6)
             
-            Text(ridingViewModel.start)
+            Text(ridingViewModel.start.name)
                 .foregroundColor(.gray6)
                 .font(.pretendardSemiBold(size: 16))
                 .padding(.vertical, 11)
@@ -151,7 +153,7 @@ struct SheetContentView: View {
             .padding(.horizontal, 4)
             .padding(.trailing, 6)
             
-            Text(ridingViewModel.end)
+            Text(ridingViewModel.end.name)
                 .foregroundColor(.gray6)
                 .font(.pretendardSemiBold(size: 16))
                 .padding(.vertical, 11)

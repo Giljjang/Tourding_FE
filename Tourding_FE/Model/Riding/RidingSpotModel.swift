@@ -11,6 +11,15 @@ struct RidingSpotModel: Hashable, Identifiable {
     let id: String = UUID().uuidString
     let name: String
     let themeType: ThemeType
+    let latitude: Double
+    let longitude: Double
+    
+    init(name: String = "", themeType: ThemeType = .none, latitude: Double = 0.0, longitude: Double = 0.0) {
+        self.name = name
+        self.themeType = themeType
+        self.latitude = latitude
+        self.longitude = longitude
+    }
 }
 
 enum ThemeType: String, CaseIterable, Codable {
@@ -20,4 +29,5 @@ enum ThemeType: String, CaseIterable, Codable {
     case shopping = "쇼핑"
     case food = "음식"
     case accommodation = "숙박"
+    case none = ""
 }

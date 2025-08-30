@@ -10,9 +10,11 @@ import Foundation
 enum ShowViewType {
     case tabView
     case ridingView
+    case ridingNextView
 }
 
 final class ModalManager: ObservableObject {
+    // 일반적인 모달
     @Published var isPresented: Bool = false
     
     @Published var title: String = ""
@@ -20,8 +22,11 @@ final class ModalManager: ObservableObject {
     @Published var activeText: String = ""
     @Published var showView: ShowViewType = .tabView
     
-    @Published var onCancel: (() -> Void)?
-    @Published var onActive: (() -> Void)?
+    var onCancel: (() -> Void)?
+    var onActive: (() -> Void)?
+    
+    // 토스트 메시지
+    @Published var isToastMessage: Bool = false
     
     func showModal(
         title: String,
@@ -42,5 +47,7 @@ final class ModalManager: ObservableObject {
     
     func hideModal() {
         self.isPresented = false
+        self.onCancel = nil
+        self.onActive = nil
     }
 }

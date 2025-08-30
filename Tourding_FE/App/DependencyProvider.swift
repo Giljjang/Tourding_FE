@@ -27,10 +27,15 @@ struct DependencyProvider {
     
     static func makeRidingViewModel() -> RidingViewModel {
         let ridingViewModel = RidingViewModel()
-        
         return ridingViewModel
     }
+    
     static func makeRouteSharedManager() -> RouteSharedManager {
         return RouteSharedManager()
+    }
+    
+    static func makespotAddViewModel() -> SpotAddViewModel {
+        let spotAddViewModel = SpotAddViewModel()
+        return spotAddViewModel
     }
 }
