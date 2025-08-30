@@ -75,12 +75,37 @@ struct CustomBottomSheet<Content: View>: View {
                 )
                 .offset(y: offset)
                 .gesture(dragGesture(geometry: geometry))
+                
+                // moveToLocationButton - 바텀시트 외부에 배치
+                if currentPosition != .large {
+                    moveToLocationButton
+                        .position(
+                            x: 40,
+                            y: offset - 30 // offset 사용으로 실시간 반영
+                        )
+                        .animation(.easeInOut(duration: animationDuration), value: currentPosition)
+                } //: if
             }
         }
         .ignoresSafeArea(.all, edges: .bottom)
         .onAppear {
             // 초기 위치 설정
             offset = screenHeight - currentPosition.height(isRiding: isRiding)
+        }
+    }
+    
+    //MARK: - View
+    private var moveToLocationButton: some View {
+        Button(action: {
+            // 위치 이동 액션
+        }) {
+            VStack(spacing: 0) {
+                Image("myPosition")
+            }
+            .frame(width: 40, height: 40)
+            .background(.white)
+            .clipShape(Circle())
+            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
         }
     }
     
