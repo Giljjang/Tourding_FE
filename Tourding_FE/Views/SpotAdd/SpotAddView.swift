@@ -99,7 +99,9 @@ struct SpotAddView: View {
             
             Spacer()
             
-            Button(action:{}){
+            Button(action:{
+                //Todo: 검색 페이지로 이동
+            }){
                 Image("spotAdd_search")
                     .padding(.trailing, 16)
             }
