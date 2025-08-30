@@ -17,6 +17,7 @@ struct Tourding_FEApp: App {
     @StateObject private var loginViewModel = LoginViewModel()
     @StateObject private var modalManager = ModalManager()
     @StateObject private var routeManager = RouteSharedManager()
+    @StateObject private var recentSearchViewModel = RecentSearchViewModel()
     
     @State private var showSplash = true
     
@@ -25,6 +26,8 @@ struct Tourding_FEApp: App {
         let kakaoNativeAppKey = (Bundle.main.infoDictionary?["KAKAO_NATIVE_APP_KEY"] as? String) ?? ""
         KakaoSDK.initSDK(appKey: kakaoNativeAppKey)
         print("🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨\(kakaoNativeAppKey)")
+        print("🔎 BASE_URL at runtime =>", BASE_URL)
+
     }
     
     var body: some Scene {
@@ -85,6 +88,7 @@ struct Tourding_FEApp: App {
                 .environmentObject(modalManager)
                 .environmentObject(loginViewModel)
                 .environmentObject(routeManager)
+                .environmentObject(recentSearchViewModel)
                 .onOpenURL { url in
                     if AuthApi.isKakaoTalkLoginUrl(url) {
                         _ = AuthController.handleOpenUrl(url: url)
