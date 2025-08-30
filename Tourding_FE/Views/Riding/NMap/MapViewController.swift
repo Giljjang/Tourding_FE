@@ -16,7 +16,7 @@ class MapViewController: UIViewController {
     
     // MARK: - Properties
     private var mapView: NMFNaverMapView!
-    private let locationManager = LocationManager()
+    let locationManager = LocationManager()
     private let locationButton = UIButton(type: .custom)
     private let cancelBag = CancelBag()
     
@@ -37,7 +37,6 @@ class MapViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupMap()
-        setupLocationButton()
         setupLocationManager()
     }
     
@@ -56,27 +55,6 @@ class MapViewController: UIViewController {
         pathManager = PathManager(mapView: mapView.mapView)
     }
     
-    private func setupLocationButton() {
-        locationButton.setImage(UIImage(named: "myPosition"), for: .normal)
-        locationButton.backgroundColor = .white
-        locationButton.layer.cornerRadius = 20
-//        locationButton.tintColor = .systemBlue
-        
-        view.addSubview(locationButton)
-        
-        locationButton.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            locationButton.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            locationButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 21),
-            locationButton.widthAnchor.constraint(equalToConstant: 40),
-            locationButton.heightAnchor.constraint(equalToConstant: 40)
-        ])
-        
-        locationButton.tapPublisher.sink { [weak self] _ in
-            self?.locationManager.moveToCurrentLocation(on: self?.mapView.mapView ?? NMFMapView())
-        }.store(in: cancelBag)
-    }
-    
     private func setupLocationManager() {
         // 위치 업데이트 콜백
         locationManager.onLocationUpdate = { [weak self] location in
@@ -93,6 +71,10 @@ class MapViewController: UIViewController {
     }
     
     // MARK: - Public Methods
+    var nmfMapView: NMFMapView? {
+        return self.mapView?.mapView
+    }
+    
     func updateMap() {
         // 마커 업데이트
         if !markerCoordinates.isEmpty && !markerIcons.isEmpty {

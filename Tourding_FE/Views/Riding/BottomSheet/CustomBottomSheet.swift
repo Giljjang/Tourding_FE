@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import NMapsMap
 
 // MARK: - 바텀 시트 위치 열거형
 enum BottomSheetPosition: CaseIterable {
@@ -29,6 +30,8 @@ struct CustomBottomSheet<Content: View>: View {
     let content: Content
     let screenHeight: CGFloat
     let isRiding: Bool
+    let locationManager: LocationManager?
+    let mapView: NMFMapView?
     
     @State private var offset: CGFloat = 0
     @Binding private var currentPosition: BottomSheetPosition
@@ -46,12 +49,16 @@ struct CustomBottomSheet<Content: View>: View {
         content: Content,
         screenHeight: CGFloat,
         currentPosition: Binding<BottomSheetPosition>,
-        isRiding: Bool = false
+        isRiding: Bool = false,
+        locationManager: LocationManager? = nil,
+        mapView: NMFMapView? = nil
     ) {
         self.content = content
         self.screenHeight = screenHeight
         self._currentPosition = currentPosition
         self.isRiding = isRiding
+        self.locationManager = locationManager
+        self.mapView = mapView
     }
     
     // MARK: - Body
@@ -98,6 +105,9 @@ struct CustomBottomSheet<Content: View>: View {
     private var moveToLocationButton: some View {
         Button(action: {
             // 위치 이동 액션
+            if let locationManager = locationManager, let mapView = mapView {
+                locationManager.moveToCurrentLocation(on: mapView)
+            }
         }) {
             VStack(spacing: 0) {
                 Image("myPosition")

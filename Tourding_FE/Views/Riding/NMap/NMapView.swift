@@ -26,6 +26,7 @@ struct NMapView: View {
                 pathCoordinates: $ridingViewModel.pathCoordinates,
                 markerCoordinates: $ridingViewModel.markerCoordinates,
                 markerIcons: $ridingViewModel.markerIcons,
+                ridingViewModel: ridingViewModel,
                 onLocationUpdate: { location in
                     currentLocation = location
                     locationText = "위도: \(location.coordinate.latitude), 경도: \(location.coordinate.longitude)"

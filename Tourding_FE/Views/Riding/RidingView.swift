@@ -54,7 +54,9 @@ struct RidingView: View {
                         content: SheetContentView(ridingViewModel: ridingViewModel),
                         screenHeight: geometry.size.height,
                         currentPosition: $currentPosition,
-                        isRiding: false
+                        isRiding: false,
+                        locationManager: ridingViewModel.locationManager,
+                        mapView: ridingViewModel.mapView
                     )
                     
                     ridingStartButtom
@@ -65,7 +67,9 @@ struct RidingView: View {
                         content: SheetGuideView(ridingViewModel: ridingViewModel),
                         screenHeight: geometry.size.height,
                         currentPosition: $currentPosition,
-                        isRiding: true
+                        isRiding: true,
+                        locationManager: ridingViewModel.locationManager,
+                        mapView: ridingViewModel.mapView
                     )
                 } // : if-else
                 

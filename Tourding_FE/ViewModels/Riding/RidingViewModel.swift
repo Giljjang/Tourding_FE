@@ -23,6 +23,10 @@ final class RidingViewModel: ObservableObject {
     @Published var showConvenienceStore: Bool = false
     @Published var guideList: [GuideModel] = []
     
+    // MARK: - 지도 관련 프로퍼티
+    var locationManager: LocationManager?
+    var mapView: NMFMapView?
+    
     
     // MARK: - 지도 관련 프로퍼티
     @Published var pathCoordinates: [NMGLatLng] = [
