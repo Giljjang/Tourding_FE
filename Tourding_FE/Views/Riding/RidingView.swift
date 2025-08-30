@@ -10,42 +10,68 @@ import SwiftUI
 struct RidingView: View {
     @EnvironmentObject var navigationManager: NavigationManager
     @EnvironmentObject var modalManager: ModalManager
+    @EnvironmentObject var routeSharedManager: RouteSharedManager
     
-    @ObservedObject private var ridingViewModel: RidingViewModel
+    // @ObservedObject가 아닌 이유 -> @StateObject 사용한 이유
+    // 부모 뷰가 다시 렌더링되지 않음: @ObservedObject는 부모 뷰가 다시 렌더링될 때만 업데이트됨.
+    //객체 참조 문제: 모달이 열리고 닫힐 때 부모 뷰가 다시 렌더링되지 않아서 @ObservedObject가 업데이트를 감지하지 못합
+    // 즉, 부모 뷰의 렌더링과 관계없이 @Published 속성 변경을 즉시 감지해야함
+    @StateObject private var ridingViewModel: RidingViewModel
     
     @State private var currentPosition: BottomSheetPosition = .medium
+    @State private var forceUpdate: Bool = false
     
     init(ridingViewModel: RidingViewModel) {
-        self.ridingViewModel = ridingViewModel
+        self._ridingViewModel = StateObject(wrappedValue: ridingViewModel)
     }
     
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .bottom) {
                 // 배경 컨텐츠
-                LinearGradient(
-                    colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
-                
+                NMapView(ridingViewModel: ridingViewModel)
+                    .ignoresSafeArea(edges: .top)
+                 
                 if currentPosition == .large {
                     Color.black.opacity(0.3)
                         .ignoresSafeArea()
                         .animation(.easeInOut(duration: 0.3), value: currentPosition)
                 }
                 
-                // 바텀 시트
-                CustomBottomSheet(
-                    content: SheetContentView(ridingViewModel: ridingViewModel),
-                    screenHeight: geometry.size.height,
-                    currentPosition: $currentPosition
-                )
-                
                 backButton
                 
-                ridingStartButtom
+                if ridingViewModel.flag {
+                    
+                    toiletButton
+                    
+                    csButton
+                    
+                } // : if
+                
+                // 바텀 시트
+                if !ridingViewModel.flag {
+                    CustomBottomSheet(
+                        content: SheetContentView(ridingViewModel: ridingViewModel),
+                        screenHeight: geometry.size.height,
+                        currentPosition: $currentPosition,
+                        isRiding: false,
+                        locationManager: ridingViewModel.locationManager,
+                        mapView: ridingViewModel.mapView
+                    )
+                    
+                    ridingStartButtom
+                        .padding(.bottom, 30)
+                    
+                } else {
+                    CustomBottomSheet(
+                        content: SheetGuideView(ridingViewModel: ridingViewModel),
+                        screenHeight: geometry.size.height,
+                        currentPosition: $currentPosition,
+                        isRiding: true,
+                        locationManager: ridingViewModel.locationManager,
+                        mapView: ridingViewModel.mapView
+                    )
+                } // : if-else
                 
                 // 커스텀 모달 뷰
                 if modalManager.isPresented && modalManager.showView == .ridingView {
@@ -60,17 +86,37 @@ struct RidingView: View {
                             x: geometry.size.width / 2,
                             y: geometry.size.height / 2
                         )
-                } // : if
+                } else if modalManager.isPresented && modalManager.showView == .ridingNextView {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            modalManager.hideModal()
+                        }
+                    
+                    CustomModalView(modalManager: modalManager)
+                        .position(
+                            x: geometry.size.width / 2,
+                            y: geometry.size.height / 2
+                        )
+                } // : if - else if
                 
             } // : ZStack
         } // : GeometryReader
+        .ignoresSafeArea()
         .navigationBarBackButtonHidden()
+        .onAppear{
+            // api 데이터 추가
+        }// : onAppear
     }
     
     //MARK: - View
     private var backButton: some View {
         Button(action:{
-            navigationManager.pop()
+            if !ridingViewModel.flag {
+                navigationManager.pop()
+            } else {
+                ridingViewModel.flag = false
+            } //: if-else
         }){
             Image("riding_back")
                 .padding(.vertical, 8)
@@ -79,7 +125,7 @@ struct RidingView: View {
                 .background(Color.white)
                 .cornerRadius(30)
         }
-        .position(x: 36, y: 53)
+        .position(x: 36, y: 93)
     } // : backButton
     
     private var ridingStartButtom: some View {
@@ -94,17 +140,26 @@ struct RidingView: View {
                 },
                 onActive: {
                     print("시작됨")
+                    ridingViewModel.flag = true
                 }
             )
         }){
-            Text("라이딩 시작하기")
-                .foregroundColor(.white)
-                .font(.pretendardSemiBold(size: 16))
-                .frame(height: 22)
-                .padding(.vertical, 16)
-                .padding(.horizontal, 130.5)
-                .background(Color.gray5)
-                .cornerRadius(10)
+            
+            HStack(spacing: 0){
+                
+                Spacer()
+                
+                Text("라이딩 시작하기")
+                    .foregroundColor(.white)
+                    .font(.pretendardSemiBold(size: 16))
+                    .frame(height: 22)
+                
+                Spacer()
+            }
+            .padding(.vertical, 16)
+            .background(Color.gray5)
+            .cornerRadius(10)
+            .padding(.horizontal, 16)
         }
         .padding(.bottom, 18)
         .background(
@@ -118,6 +173,47 @@ struct RidingView: View {
             )
         ) // : background
     } // : ridingStartButtom
+    
+    //MARK: - Riding 중
+    private var toiletButton: some View {
+        Button(action:{
+            ridingViewModel.toggleToilet()
+        }){
+            HStack(spacing: 2){
+                Image(ridingViewModel.showToilet ? "toilet_on": "toilet_off")
+                    .padding(.vertical, 8)
+                    .padding(.leading, 12)
+                
+                Text("화장실")
+                    .foregroundColor(ridingViewModel.showToilet ? .white : .gray5)
+                    .font(.pretendardMedium(size: 14))
+                    .padding(.trailing, 14)
+            } // : HStack
+            .background(ridingViewModel.showToilet ? Color.gray5 : Color.white)
+            .cornerRadius(12)
+        }
+        .position(x: 110, y: 93)
+    } // : toiletButton
+    
+    private var csButton: some View {
+        Button(action:{
+            ridingViewModel.toggleConvenienceStore()
+        }){
+            HStack(spacing: 2){
+                Image(ridingViewModel.showConvenienceStore ? "cs_on": "cs_off")
+                    .padding(.vertical, 8)
+                    .padding(.leading, 12)
+                
+                Text("편의점")
+                    .foregroundColor(ridingViewModel.showConvenienceStore ? .white : .gray5)
+                    .font(.pretendardMedium(size: 14))
+                    .padding(.trailing, 14)
+            } // : HStack
+            .background(ridingViewModel.showConvenienceStore ? Color.gray5 : Color.white)
+            .cornerRadius(12)
+        }
+        .position(x: 208, y: 93)
+    } // : csButton
 }
 
 #Preview {
