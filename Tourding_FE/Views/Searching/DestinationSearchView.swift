@@ -22,12 +22,14 @@ struct DestinationSearchView: View {
     @State private var shouldShowRecentSearches = true  // 최근 검색어 표시 여부를 직접 제어
     @State private var suppressNextOnChange = false     // 칩 누를 때 onchange 무시하기위해서
     
+    let isFromHome: Bool
+    
     var body: some View {
         VStack(spacing: 0) {
             // 상단 검색바 영역
             SearchHeaderComponent(
                 searchText: $searchText,
-                hasSearched: .constant(false), // hasSearched는 이제 사용하지 않음
+                hasSearched: .constant(false),
                 onBack: {
                     navigationManager.pop()
                 },
@@ -167,7 +169,7 @@ struct DestinationSearchView: View {
 // MARK: - 미리보기
 #Preview {
     NavigationView {
-        DestinationSearchView()
+        DestinationSearchView(isFromHome: false)
             .environmentObject(NavigationManager())
             .environmentObject(RecentSearchViewModel())
     }

@@ -77,8 +77,8 @@ struct Tourding_FEApp: App {
                                     RidingView(ridingViewModel: ridingViewModel)
                                 case .SpotAddView:
                                     SpotAddView(spotAddViewModel: spotAddViewModel)
-                                case .DestinationSearchView:
-                                    DestinationSearchView()
+                                case .DestinationSearchView(let isFromHome):
+                                    DestinationSearchView(isFromHome: isFromHome)
                                 default:
                                     EmptyView()
                                 }
