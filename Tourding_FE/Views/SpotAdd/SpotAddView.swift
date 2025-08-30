@@ -25,6 +25,7 @@ struct SpotAddView: View {
             filterSection
                 .padding(.bottom, 24)
             
+            //Todo: API 연결 필요
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
                     
@@ -36,7 +37,6 @@ struct SpotAddView: View {
                         .frame(width: 52, height: 52)
                         .background(Color.gray1)
                         .cornerRadius(10)
-                        
     
                         VStack(alignment: .leading, spacing: 2) {
                             Text("불국사")
@@ -133,18 +133,24 @@ struct SpotAddView: View {
     private func toggleFilterButton(
         title: String
     ) -> some View {
-        Button(action:{}){
+        Button(action:{
+            spotAddViewModel.clickFliter = title
+        }){
             HStack(spacing: 0) {
-                Image(spotAddViewModel.matchImageName(for: title))
+                Image(
+                    spotAddViewModel.clickFliter == title ? "\(spotAddViewModel.matchImageName(for: title))_on" :
+                    spotAddViewModel.matchImageName(for: title))
                 
                 Text(title)
-                    .foregroundColor(.gray4)
+                    .foregroundColor(
+                        spotAddViewModel.clickFliter == title ?
+                            .white : .gray4)
                     .font(.pretendardMedium(size: 14))
             }
             .padding(.vertical, 6)
             .padding(.leading, 10)
             .padding(.trailing, 12)
-            .background(Color.white)
+            .background(spotAddViewModel.clickFliter == title ? Color.gray5 : Color.white)
             .cornerRadius(10)
         }
     }
