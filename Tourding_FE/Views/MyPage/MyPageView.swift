@@ -12,6 +12,7 @@ struct MyPageView: View {
     @ObservedObject var myPageViewModel: MyPageViewModel // 마이페이지 ViewModel
     @EnvironmentObject var modalManager: ModalManager
     @EnvironmentObject var navigationManager: NavigationManager
+    @EnvironmentObject var recentSearchViewModel : RecentSearchViewModel
     
     init(viewModel: MyPageViewModel) {
         self.myPageViewModel = viewModel
@@ -77,6 +78,7 @@ struct MyPageView: View {
                         },
                         onActive: {
                             myPageViewModel.withdraw(globalLoginViewModel: loginViewModel)
+                            recentSearchViewModel.clear()
                             navigationManager.currentTab = .HomewView
                             print("회원탈퇴됨")
                         }
@@ -93,9 +95,9 @@ struct MyPageView: View {
     private var headerText: some View {
         Text("내 정보")
             .foregroundColor(Color.gray6)
-            .font(.pretendardMedium(size: 26))
+            .font(.pretendardSemiBold(size: 26))
             .padding(.bottom, 26)
-            .padding(.top, 48)
+            .padding(.top, 70)
             .padding(.leading, 16)
     } // : headerText
     
@@ -128,9 +130,12 @@ struct MyPageView: View {
         
     }
 }
-//
-//#Preview {
-//    MyPageView(Mypa)
-//        .environmentObject(MyPageViewModel())
-//        .environmentObject(NavigationManager())
-//}
+
+#Preview {
+    
+   let myPageViewModel = MyPageViewModel() // 마이페이지 ViewModel
+
+    MyPageView(viewModel: myPageViewModel)
+        .environmentObject(NavigationManager())
+        .environmentObject(LoginViewModel())
+}
