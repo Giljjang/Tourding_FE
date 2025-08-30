@@ -33,6 +33,11 @@
 	</array>
 	<key>NMFNcpKeyId</key>
 	<string>$(NAVER_APP_KEY)</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Pretendard-Black.otf</string>

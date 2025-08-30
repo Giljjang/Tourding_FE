@@ -104,8 +104,46 @@ class KakaoLocalService {
         )
     }
     
-    // MARK: - 인기 키워드 검색 (편의 메서드들)
     
+    // MARK: - 좌표 기반 주소 정보 받아오기(KAKAO)
+    struct KakaoRegionResponse: Codable {
+        struct Region: Codable {
+            let regionType: String
+            let addressName: String
+            let region1depthName: String
+            let region2depthName: String
+            let region3depthName: String
+            enum CodingKeys: String, CodingKey {
+                case regionType = "region_type"
+                case addressName = "address_name"
+                case region1depthName = "region_1depth_name"
+                case region2depthName = "region_2depth_name"
+                case region3depthName = "region_3depth_name"
+            }
+        }
+        let documents: [Region]
+    }
+}
+
+//
+extension KakaoLocalService {
+    static func reverseGeocode(x lon: Double, y lat: Double) async throws -> KakaoRegionResponse {
+        let params = ["x": "\(lon)", "y": "\(lat)"]
+        return try await NetworkService.request(
+            apiType: .kakaoLocal,
+            endpoint: "/v2/local/geo/coord2regioncode.json",
+            parameters: params,
+            headers: commonHeaders,
+            method: "GET"
+        )
+    }
+}
+
+
+
+
+// MARK: - 인기 키워드 검색 (편의 메서드들)
+
 //    /// 맛집 검색
 //    static func searchRestaurants(
 //        near location: CLLocationCoordinate2D,
@@ -119,7 +157,7 @@ class KakaoLocalService {
 //            sort: "distance"
 //        )
 //    }
-//    
+//
 //    /// 카페 검색
 //    static func searchCafes(
 //        near location: CLLocationCoordinate2D,
@@ -133,7 +171,7 @@ class KakaoLocalService {
 //            sort: "distance"
 //        )
 //    }
-//    
+//
 //    /// 관광지 검색
 //    static func searchTouristSpots(
 //        near location: CLLocationCoordinate2D,
@@ -147,7 +185,7 @@ class KakaoLocalService {
 //            sort: "distance"
 //        )
 //    }
-//    
+//
 //    /// 숙박 시설 검색
 //    static func searchAccommodations(
 //        near location: CLLocationCoordinate2D,
@@ -185,4 +223,4 @@ class KakaoLocalService {
 //        static let hospital = "HP8"             // 병원
 //        static let pharmacy = "PM9"             // 약국
 //    }
-}
+

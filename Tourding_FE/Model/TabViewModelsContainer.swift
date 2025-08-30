@@ -11,4 +11,5 @@ struct TabViewModelsContainer {
     let homeViewModel: HomeViewModel
     let myPageViewModel: MyPageViewModel
     let spotSearchViewModel: SpotSearchViewModel
+    let dsViewModel: DestinationSearchViewModel
 }

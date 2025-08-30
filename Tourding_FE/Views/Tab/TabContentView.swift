@@ -13,8 +13,11 @@ struct TabContentView: View {
     
     private var viewModel: TabViewModelsContainer
     
+    @ObservedObject private var spotVM: SpotSearchViewModel // SpotSearchViewModel의 변화를 관찰하기 위해서 따로 추가
+    
     init(viewModel: TabViewModelsContainer) {
         self.viewModel = viewModel
+        self.spotVM = viewModel.spotSearchViewModel
     }
     
     var body: some View {
@@ -24,7 +27,10 @@ struct TabContentView: View {
             case .HomewView:
                 HomeView(viewModel: viewModel.homeViewModel)
             case .SpotSearchView:
-                SpotSearchView()
+                SpotSearchView(
+                    spotviewModel: spotVM,
+                    dsviewModel: viewModel.dsViewModel
+                )
             case .MyPageView :
                 MyPageView(viewModel: viewModel.myPageViewModel)
             default:
@@ -33,6 +39,8 @@ struct TabContentView: View {
             
             CustomTabView(currentView: navigationManager.currentTab)
                 .padding(.bottom, 52)
+                .allowsHitTesting(!viewModel.spotSearchViewModel.isLoading)
+                .disabled(viewModel.spotSearchViewModel.isLoading)
             
             // 커스텀 모달 뷰
             if modalManager.isPresented && modalManager.showView == .tabView {
@@ -44,7 +52,11 @@ struct TabContentView: View {
                 
                 CustomModalView(modalManager: modalManager)
             } // : if
-            
+            // 스팟 검색 로딩 오버레이 (전체 화면)
+            if viewModel.spotSearchViewModel.isLoading {
+                Color.white.opacity(0.5).ignoresSafeArea()
+                DotsLoadingView()
+            }
         } // : Zstack
         .edgesIgnoringSafeArea(.bottom)
     }
@@ -52,18 +64,22 @@ struct TabContentView: View {
 
 #Preview {
     let repository = TestRepository()
+    let TourRepository = TourRepository()
     
     let homeViewModel = HomeViewModel(testRepository: repository)
     let myPageViewModel = MyPageViewModel()
-    let spotSearchViewModel = SpotSearchViewModel()
+    let spotSearchViewModel = SpotSearchViewModel(tourRepository: TourRepository)
+    let dsViewModel = DestinationSearchViewModel()
     
     let viewModels = TabViewModelsContainer(
         homeViewModel: homeViewModel,
         myPageViewModel: myPageViewModel,
-        spotSearchViewModel: spotSearchViewModel
+        spotSearchViewModel: spotSearchViewModel,
+        dsViewModel: dsViewModel
     )
     
     TabContentView(viewModel: viewModels)
         .environmentObject(NavigationManager())
         .environmentObject(ModalManager())
+        .environmentObject(RouteSharedManager())
 }
