@@ -32,12 +32,7 @@ final class RidingViewModel: ObservableObject {
     
     
     // MARK: - 지도 관련 프로퍼티
-    @Published var pathCoordinates: [NMGLatLng] = [
-        NMGLatLng(lat: 37.5665, lng: 126.9780),
-        NMGLatLng(lat: 35.1796, lng: 129.0756),
-        NMGLatLng(lat: 35.9078, lng: 127.7669),
-        NMGLatLng(lat: 37.4563, lng: 126.7052)
-    ]
+    @Published var pathCoordinates: [NMGLatLng] = []
     
     // 특정 좌표에 marker 넣기
     @Published var markerCoordinates: [NMGLatLng] = [
@@ -114,7 +109,28 @@ final class RidingViewModel: ObservableObject {
         do {
             let response = try await routeRepository.getRoutesLocationName(userId: userId)
             routeLocation = response
-//            print("response : \(routeLocation)")
+            //            print("response : \(routeLocation)")
+            
+            markerCoordinates = routeLocation.compactMap { item in
+                if let lat = Double(item.lat), let lon = Double(item.lon) {
+                    return NMGLatLng(lat: lat, lng: lon)
+                } else {
+                    return nil
+                }
+            }
+            
+            markerIcons = routeLocation.map { item in
+                switch item.type {
+                case "Start":
+                    return MarkerIcons.startMarker
+                case "Goal":
+                    return MarkerIcons.goalMarker
+                case "WayPoint":
+                    return MarkerIcons.numberMarker(item.sequenceNum)
+                default:
+                    return MarkerIcons.numberMarker(0)
+                }
+            }
         } catch {
             print("GET ERROR: /routes/location-name \(error)")
         }
