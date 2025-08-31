@@ -147,7 +147,7 @@ struct HomeView: View {
                     routeSharedManager.currentSelectionMode = .startLocation
                     navigationManager.push(.DestinationSearchView)
                 }){
-                    Text(routeSharedManager.routeData.startLocation.isEmpty ? "출발지를 입력해주세요" : "\(routeSharedManager.routeData.startLocation.name.truncated(limit: 14))")
+                    Text(routeSharedManager.routeData.startLocation.isEmpty ? "출발지를 입력해주세요" : "\(routeSharedManager.routeData.startLocation.name.truncated(limit: 17))")
                         .foregroundColor(routeSharedManager.routeData.startLocation.isEmpty ? .gray2 : .gray6)
                         .font(.pretendardMedium(size: 18))
                 }
@@ -179,7 +179,7 @@ struct HomeView: View {
                     routeSharedManager.currentSelectionMode = .endLocation
                     navigationManager.push(.DestinationSearchView)
                 }){
-                    Text(routeSharedManager.routeData.endLocation.isEmpty ? "도착지를 입력해주세요" : "\(routeSharedManager.routeData.endLocation.name.truncated(limit: 14))")
+                    Text(routeSharedManager.routeData.endLocation.isEmpty ? "도착지를 입력해주세요" : "\(routeSharedManager.routeData.endLocation.name.truncated(limit: 17))")
                         .foregroundColor(routeSharedManager.routeData.endLocation.isEmpty ? .gray2 : .gray6)
                         .font(.pretendardMedium(size: 18))
                 }
@@ -252,13 +252,13 @@ struct HomeView: View {
                 
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .top, spacing: 2) {
-                        Text(viewModel.routeLocation.first?.name ?? "")
+                        Text(viewModel.routeLocation.first?.name.truncated(limit: 8) ?? "")
                             .foregroundColor(.gray4)
                             .font(.pretendardMedium(size: 14))
                         
                         Image("icon_right")
                         
-                        Text(viewModel.routeLocation.last?.name ?? "")
+                        Text(viewModel.routeLocation.last?.name.truncated(limit: 8) ?? "")
                             .foregroundColor(.gray4)
                             .font(.pretendardMedium(size: 14))
                         

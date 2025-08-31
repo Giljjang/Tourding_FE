@@ -25,8 +25,9 @@ struct DependencyProvider {
         )
     }
     
-    static func makeRidingViewModel() -> RidingViewModel {
-        let ridingViewModel = RidingViewModel()
+    @MainActor static func makeRidingViewModel() -> RidingViewModel {
+        let RouteRepository = RouteRepository()
+        let ridingViewModel = RidingViewModel(routeRepository: RouteRepository)
         return ridingViewModel
     }
     

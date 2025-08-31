@@ -61,15 +61,15 @@ final class SpotAddViewModel: ObservableObject {
     
     
     //MARK: - API 호출
-    func fetchNearbySpots(lat: Double, lng: Double) async {
+    func fetchNearbySpots(lat: String, lng: String) async {
         isLoading = true
         errorMessage = nil
         
         do {
             spots = try await tourRepository.searchLocationSpots(
                 pageNum: 0,
-                mapX: String(lng),
-                mapY: String(lat),
+                mapX: lng,
+                mapY: lat,
                 radius: "20000"
             )
         

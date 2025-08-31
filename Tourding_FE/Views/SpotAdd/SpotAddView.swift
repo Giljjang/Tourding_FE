@@ -12,10 +12,10 @@ struct SpotAddView: View {
     @EnvironmentObject var modalManager: ModalManager
     
     @StateObject var spotAddViewModel: SpotAddViewModel
-    let lat: Double
-    let lon: Double
+    let lat: String
+    let lon: String
     
-    init(spotAddViewModel: SpotAddViewModel, lat: Double, lon: Double) {
+    init(spotAddViewModel: SpotAddViewModel, lat: String, lon: String) {
         self._spotAddViewModel = StateObject(wrappedValue: spotAddViewModel)
         self.lat = lat
         self.lon = lon

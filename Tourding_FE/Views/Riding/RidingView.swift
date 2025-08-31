@@ -118,7 +118,9 @@ struct RidingView: View {
         .ignoresSafeArea()
         .navigationBarBackButtonHidden()
         .onAppear{
-            // api 데이터 추가
+            Task{
+                await ridingViewModel.getRouteLocationAPI()
+            }
         }// : onAppear
     }
     
@@ -230,7 +232,7 @@ struct RidingView: View {
 }
 
 #Preview {
-    RidingView(ridingViewModel: RidingViewModel())
+    RidingView(ridingViewModel: RidingViewModel(routeRepository: RouteRepository()))
         .environmentObject(NavigationManager())
         .environmentObject(ModalManager())
 }

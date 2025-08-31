@@ -15,7 +15,7 @@ enum ViewType : Hashable {
     
     case LoginView
     case RidingView
-    case SpotAddView(lat: Double, lon: Double)
+    case SpotAddView(lat: String, lon: String)
     case ServiceView
     case DestinationSearchView
 }

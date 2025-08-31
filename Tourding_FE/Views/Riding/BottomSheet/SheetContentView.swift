@@ -104,9 +104,12 @@ struct SheetContentView: View {
             Spacer()
             
             Button(action:{
-                navigationManager.push(.SpotAddView(
-                    lat: ridingViewModel.end.latitude,
-                    lon: ridingViewModel.end.longitude))
+                if let lastLocation = ridingViewModel.routeLocation.last {
+                    navigationManager.push(.SpotAddView(
+                        lat: lastLocation.lat,
+                        lon: lastLocation.lon
+                    ))
+                }
             }){
                 Image("icon_plus")
                 Text("스팟 추가")
@@ -133,7 +136,7 @@ struct SheetContentView: View {
             .padding(.horizontal, 4)
             .padding(.trailing, 6)
             
-            Text(ridingViewModel.start.name)
+            Text(ridingViewModel.routeLocation.first?.name ?? "출발지")
                 .foregroundColor(.gray6)
                 .font(.pretendardSemiBold(size: 16))
                 .padding(.vertical, 11)
@@ -155,7 +158,7 @@ struct SheetContentView: View {
             .padding(.horizontal, 4)
             .padding(.trailing, 6)
             
-            Text(ridingViewModel.end.name)
+            Text(ridingViewModel.routeLocation.last?.name ?? "도착지")
                 .foregroundColor(.gray6)
                 .font(.pretendardSemiBold(size: 16))
                 .padding(.vertical, 11)
@@ -216,7 +219,7 @@ struct SheetContentView: View {
 }
 
 #Preview {
-    SheetContentView(ridingViewModel: RidingViewModel())
+    SheetContentView(ridingViewModel: RidingViewModel(routeRepository: RouteRepository()))
         .environmentObject(NavigationManager())
         .environmentObject(ModalManager())
 }

@@ -10,12 +10,14 @@ import Combine
 import NMapsMap
 
 final class RidingViewModel: ObservableObject {
+    @Published var userId: Int = 2
     @Published var isLoading: Bool = false
     @Published var flag: Bool = false // 라이딩 전 <-> 라이딩 후 화면 변경
     
     //라이딩 시작 전
-    @Published var start: RidingSpotModel = RidingSpotModel(name: "출발지")
-    @Published var end: RidingSpotModel = RidingSpotModel(name: "도착지")
+    @Published var routeLocation: [LocationNameModel] = []
+    @Published var routeMapPaths: [RoutePathModel] = []
+    
     @Published var spotList: [RidingSpotModel]  = []
     @Published var nthLineHeight: Double = 0 // spotRow 왼쪽 라인 길이
     
@@ -48,8 +50,11 @@ final class RidingViewModel: ObservableObject {
     ]
     
     private var cancellables = Set<AnyCancellable>()
+    private let routeRepository: RouteRepositoryProtocol
     
-    init() {
+    init(routeRepository: RouteRepositoryProtocol) {
+        self.routeRepository = routeRepository
+        
         showMockSpotList()
         showMockGuideList()
         
@@ -102,6 +107,19 @@ final class RidingViewModel: ObservableObject {
         nthLineHeight = Double((spotList.count * 66) + (spotList.count + 1) * 8)
     } // : func calculateNthLineHeight
     
+    //MARK: - API 호출
+    @MainActor
+    func getRouteLocationAPI() async {
+        isLoading = true
+        do {
+            let response = try await routeRepository.getRoutesLocationName(userId: userId)
+            routeLocation = response
+//            print("response : \(routeLocation)")
+            isLoading = false
+        } catch {
+            print("GET ERROR: /routes/location-name \(error)")
+        }
+    }
 }
 
 //MARK: -  Riding 시작하기 이후 라이딩 뷰 함수
