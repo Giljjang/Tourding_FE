@@ -120,6 +120,7 @@ struct RidingView: View {
         .onAppear{
             Task{
                 await ridingViewModel.getRouteLocationAPI()
+                await ridingViewModel.getRoutePathAPI()
             }
         }// : onAppear
     }

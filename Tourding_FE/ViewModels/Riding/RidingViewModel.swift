@@ -115,10 +115,32 @@ final class RidingViewModel: ObservableObject {
             let response = try await routeRepository.getRoutesLocationName(userId: userId)
             routeLocation = response
 //            print("response : \(routeLocation)")
-            isLoading = false
         } catch {
             print("GET ERROR: /routes/location-name \(error)")
         }
+        isLoading = false
+    }
+    
+    @MainActor
+    func getRoutePathAPI() async {
+        isLoading = true
+        do {
+            let response = try await routeRepository.getRoutesPath(userId: userId)
+            routeMapPaths = response
+            
+            pathCoordinates = routeMapPaths.compactMap { item in
+                if let lat = Double(item.lat),
+                   let lon = Double(item.lon) {
+                    return NMGLatLng(lat: lat, lng: lon)
+                } else {
+                    return nil // 변환 실패 시 무시
+                }
+            }
+            
+        } catch {
+            print("GET ERROR: /routes/path \(error)")
+        }
+        isLoading = false
     }
 }
 

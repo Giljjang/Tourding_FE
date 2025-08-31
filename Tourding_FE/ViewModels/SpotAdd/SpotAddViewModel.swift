@@ -76,6 +76,7 @@ final class SpotAddViewModel: ObservableObject {
         } catch {
             errorMessage = "스팟을 불러오는데 실패했습니다."
             print("API 오류: \(error)")
+            
         }
         
         isLoading = false

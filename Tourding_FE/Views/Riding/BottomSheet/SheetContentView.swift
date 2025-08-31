@@ -136,7 +136,7 @@ struct SheetContentView: View {
             .padding(.horizontal, 4)
             .padding(.trailing, 6)
             
-            Text(ridingViewModel.routeLocation.first?.name ?? "출발지")
+            Text(ridingViewModel.routeLocation.first?.name.truncated(limit: 21) ?? "출발지")
                 .foregroundColor(.gray6)
                 .font(.pretendardSemiBold(size: 16))
                 .padding(.vertical, 11)
@@ -158,7 +158,7 @@ struct SheetContentView: View {
             .padding(.horizontal, 4)
             .padding(.trailing, 6)
             
-            Text(ridingViewModel.routeLocation.last?.name ?? "도착지")
+            Text(ridingViewModel.routeLocation.last?.name.truncated(limit: 21) ?? "도착지")
                 .foregroundColor(.gray6)
                 .font(.pretendardSemiBold(size: 16))
                 .padding(.vertical, 11)
