@@ -10,12 +10,12 @@ import Foundation
 final class RouteRepository: RouteRepositoryProtocol {
     func postRoutes(requestBody: RequestRouteModel) async throws {
         do{
-            let response: APIResponse = try await NetworkService.request(
+            _ = try await NetworkService.request(
                 apiType: .main,
                 endpoint: "/routes",
                 body: requestBody,
                 method: "POST"
-            )
+            ) as EmptyResponse
         } catch{
             throw error
         }
