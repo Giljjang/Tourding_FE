@@ -9,17 +9,24 @@ import Foundation
 
 @MainActor
 final class SpotAddViewModel: ObservableObject {
+    @Published var userId: Int = 2
+    
     @Published var clickFliter: String = ""
     let tagFilter: [String] = ["전체","자연", "인문(문화/예술/역사)", "레포츠", "쇼핑", "음식", "숙박"]
     
+    @Published var routeLocation: [LocationNameModel] = []
     @Published var spots: [SpotData] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
     
     private let tourRepository: TourRepositoryProtocol
+    private let routeRepository: RouteRepositoryProtocol
     
-    init(tourRepository: TourRepositoryProtocol) {
-        self.tourRepository = tourRepository
+    init(
+        tourRepository: TourRepositoryProtocol,
+        routeRepository: RouteRepositoryProtocol) {
+            self.tourRepository = tourRepository
+            self.routeRepository = routeRepository
     }
     
     //MARK: - View 로직
@@ -44,22 +51,6 @@ final class SpotAddViewModel: ObservableObject {
         }
     } // : func
     
-    private func categoryIcon(for typeId: String) -> String {
-        switch typeId {
-        case "12": return "humon"   // 관광지
-        case "14": return "humon"   // 문화시설
-        case "15": return "humon"   // 축제공연행사
-        case "25": return "humon"   // 여행코스
-        case "28": return "leport"  // 레포츠
-        case "32": return "sleep"   // 숙박
-        case "38": return "shoping" // 쇼핑
-        case "39": return "food"    // 음식점
-        default:   return "관광지"  // 기본값
-        }
-    }
-
-    
-    
     //MARK: - API 호출
     func fetchNearbySpots(lat: String, lng: String) async {
         isLoading = true
@@ -79,6 +70,19 @@ final class SpotAddViewModel: ObservableObject {
             
         }
         
+        isLoading = false
+    }
+    
+    @MainActor
+    func getRouteLocationAPI() async {
+        isLoading = true
+        do {
+            let response = try await routeRepository.getRoutesLocationName(userId: userId)
+            routeLocation = response
+            
+        } catch {
+            print("GET ERROR: /routes/location-name \(error)")
+        }
         isLoading = false
     }
 }

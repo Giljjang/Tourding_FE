@@ -24,8 +24,6 @@ final class TourRepository: TourRepositoryProtocol {
             method: "POST"
         )
         
-        print("spots: \(spots)")
-        
         return spots
     }
 }

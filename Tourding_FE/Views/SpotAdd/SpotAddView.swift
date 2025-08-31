@@ -48,12 +48,26 @@ struct SpotAddView: View {
                 CustomModalView(modalManager: modalManager)
             }
             
+            if spotAddViewModel.isLoading {
+                Color.white.opacity(0.5)
+                    .ignoresSafeArea()
+                
+                VStack{
+                    Spacer()
+                    
+                    DotsLoadingView()
+                    
+                    Spacer()
+                }
+            }// if 로딩 상태
+            
         }// :Zstck
         .navigationBarBackButtonHidden()
         .background(Color.gray1)
         .onAppear{
             Task{
                 await spotAddViewModel.fetchNearbySpots(lat: lat, lng: lon)
+                await spotAddViewModel.getRouteLocationAPI()
             }
         }//: onAppear
     }

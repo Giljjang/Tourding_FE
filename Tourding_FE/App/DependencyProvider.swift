@@ -37,8 +37,11 @@ struct DependencyProvider {
     
     @MainActor static func makespotAddViewModel() -> SpotAddViewModel {
         let Tourerepository = TourRepository()
+        let RouteRepository = RouteRepository()
         
-        let spotAddViewModel = SpotAddViewModel(tourRepository: Tourerepository)
+        let spotAddViewModel = SpotAddViewModel(
+            tourRepository: Tourerepository,
+            routeRepository: RouteRepository)
         return spotAddViewModel
     }
 }
