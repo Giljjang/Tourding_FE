@@ -164,64 +164,10 @@ extension RidingViewModel {
     
     func toggleToilet(){
         showToilet.toggle()
-        updateToiletMarkers()
     }
     
     func toggleConvenienceStore(){
         showConvenienceStore.toggle()
-        updateConvenienceStoreMarkers()
-    }
-    
-    // 화장실 마커 업데이트
-    private func updateToiletMarkers() {
-        if showToilet {
-            // 화장실 마커 추가 (예시 좌표)
-            let toiletCoordinates = [
-                NMGLatLng(lat: 37.5665, lng: 126.9780),
-                NMGLatLng(lat: 37.5668, lng: 126.9785)
-            ]
-            let toiletIcons = Array(repeating: MarkerIcons.toiletMarker, count: toiletCoordinates.count)
-            
-            additionalMarkerCoordinates = toiletCoordinates
-            additionalMarkerIcons = toiletIcons
-        } else {
-            // 화장실 마커 제거
-            additionalMarkerCoordinates.removeAll()
-            additionalMarkerIcons.removeAll()
-        }
-    }
-    
-    // 편의점 마커 업데이트
-    private func updateConvenienceStoreMarkers() {
-        if showConvenienceStore {
-            // 편의점 마커 추가 (예시 좌표)
-            let csCoordinates = [
-                NMGLatLng(lat: 37.5670, lng: 126.9790),
-                NMGLatLng(lat: 37.5675, lng: 126.9795)
-            ]
-            let csIcons = Array(repeating: MarkerIcons.csMarker, count: csCoordinates.count)
-            
-            // 기존 마커에 추가
-            additionalMarkerCoordinates.append(contentsOf: csCoordinates)
-            additionalMarkerIcons.append(contentsOf: csIcons)
-        } else {
-            // 편의점 마커만 제거 (화장실 마커는 유지)
-            if showToilet {
-                // 화장실 마커만 유지
-                let toiletCoordinates = [
-                    NMGLatLng(lat: 37.5665, lng: 126.9780),
-                    NMGLatLng(lat: 37.5668, lng: 126.9785)
-                ]
-                let toiletIcons = Array(repeating: MarkerIcons.toiletMarker, count: toiletCoordinates.count)
-                
-                additionalMarkerCoordinates = toiletCoordinates
-                additionalMarkerIcons = toiletIcons
-            } else {
-                // 모든 추가 마커 제거
-                additionalMarkerCoordinates.removeAll()
-                additionalMarkerIcons.removeAll()
-            }
-        }
     }
 }
 
