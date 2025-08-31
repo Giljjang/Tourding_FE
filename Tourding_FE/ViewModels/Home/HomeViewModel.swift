@@ -16,44 +16,29 @@ final class HomeViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var abendFlag: Bool = true
     
-    // 최근 경로 관련 데이터 (routeContinue 섹션용)
-    @Published var recentRoute: RecentRouteData?
-    
     private let routeRepository: RouteRepositoryProtocol
     
     init(routeRepository: RouteRepositoryProtocol) {
         self.routeRepository = routeRepository
-        loadRecentRoute()
     }
     
     // MARK: - Home 화면 전용 비즈니스 로직
     
-    /// 최근 경로 데이터 로드
-    private func loadRecentRoute() {
-        // TODO: 실제로는 UserDefaults나 서버에서 최근 경로 가져오기
-        recentRoute = RecentRouteData(
-            startLocationName: "한동대",
-            endLocationName: "영남대"
-        )
-    }
-    
-    /// 최근 경로 이어서 가기 기능
-    func continueRecentRoute() {
-        guard let recent = recentRoute else { return }
-        print("🔄 최근 경로 이어서 가기: \(recent.startLocationName) → \(recent.endLocationName)")
-        // 라우팅 로직 처리
+    func isFirstAndLastCoordinateEqual(start: LocationData, end: LocationData) -> Bool {
+
+        return start.latitude == end.latitude && start.longitude == end.longitude
     }
     
     //MARK: - API 호출
     @MainActor
-    func postRouteAPI() async {
+    func postRouteAPI(start: LocationData, end: LocationData) async {
         isLoading = true
         let requestBody: RequestRouteModel = RequestRouteModel(
             userId: userId,
-            start: "\(routeLocation.first!.lon),\(routeLocation.first!.lat)",
-            goal: "\(routeLocation.last!.lon),\(routeLocation.last!.lat)",
+            start: "\(start.longitude),\(start.latitude)",
+            goal: "\(end.longitude),\(end.latitude)",
             wayPoints: "",
-            locateName: "\(routeLocation.first!.name),\(routeLocation.last!.name)"
+            locateName: "\(start.name),\(end.name)"
         )
         
         do {
@@ -76,10 +61,4 @@ final class HomeViewModel: ObservableObject {
         }
     }
     
-}
-
-// MARK: - Home 화면 전용 데이터 모델
-struct RecentRouteData {
-    let startLocationName: String
-    let endLocationName: String
 }

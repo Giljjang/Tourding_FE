@@ -59,6 +59,31 @@ struct HomeView: View {
             .padding(.horizontal, 16)
             .background(Color.gray1)
             
+            // 커스텀 모달 뷰
+            if modalManager.isPresented && modalManager.showView == .tabView {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        modalManager.hideModal()
+                    }
+                
+                CustomModalView(modalManager: modalManager)
+            }
+            
+            // 로딩뷰
+            if viewModel.isLoading {
+                Color.white.opacity(0.5)
+                    .ignoresSafeArea()
+                
+                VStack{
+                    Spacer()
+                    
+                    DotsLoadingView()
+                    
+                    Spacer()
+                }
+            }// if 로딩 상태
+            
             if modalManager.isToastMessage {
                 ToastMessageView()
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -171,10 +196,28 @@ struct HomeView: View {
             .padding(.bottom, 31)
             
             Button(action: {
-                Task {
-                    await viewModel.postRouteAPI()
-                    navigationManager.push(.RidingView)
-                }
+                let start = routeSharedManager.routeData.startLocation
+                let end = routeSharedManager.routeData.endLocation
+                
+                if viewModel.isFirstAndLastCoordinateEqual(start: start, end: end){
+                    modalManager.showModal(
+                        title: "출발지와 도착지가 동일해요",
+                        subText: "확인 후 다른 위치로 설정해 주세요",
+                        activeText: "확인하기",
+                        showView: .tabView,
+                        onCancel: {
+                            print("취소됨")
+                        },
+                        onActive: {
+                            print("시작됨")
+                        }
+                    )
+                } else {
+                    Task {
+                        await viewModel.postRouteAPI(start: start, end: end)
+                        navigationManager.push(.RidingView)
+                    }
+                } // if-else
             }){
                 Text("코스 만들기")
                     .foregroundColor(routeSharedManager.hasValidPoints ? .white : .gray3)
