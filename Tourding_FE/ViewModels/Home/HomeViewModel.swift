@@ -44,6 +44,7 @@ final class HomeViewModel: ObservableObject {
         do {
             let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
 
+            isLoading = false
 //            print("POST SUCCESS: /routes \(response)")
         } catch {
             print("POST ERROR: /routes \(error)")

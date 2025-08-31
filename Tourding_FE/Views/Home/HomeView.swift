@@ -147,7 +147,7 @@ struct HomeView: View {
                     routeSharedManager.currentSelectionMode = .startLocation
                     navigationManager.push(.DestinationSearchView)
                 }){
-                    Text(routeSharedManager.routeData.startLocation.isEmpty ? "출발지를 입력해주세요" : "\(routeSharedManager.routeData.startLocation.name)")
+                    Text(routeSharedManager.routeData.startLocation.isEmpty ? "출발지를 입력해주세요" : "\(routeSharedManager.routeData.startLocation.name.truncated(limit: 14))")
                         .foregroundColor(routeSharedManager.routeData.startLocation.isEmpty ? .gray2 : .gray6)
                         .font(.pretendardMedium(size: 18))
                 }
@@ -179,7 +179,7 @@ struct HomeView: View {
                     routeSharedManager.currentSelectionMode = .endLocation
                     navigationManager.push(.DestinationSearchView)
                 }){
-                    Text(routeSharedManager.routeData.endLocation.isEmpty ? "도착지를 입력해주세요" : "\(routeSharedManager.routeData.endLocation.name)")
+                    Text(routeSharedManager.routeData.endLocation.isEmpty ? "도착지를 입력해주세요" : "\(routeSharedManager.routeData.endLocation.name.truncated(limit: 14))")
                         .foregroundColor(routeSharedManager.routeData.endLocation.isEmpty ? .gray2 : .gray6)
                         .font(.pretendardMedium(size: 18))
                 }
