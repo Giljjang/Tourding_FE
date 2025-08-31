@@ -51,8 +51,40 @@ final class SpotAddViewModel: ObservableObject {
         }
     } // : func
     
+    func matchTypeCodeName(for title: String) -> String {
+        switch title {
+        case "자연":
+            return "A01"
+        case "인문(문화/예술/역사)":
+            return "A02"
+        case "레포츠":
+            return "A03"
+        case "쇼핑":
+            return "A04"
+        case "음식":
+            return "A05"
+        case "숙박":
+            return "B02"
+        case "추천코스":
+            return "C01"
+        default:
+            return "A01"
+        }
+    }
+    
+    func simplifiedAddressRegex(_ fullAddress: String) -> String {
+        // 숫자와 번지 제거
+        let pattern = #"(\d+.*$)"# // 숫자+문자열로 끝나는 부분
+        let regex = try! NSRegularExpression(pattern: pattern, options: [])
+
+        let range = NSRange(location: 0, length: fullAddress.utf16.count)
+        let result = regex.stringByReplacingMatches(in: fullAddress, options: [], range: range, withTemplate: "")
+        
+        return result.trimmingCharacters(in: .whitespaces)
+    }
+    
     //MARK: - API 호출
-    func fetchNearbySpots(lat: String, lng: String) async {
+    func fetchNearbySpots(lat: String, lng: String, typeCode: String) async {
         isLoading = true
         errorMessage = nil
         
@@ -61,8 +93,11 @@ final class SpotAddViewModel: ObservableObject {
                 pageNum: 0,
                 mapX: lng,
                 mapY: lat,
-                radius: "20000"
+                radius: "20000",
+                typeCode: typeCode
             )
+            
+//            print("spots : \(spots)")
         
         } catch {
             errorMessage = "스팟을 불러오는데 실패했습니다."

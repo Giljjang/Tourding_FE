@@ -160,6 +160,7 @@ struct SpotCardView: View {
         SpotData(
             title: "해피치즈스마일",
             addr1: "경북 경산시 조영동",
+            typeCode: "A01",
             contentid: "1",
             contenttypeid: "39",
             firstimage: "",
@@ -170,6 +171,7 @@ struct SpotCardView: View {
         SpotData(
             title: "경산 한옥마을",
             addr1: "경북 경산시 중앙동",
+            typeCode: "A01",
             contentid: "2",
             contenttypeid: "12",
             firstimage: "https://example.com/image.jpg",

@@ -66,7 +66,7 @@ struct SpotAddView: View {
         .background(Color.gray1)
         .onAppear{
             Task{
-                await spotAddViewModel.fetchNearbySpots(lat: lat, lng: lon)
+                await spotAddViewModel.fetchNearbySpots(lat: lat, lng: lon, typeCode: "")
                 await spotAddViewModel.getRouteLocationAPI()
             }
         }//: onAppear
@@ -129,6 +129,12 @@ struct SpotAddView: View {
     ) -> some View {
         Button(action:{
             spotAddViewModel.clickFliter = title
+            Task{
+                await spotAddViewModel.fetchNearbySpots(
+                    lat: lat,
+                    lng: lon,
+                    typeCode: spotAddViewModel.matchTypeCodeName(for: title))
+            }
         }){
             HStack(spacing: 0) {
                 Image(
@@ -186,7 +192,7 @@ struct SpotAddView: View {
                         .foregroundColor(.gray6)
                         .font(.pretendardSemiBold(size: 16))
                     
-                    Text(spot.addr1 == "" ? "-" : spot.addr1)
+                    Text(spot.addr1 == "" ? "-" : spotAddViewModel.simplifiedAddressRegex(spot.addr1))
                         .foregroundColor(.gray4)
                         .font(.pretendardRegular(size: 14))
                 }
