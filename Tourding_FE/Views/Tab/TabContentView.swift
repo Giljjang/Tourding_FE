@@ -63,10 +63,10 @@ struct TabContentView: View {
 }
 
 #Preview {
-    let repository = TestRepository()
+    let repository = RouteRepository()
     let TourRepository = TourRepository()
     
-    let homeViewModel = HomeViewModel(testRepository: repository)
+    let homeViewModel = HomeViewModel(routeRepository: repository)
     let myPageViewModel = MyPageViewModel()
     let spotSearchViewModel = SpotSearchViewModel(tourRepository: TourRepository)
     let dsViewModel = DestinationSearchViewModel()

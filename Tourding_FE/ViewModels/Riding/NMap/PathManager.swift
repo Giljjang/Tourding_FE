@@ -8,7 +8,7 @@
 import UIKit
 import NMapsMap
 
-class PathManager {
+final class PathManager {
     
     // MARK: - Properties
     private let pathOverlay = NMFPath()

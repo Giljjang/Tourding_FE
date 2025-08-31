@@ -8,6 +8,9 @@
 import Foundation
 
 final class HomeViewModel: ObservableObject {
+    //MARK: - 서버 데이터 저장
+    @Published var userId: Int = 2
+    @Published var routeLocation: [LocationNameModel] = []
     
     // MARK: - Home 화면 전용 상태들
     @Published var abendFlag: Bool = true
@@ -15,10 +18,10 @@ final class HomeViewModel: ObservableObject {
     // 최근 경로 관련 데이터 (routeContinue 섹션용)
     @Published var recentRoute: RecentRouteData?
     
-    private let testRepository: TestRepositoryProtocol
+    private let routeRepository: RouteRepositoryProtocol
     
-    init(testRepository: TestRepositoryProtocol) {
-        self.testRepository = testRepository
+    init(routeRepository: RouteRepositoryProtocol) {
+        self.routeRepository = routeRepository
         loadRecentRoute()
     }
     
@@ -40,15 +43,30 @@ final class HomeViewModel: ObservableObject {
         // 라우팅 로직 처리
     }
     
-    // MARK: - 기존 테스트 관련 메서드 (Home 화면에서 필요한 경우)
-    func getTestList() async -> [TestModel] {
+    //MARK: - API 호출
+//    func postRouteAPI() async -> [TestModel] {
+//        let requestBody: RequestRouteModel = RequestRouteModel(userId: userId, start: <#T##String#>, goal: <#T##String#>, locateName: <#T##String#>)
+//        
+//        do {
+//            let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
+//
+//            print("POST SUCCESS: /routes \(response)")
+//        } catch {
+//            print("POST ERROR: /routes \(error)")
+//        }
+//    }
+    
+    @MainActor
+    func getRouteLocationAPI() async {
         do {
-            let tests = try await testRepository.getTest()
-            return tests
+            let response = try await routeRepository.getRoutesLocationName(userId: userId)
+            routeLocation = response
+//            print("response : \(routeLocation)")
         } catch {
-            return []
+            print("GET ERROR: /routes/location-name \(error)")
         }
     }
+    
 }
 
 // MARK: - Home 화면 전용 데이터 모델

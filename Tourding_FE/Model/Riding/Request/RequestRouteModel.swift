@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct RequestRouteModel {
+struct RequestRouteModel: Codable {
     let userId: Int
     let start: String //lat,lon
     let goal: String //lat,lon

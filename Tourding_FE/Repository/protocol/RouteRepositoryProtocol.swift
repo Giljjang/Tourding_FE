@@ -8,5 +8,8 @@
 import Foundation
 
 protocol RouteRepositoryProtocol {
-    func postRoutes(body: RequestRouteModel)
+    func postRoutes(requestBody: RequestRouteModel) async throws
+    func getRoutesPath(userId: Int) async throws -> [RoutePathModel]
+    func getRoutesLocationName(userId: Int) async throws  -> [LocationNameModel]
+    func getRoutesGuide(userId: Int) async throws  -> [GuideModel]
 }

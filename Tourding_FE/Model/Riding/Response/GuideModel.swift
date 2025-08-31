@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct GuideModel: Decodable, Hashable {
+struct GuideModel: Codable, Hashable {
     let sequenceNum: Int
     let distance: Int
     let duration: Int
@@ -24,9 +24,9 @@ struct GuideModel: Decodable, Hashable {
 
     // instructions 내용 기반으로 guideType 반환
     var guideType: GuideType? {
-        if instructions.contains("우회전") {
+        if instructions.contains("우회전") || instructions.contains("오른쪽"){
             return .rightTurn
-        } else if instructions.contains("좌회전") {
+        } else if instructions.contains("좌회전") || instructions.contains("왼쪽") {
             return .leftTurn
         } else if instructions.contains("직진") {
             return .straight
@@ -34,7 +34,7 @@ struct GuideModel: Decodable, Hashable {
             return .stopOver
         }
         else {
-            return nil
+            return .straight
         }
     }
 }

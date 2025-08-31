@@ -10,7 +10,7 @@ import CoreLocation
 import NMapsMap
 import Combine
 
-class LocationManager: NSObject {
+final class LocationManager: NSObject {
     
     // MARK: - Properties
     private let locationManager = CLLocationManager()

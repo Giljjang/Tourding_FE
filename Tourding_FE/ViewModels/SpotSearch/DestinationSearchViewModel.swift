@@ -12,7 +12,7 @@ import CoreLocation
 import Combine
 
 @MainActor
-class DestinationSearchViewModel: NSObject, ObservableObject {
+final class DestinationSearchViewModel: NSObject, ObservableObject {
 // MARK: - Published Properties
     @Published var searchResults: [Place] = []
     @Published var isLoading = false

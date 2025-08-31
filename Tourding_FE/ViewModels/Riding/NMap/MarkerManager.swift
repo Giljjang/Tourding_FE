@@ -8,7 +8,7 @@
 import UIKit
 import NMapsMap
 
-class MarkerManager {
+final class MarkerManager {
     
     // MARK: - Properties
     private var markers: [NMFMarker] = []

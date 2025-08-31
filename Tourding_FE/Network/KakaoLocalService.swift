@@ -9,7 +9,7 @@
 import Foundation
 import CoreLocation
 
-class KakaoLocalService {
+final class KakaoLocalService {
     
     /// 카카오 REST API 키
     private static var kakaoAPIKey: String {

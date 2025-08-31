@@ -14,10 +14,10 @@ struct HomeView: View {
     @EnvironmentObject private var ridingViewModel: RidingViewModel
     
     
-    @ObservedObject private var viewModel: HomeViewModel
+    @StateObject private var viewModel: HomeViewModel
     
     init(viewModel: HomeViewModel) {
-        self.viewModel = viewModel
+        self._viewModel = StateObject(wrappedValue: viewModel)
     }
     
     enum HomeMenu {
@@ -47,7 +47,9 @@ struct HomeView: View {
                     case .routeMaking:
                         routeMaking
                     case .routeContinue:
-                        routeContinue
+                        if !viewModel.routeLocation.isEmpty{
+                            routeContinue
+                        }
                     }
                 }//ForEach
                 
@@ -71,6 +73,11 @@ struct HomeView: View {
             } // : if modalManager.isToastMessage
         } // :Zstack
         .animation(.easeInOut, value: modalManager.isToastMessage)
+        .onAppear{
+            Task{
+                await viewModel.getRouteLocationAPI()
+            }
+        } // : onAppear
     }
     
     //MARK: - View
@@ -241,7 +248,7 @@ struct HomeView: View {
 }
 
 #Preview {
-    HomeView(viewModel: HomeViewModel(testRepository: TestRepository()))
+    HomeView(viewModel: HomeViewModel(routeRepository: RouteRepository()))
         .environmentObject(NavigationManager())
         .environmentObject(RouteSharedManager())
 }

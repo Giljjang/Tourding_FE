@@ -7,7 +7,7 @@
 
 import Foundation
 
-class TourRepository: TourRepositoryProtocol {
+final class TourRepository: TourRepositoryProtocol {
     func searchLocationSpots(pageNum: Int, mapX: String, mapY: String, radius: String) async throws -> [SpotData] {
         let requestBody = SpotSearchRequest(
             pageNum: pageNum,

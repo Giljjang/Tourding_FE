@@ -12,7 +12,7 @@ import CoreLocation
 import Combine
 
 // MARK: - MapViewController
-class MapViewController: UIViewController {
+final class MapViewController: UIViewController {
     
     // MARK: - Properties
     private var mapView: NMFNaverMapView!

@@ -96,7 +96,7 @@ struct SpotAddView: View {
                     .foregroundColor(.gray6)
                     .font(.pretendardSemiBold(size: 26))
                 
-                Text("출발지와 도착지 사이 스팟을 모았어요")
+                Text("출발지와 도착지 근처 스팟을 모았어요")
                     .foregroundColor(.gray4)
                     .font(.pretendardMedium(size: 16))
             } // : VStack
@@ -184,7 +184,7 @@ struct SpotAddView: View {
                 Button(action:{
                     modalManager.showModal(
                         title: "코스에 이 스팟을 추가할까요?",
-                        subText: "'\(spot.title.truncated(limit: 14))'",
+                        subText: "'\(spot.title.truncated(limit: 21))'",
                         activeText: "추가하기",
                         showView: .spotAdd,
                         onCancel: {
