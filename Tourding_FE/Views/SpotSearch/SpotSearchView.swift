@@ -188,9 +188,9 @@ struct SpotSearchView: View {
     }
     
 }
-
-#Preview {
-    SpotSearchView(
-        spotviewModel: SpotSearchViewModel(tourRepository: TourRepository()),
-        dsviewModel: DestinationSearchViewModel())
-}
+//
+//#Preview {
+//    SpotSearchView(
+//        spotviewModel: SpotSearchViewModel(tourRepository: TourRepository()),
+//        dsviewModel: DestinationSearchViewModel(tourRepository: TourRepository()))
+//}
