@@ -171,8 +171,10 @@ struct HomeView: View {
             .padding(.bottom, 31)
             
             Button(action: {
-                routeSharedManager.printCurrentRouteState()
-                navigationManager.push(.RidingView)
+                Task {
+                    await viewModel.postRouteAPI()
+                    navigationManager.push(.RidingView)
+                }
             }){
                 Text("코스 만들기")
                     .foregroundColor(routeSharedManager.hasValidPoints ? .white : .gray3)
@@ -207,13 +209,13 @@ struct HomeView: View {
                 
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .top, spacing: 2) {
-                        Text("한동대")
+                        Text(viewModel.routeLocation.first?.name ?? "")
                             .foregroundColor(.gray4)
                             .font(.pretendardMedium(size: 14))
                         
                         Image("icon_right")
                         
-                        Text("영남대")
+                        Text(viewModel.routeLocation.last?.name ?? "")
                             .foregroundColor(.gray4)
                             .font(.pretendardMedium(size: 14))
                         

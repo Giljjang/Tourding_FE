@@ -13,6 +13,7 @@ final class HomeViewModel: ObservableObject {
     @Published var routeLocation: [LocationNameModel] = []
     
     // MARK: - Home 화면 전용 상태들
+    @Published var isLoading: Bool = false
     @Published var abendFlag: Bool = true
     
     // 최근 경로 관련 데이터 (routeContinue 섹션용)
@@ -44,17 +45,25 @@ final class HomeViewModel: ObservableObject {
     }
     
     //MARK: - API 호출
-//    func postRouteAPI() async -> [TestModel] {
-//        let requestBody: RequestRouteModel = RequestRouteModel(userId: userId, start: <#T##String#>, goal: <#T##String#>, locateName: <#T##String#>)
-//        
-//        do {
-//            let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
-//
+    @MainActor
+    func postRouteAPI() async {
+        isLoading = true
+        let requestBody: RequestRouteModel = RequestRouteModel(
+            userId: userId,
+            start: "\(routeLocation.first!.lon),\(routeLocation.first!.lat)",
+            goal: "\(routeLocation.last!.lon),\(routeLocation.last!.lat)",
+            wayPoints: "",
+            locateName: "\(routeLocation.first!.name),\(routeLocation.last!.name)"
+        )
+        
+        do {
+            let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
+
 //            print("POST SUCCESS: /routes \(response)")
-//        } catch {
-//            print("POST ERROR: /routes \(error)")
-//        }
-//    }
+        } catch {
+            print("POST ERROR: /routes \(error)")
+        }
+    }
     
     @MainActor
     func getRouteLocationAPI() async {
