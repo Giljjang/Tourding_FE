@@ -58,13 +58,6 @@ final class RidingViewModel: ObservableObject {
                 self?.calculateNthLineHeight()
             }
             .store(in: &cancellables)
-        
-        // flag 변경 감지
-        $flag
-            .sink { [weak self] newValue in
-                print("flag 변경됨: \(newValue)")
-            }
-            .store(in: &cancellables)
     }
     
     //MARK: - mock
