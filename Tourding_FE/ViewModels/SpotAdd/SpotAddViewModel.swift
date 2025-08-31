@@ -120,4 +120,25 @@ final class SpotAddViewModel: ObservableObject {
         }
         isLoading = false
     }
+    
+    //Todo:
+    @MainActor
+    func postRouteAPI(start: LocationData, end: LocationData) async {
+        isLoading = true
+        let requestBody: RequestRouteModel = RequestRouteModel(
+            userId: userId,
+            start: "\(start.longitude),\(start.latitude)",
+            goal: "\(end.longitude),\(end.latitude)",
+            wayPoints: "",
+            locateName: "\(start.name),\(end.name)"
+        )
+        
+        do {
+            let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
+
+            isLoading = false
+        } catch {
+            print("POST ERROR: /routes \(error)")
+        }
+    }
 }

@@ -192,7 +192,7 @@ struct SpotAddView: View {
                         .foregroundColor(.gray6)
                         .font(.pretendardSemiBold(size: 16))
                     
-                    Text(spot.addr1 == "" ? "-" : spotAddViewModel.simplifiedAddressRegex(spot.addr1))
+                    Text(spot.addr1 == "" ? "-" : spotAddViewModel.simplifiedAddressRegex(spot.addr1).truncated(limit: 16))
                         .foregroundColor(.gray4)
                         .font(.pretendardRegular(size: 14))
                 }
