@@ -34,15 +34,14 @@ final class RidingViewModel: ObservableObject {
     // MARK: - 지도 관련 프로퍼티
     @Published var pathCoordinates: [NMGLatLng] = []
     
-    // 특정 좌표에 marker 넣기
-    @Published var markerCoordinates: [NMGLatLng] = [
-        NMGLatLng(lat: 37.5665, lng: 126.9780),  // 첫 번째 위치
-        NMGLatLng(lat: 35.9078, lng: 127.7669)   // 세 번째 위치
-    ]
-    @Published var markerIcons: [NMFOverlayImage] = [
-        MarkerIcons.goalMarker,
-        MarkerIcons.startMarker
-    ]
+    // 기존 마커 (경로 관련)
+    @Published var markerCoordinates: [NMGLatLng] = []
+    
+    @Published var markerIcons: [NMFOverlayImage] = []
+    
+    // 추가 마커 (편의시설)
+    @Published var additionalMarkerCoordinates: [NMGLatLng] = []
+    @Published var additionalMarkerIcons: [NMFOverlayImage] = []
     
     private var cancellables = Set<AnyCancellable>()
     private let routeRepository: RouteRepositoryProtocol
@@ -165,10 +164,64 @@ extension RidingViewModel {
     
     func toggleToilet(){
         showToilet.toggle()
+        updateToiletMarkers()
     }
     
     func toggleConvenienceStore(){
         showConvenienceStore.toggle()
+        updateConvenienceStoreMarkers()
+    }
+    
+    // 화장실 마커 업데이트
+    private func updateToiletMarkers() {
+        if showToilet {
+            // 화장실 마커 추가 (예시 좌표)
+            let toiletCoordinates = [
+                NMGLatLng(lat: 37.5665, lng: 126.9780),
+                NMGLatLng(lat: 37.5668, lng: 126.9785)
+            ]
+            let toiletIcons = Array(repeating: MarkerIcons.toiletMarker, count: toiletCoordinates.count)
+            
+            additionalMarkerCoordinates = toiletCoordinates
+            additionalMarkerIcons = toiletIcons
+        } else {
+            // 화장실 마커 제거
+            additionalMarkerCoordinates.removeAll()
+            additionalMarkerIcons.removeAll()
+        }
+    }
+    
+    // 편의점 마커 업데이트
+    private func updateConvenienceStoreMarkers() {
+        if showConvenienceStore {
+            // 편의점 마커 추가 (예시 좌표)
+            let csCoordinates = [
+                NMGLatLng(lat: 37.5670, lng: 126.9790),
+                NMGLatLng(lat: 37.5675, lng: 126.9795)
+            ]
+            let csIcons = Array(repeating: MarkerIcons.csMarker, count: csCoordinates.count)
+            
+            // 기존 마커에 추가
+            additionalMarkerCoordinates.append(contentsOf: csCoordinates)
+            additionalMarkerIcons.append(contentsOf: csIcons)
+        } else {
+            // 편의점 마커만 제거 (화장실 마커는 유지)
+            if showToilet {
+                // 화장실 마커만 유지
+                let toiletCoordinates = [
+                    NMGLatLng(lat: 37.5665, lng: 126.9780),
+                    NMGLatLng(lat: 37.5668, lng: 126.9785)
+                ]
+                let toiletIcons = Array(repeating: MarkerIcons.toiletMarker, count: toiletCoordinates.count)
+                
+                additionalMarkerCoordinates = toiletCoordinates
+                additionalMarkerIcons = toiletIcons
+            } else {
+                // 모든 추가 마커 제거
+                additionalMarkerCoordinates.removeAll()
+                additionalMarkerIcons.removeAll()
+            }
+        }
     }
 }
 

@@ -12,6 +12,7 @@ final class MarkerManager {
     
     // MARK: - Properties
     private var markers: [NMFMarker] = []
+    private var additionalMarkers: [NMFMarker] = []
     private weak var mapView: NMFMapView?
     
     // MARK: - Initialization
@@ -38,6 +39,24 @@ final class MarkerManager {
         }
     }
     
+    func addAdditionalMarkers(coordinates: [NMGLatLng], icons: [NMFOverlayImage]) {
+        clearAdditionalMarkers()
+        
+        for (index, coordinate) in coordinates.enumerated() {
+            let marker = NMFMarker(position: coordinate)
+            let icon = icons[index % icons.count]
+            marker.iconImage = icon
+            
+            // 마커 타입에 따라 크기 설정
+            let size = getMarkerSize(for: icon)
+            marker.width = size.width
+            marker.height = size.height
+            marker.anchor = CGPoint(x: 0.5, y: 0.5) // 중앙 기준
+            marker.mapView = mapView
+            additionalMarkers.append(marker)
+        }
+    }
+    
     func addMarker(at coordinate: NMGLatLng, icon: NMFOverlayImage) {
         let marker = NMFMarker(position: coordinate)
         marker.iconImage = icon
@@ -54,6 +73,16 @@ final class MarkerManager {
     func clearMarkers() {
         markers.forEach { $0.mapView = nil }
         markers.removeAll()
+    }
+    
+    func clearAdditionalMarkers() {
+        additionalMarkers.forEach { $0.mapView = nil }
+        additionalMarkers.removeAll()
+    }
+    
+    func clearAllMarkers() {
+        clearMarkers()
+        clearAdditionalMarkers()
     }
     
     func getMarkerCoordinates() -> [NMGLatLng] {

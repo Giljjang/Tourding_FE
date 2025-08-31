@@ -17,6 +17,8 @@ struct MapViewRepresentable: UIViewRepresentable {
     @Binding var pathCoordinates: [NMGLatLng]
     @Binding var markerCoordinates: [NMGLatLng]
     @Binding var markerIcons: [NMFOverlayImage]
+    @Binding var additionalMarkerCoordinates: [NMGLatLng]
+    @Binding var additionalMarkerIcons: [NMFOverlayImage]
     var ridingViewModel: RidingViewModel?
     
     // MARK: - Callbacks
@@ -32,6 +34,8 @@ struct MapViewRepresentable: UIViewRepresentable {
         mapViewController.pathCoordinates = pathCoordinates
         mapViewController.markerCoordinates = markerCoordinates
         mapViewController.markerIcons = markerIcons
+        mapViewController.additionalMarkerCoordinates = additionalMarkerCoordinates
+        mapViewController.additionalMarkerIcons = additionalMarkerIcons
         mapViewController.onLocationUpdate = onLocationUpdate
         mapViewController.onMapTap = onMapTap
         
@@ -66,6 +70,8 @@ struct MapViewRepresentable: UIViewRepresentable {
         mapViewController.pathCoordinates = pathCoordinates
         mapViewController.markerCoordinates = markerCoordinates
         mapViewController.markerIcons = markerIcons
+        mapViewController.additionalMarkerCoordinates = additionalMarkerCoordinates
+        mapViewController.additionalMarkerIcons = additionalMarkerIcons
         mapViewController.onLocationUpdate = onLocationUpdate
         mapViewController.onMapTap = onMapTap
         

@@ -24,6 +24,8 @@ final class MapViewController: UIViewController {
     var pathCoordinates: [NMGLatLng] = []
     var markerCoordinates: [NMGLatLng] = []
     var markerIcons: [NMFOverlayImage] = []
+    var additionalMarkerCoordinates: [NMGLatLng] = []
+    var additionalMarkerIcons: [NMFOverlayImage] = []
     
     // MARK: - Callbacks
     var onLocationUpdate: ((CLLocation) -> Void)?
@@ -83,9 +85,14 @@ final class MapViewController: UIViewController {
     }
     
     func updateMap() {
-        // 마커 업데이트
+        // 기존 마커 업데이트
         if !markerCoordinates.isEmpty && !markerIcons.isEmpty {
             markerManager.addMarkers(coordinates: markerCoordinates, icons: markerIcons)
+        }
+        
+        // 추가 마커 업데이트
+        if !additionalMarkerCoordinates.isEmpty && !additionalMarkerIcons.isEmpty {
+            markerManager.addAdditionalMarkers(coordinates: additionalMarkerCoordinates, icons: additionalMarkerIcons)
         }
         
         // 경로선 업데이트

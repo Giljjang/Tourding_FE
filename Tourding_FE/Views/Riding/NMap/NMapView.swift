@@ -26,6 +26,8 @@ struct NMapView: View {
                 pathCoordinates: $ridingViewModel.pathCoordinates,
                 markerCoordinates: $ridingViewModel.markerCoordinates,
                 markerIcons: $ridingViewModel.markerIcons,
+                additionalMarkerCoordinates: $ridingViewModel.additionalMarkerCoordinates,
+                additionalMarkerIcons: $ridingViewModel.additionalMarkerIcons,
                 ridingViewModel: ridingViewModel,
                 onLocationUpdate: { location in
                     currentLocation = location
