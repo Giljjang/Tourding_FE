@@ -109,7 +109,7 @@ struct guideRowView: View {
             }
             
             VStack(alignment: .leading, spacing: 0) {
-                Text(text)
+                Text(text.truncated(limit: 21))
                     .foregroundColor(.gray6)
                     .font(.pretendardSemiBold(size: 16))
                     .padding(.top, time == nil ? 24 : 13)

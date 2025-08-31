@@ -9,75 +9,53 @@ import SwiftUI
 
 struct SpotAddView: View {
     @EnvironmentObject var navigationManager: NavigationManager
-    @ObservedObject var spotAddViewModel: SpotAddViewModel
+    @EnvironmentObject var modalManager: ModalManager
     
-    init(spotAddViewModel: SpotAddViewModel) {
-        self.spotAddViewModel = spotAddViewModel
+    @StateObject var spotAddViewModel: SpotAddViewModel
+    let lat: Double
+    let lon: Double
+    
+    init(spotAddViewModel: SpotAddViewModel, lat: Double, lon: Double) {
+        self._spotAddViewModel = StateObject(wrappedValue: spotAddViewModel)
+        self.lat = lat
+        self.lon = lon
     }
     
     var body: some View {
-        VStack(alignment: .leading,spacing:0){
+        ZStack{
+            VStack(alignment: .leading,spacing:0){
+                
+                header
+                
+                section
+                
+                filterSection
+                    .padding(.bottom, 24)
+                
+                scrollSpotListView
+                
+                Spacer()
+                
+            } // : VStack
             
-            header
+            if modalManager.isPresented && modalManager.showView == .spotAdd {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        modalManager.hideModal()
+                    }
+                
+                CustomModalView(modalManager: modalManager)
+            }
             
-            section
-            
-            filterSection
-                .padding(.bottom, 24)
-            
-            //Todo: API 연결 필요
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 0) {
-                    
-                    //Row Cell
-                    HStack(alignment: .top, spacing: 0){
-                        VStack{
-                            Image("empty")
-                        }
-                        .frame(width: 52, height: 52)
-                        .background(Color.gray1)
-                        .cornerRadius(10)
-    
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("불국사")
-                                .foregroundColor(.gray6)
-                                .font(.pretendardSemiBold(size: 16))
-                            
-                            Text("경북 경산시 조영동")
-                                .foregroundColor(.gray4)
-                                .font(.pretendardRegular(size: 14))
-                        }
-                        .padding(.leading, 12)
-                        .padding(.top, 5)
-                        
-                        Spacer()
-                        
-                        Button(action:{}){
-                            Text("추가")
-                                .foregroundColor(.gray4)
-                                .padding(.vertical, 9.2)
-                                .padding(.horizontal, 12)
-                                .background(Color.gray1)
-                                .cornerRadius(10)
-                        }
-                        .padding(.vertical, 10)
-                        
-                    } // : HStack
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-
-                    
-                } //: VStack
-                .padding(.top, 4)
-                .background(.white)
-                .cornerRadius(16)
-                .padding(.horizontal, 16)
-            } // : ScrollView
-            
-            Spacer()
-        } // : VStack
+        }// :Zstck
         .navigationBarBackButtonHidden()
         .background(Color.gray1)
+        .onAppear{
+            Task{
+                await spotAddViewModel.fetchNearbySpots(lat: lat, lng: lon)
+            }
+        }//: onAppear
     }
     
     //MARK: - View
@@ -168,9 +146,81 @@ struct SpotAddView: View {
             .padding(.bottom, 14)
         } // : ScrollView
     }
-}
-
-#Preview {
-    SpotAddView(spotAddViewModel: SpotAddViewModel())
-        .environmentObject(NavigationManager())
+    
+    private var spotRowView: some View {
+        ForEach(spotAddViewModel.spots){ spot in
+            HStack(alignment: .top, spacing: 0){
+                VStack{
+                    if let url = URL(string: spot.firstimage), !spot.firstimage.isEmpty {
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        } placeholder: {
+                            ProgressView()
+                        }
+                    } else {
+                        Image("empty")
+                    }
+                }
+                .frame(width: 52, height: 52)
+                .background(Color.gray1)
+                .cornerRadius(10)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(spot.title.truncated(limit: 14))
+                        .foregroundColor(.gray6)
+                        .font(.pretendardSemiBold(size: 16))
+                    
+                    Text(spot.addr1 == "" ? "-" : spot.addr1)
+                        .foregroundColor(.gray4)
+                        .font(.pretendardRegular(size: 14))
+                }
+                .padding(.leading, 12)
+                .padding(.top, 5)
+                
+                Spacer()
+                
+                Button(action:{
+                    modalManager.showModal(
+                        title: "코스에 이 스팟을 추가할까요?",
+                        subText: "'\(spot.title.truncated(limit: 14))'",
+                        activeText: "추가하기",
+                        showView: .spotAdd,
+                        onCancel: {
+                            print("취소됨")
+                        },
+                        onActive: {
+                            print("시작됨")
+                        }
+                    )
+                }){
+                    Text("추가")
+                        .foregroundColor(.gray4)
+                        .padding(.vertical, 9.2)
+                        .padding(.horizontal, 12)
+                        .background(Color.gray1)
+                        .cornerRadius(10)
+                }
+                .padding(.vertical, 10)
+                
+            } // : HStack
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        } // : ForEach
+    }
+    
+    private var scrollSpotListView: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 0) {
+                //Row Cell List
+                spotRowView
+                
+            } //: VStack
+            .padding(.top, 4)
+            .background(.white)
+            .cornerRadius(16)
+            .padding(.horizontal, 16)
+        } // : ScrollView
+    }
 }

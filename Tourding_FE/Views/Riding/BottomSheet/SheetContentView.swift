@@ -104,7 +104,9 @@ struct SheetContentView: View {
             Spacer()
             
             Button(action:{
-                navigationManager.push(.SpotAddView)
+                navigationManager.push(.SpotAddView(
+                    lat: ridingViewModel.end.latitude,
+                    lon: ridingViewModel.end.longitude))
             }){
                 Image("icon_plus")
                 Text("스팟 추가")
@@ -166,7 +168,7 @@ struct SheetContentView: View {
     private func spotRow(item: RidingSpotModel) -> some View {
         HStack(alignment: .top, spacing: 0) {
             VStack(alignment: .leading, spacing:2) {
-                Text(item.name)
+                Text(item.name.truncated(limit: 16))
                     .foregroundColor(.gray6)
                     .font(.pretendardSemiBold(size: 16))
                     .frame(height:22)

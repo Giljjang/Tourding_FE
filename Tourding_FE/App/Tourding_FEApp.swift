@@ -75,8 +75,11 @@ struct Tourding_FEApp: App {
                                     ServiceView()
                                 case .RidingView:
                                     RidingView(ridingViewModel: ridingViewModel)
-                                case .SpotAddView:
-                                    SpotAddView(spotAddViewModel: spotAddViewModel)
+                                case .SpotAddView(let lat, let lon):
+                                    SpotAddView(
+                                        spotAddViewModel: spotAddViewModel,
+                                        lat: lat,
+                                        lon: lon)
                                 case .DestinationSearchView:
                                     DestinationSearchView()
                                 default:

@@ -34,8 +34,10 @@ struct DependencyProvider {
         return RouteSharedManager()
     }
     
-    static func makespotAddViewModel() -> SpotAddViewModel {
-        let spotAddViewModel = SpotAddViewModel()
+    @MainActor static func makespotAddViewModel() -> SpotAddViewModel {
+        let Tourerepository = TourRepository()
+        
+        let spotAddViewModel = SpotAddViewModel(tourRepository: Tourerepository)
         return spotAddViewModel
     }
 }
