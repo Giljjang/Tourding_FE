@@ -32,7 +32,11 @@ struct SpotAddView: View {
                 filterSection
                     .padding(.bottom, 24)
                 
-                scrollSpotListView
+                if spotAddViewModel.spots.isEmpty {
+                    emptyView
+                } else {
+                    scrollSpotListView
+                }//: if-else
                 
                 Spacer()
                 
@@ -110,7 +114,7 @@ struct SpotAddView: View {
                     .foregroundColor(.gray6)
                     .font(.pretendardSemiBold(size: 26))
                 
-                Text("출발지와 도착지 근처 스팟을 모았어요")
+                Text("도착지 근처 스팟을 모았어요")
                     .foregroundColor(.gray4)
                     .font(.pretendardMedium(size: 16))
             } // : VStack
@@ -229,6 +233,8 @@ struct SpotAddView: View {
                                 Task{
                                     await spotAddViewModel.postRouteAPI(originalData: spotAddViewModel.routeLocation, updatedData: spot)
                                     await spotAddViewModel.getRouteLocationAPI()
+                                    navigationManager.pop()
+                                
                                 }
                             }
                         )
@@ -236,6 +242,7 @@ struct SpotAddView: View {
                 }){
                     Text("추가")
                         .foregroundColor(.gray4)
+                        .font(.pretendardMedium(size: 14))
                         .padding(.vertical, 9.2)
                         .padding(.horizontal, 12)
                         .background(Color.gray1)
@@ -261,5 +268,29 @@ struct SpotAddView: View {
             .cornerRadius(16)
             .padding(.horizontal, 16)
         } // : ScrollView
+    }
+    
+    private var emptyView: some View {
+        VStack{
+            Spacer()
+            
+            HStack(alignment: .top, spacing:0){
+                Spacer()
+                
+                Image("illust_No recommendations")
+                
+                Spacer()
+            }
+            
+            Text("앗, 현재 위치 근처에는\n추천 스팟이 없어요")
+                .foregroundColor(.gray3)
+                .font(.pretendardMedium(size: 18))
+                .multilineTextAlignment(.center)
+            
+            Spacer()
+            
+            Spacer()
+        } // : VStack
+        .frame(maxHeight: .infinity)
     }
 }
