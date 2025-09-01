@@ -44,4 +44,8 @@ struct DependencyProvider {
             routeRepository: RouteRepository)
         return spotAddViewModel
     }
+    @MainActor static func makesFilterBarViewModel() -> FilterBarViewModel {
+        let FilterBarViewModel = FilterBarViewModel(tourRepository: TourRepository())
+        return FilterBarViewModel
+    }
 }

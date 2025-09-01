@@ -27,8 +27,11 @@ struct SearchBar: View {
                 onSubmit?()
                 hideKeyboard()
             }
-            .onChange(of: text) { _ in
-                onTextChange?()
+            .onChange(of: text) { newValue in
+                // onSubmit이 호출된 직후에는 onChange를 무시
+                if !newValue.isEmpty {
+                    onTextChange?()
+                }
             }
             .foregroundColor(.gray6)
             .font(.pretendardMedium(size: 16))

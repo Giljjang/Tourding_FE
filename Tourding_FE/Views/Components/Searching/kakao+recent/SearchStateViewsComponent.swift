@@ -10,6 +10,7 @@ import SwiftUI
 struct SearchStateViewsComponent: View {
     enum SearchState {
         case empty
+        case empty2
         case loading
         case noResults
     }
@@ -21,6 +22,8 @@ struct SearchStateViewsComponent: View {
             switch state {
             case .empty:
                 EmptyStateView()
+            case .empty2:
+                EmptyStateView2()
             case .loading:
                 LoadingStateView()
             case .noResults:
@@ -36,6 +39,17 @@ struct EmptyStateView: View {
     var body: some View {
         VStack(spacing: 12) {
             Image("searchempty")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 338)
+        }
+    }
+}
+
+struct EmptyStateView2: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            Image("empty2")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 338)

@@ -26,11 +26,11 @@ final class DestinationSearchViewModel: NSObject, ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private let locationManager = CLLocationManager()
     private var currentSearchQuery = ""
-    
+        
     // MARK: - Initialization
     override init() {
-        super.init()
-        setupLocationManager()
+        super.init()                         // 2) 슈퍼 초기화
+        setupLocationManager()               // 3) 이후 설정(델리게이트 등)
     }
     
     // MARK: - Location Setup
@@ -42,6 +42,7 @@ final class DestinationSearchViewModel: NSObject, ObservableObject {
         locationManager.requestWhenInUseAuthorization()
         locationManager.startUpdatingLocation()
     }
+
     
     // MARK: - Search Methods
     
@@ -79,7 +80,7 @@ final class DestinationSearchViewModel: NSObject, ObservableObject {
             isLoading = true
         }
         errorMessage = nil
-
+        
         do {
             let response = try await KakaoLocalService.searchPlaces(
                 query: query,
@@ -89,27 +90,27 @@ final class DestinationSearchViewModel: NSObject, ObservableObject {
                 size: 15,
                 sort: "accuracy"               // ✅ 항상 정확도순으로 받기
             )
-
+            
             // 1) 페이지 합치기
             let merged = loadMore ? (self.searchResults + response.documents)
-                                  : response.documents
-
+            : response.documents
+            
             // 2) 중복 제거(id 기준)
             let deduped = deduplicateByID(merged)
-
+            
             // 3) 정확도 유지 + 동일 항목끼리만 거리 오름차순
             self.searchResults = applyAccuracyWithDistanceTieBreak(deduped)
-
+            
             // 페이징/메타 처리
             totalCount = response.meta.totalCount
             hasMoreResults = !response.meta.isEnd
             currentPage += 1
-
+            
         } catch {
             errorMessage = handleError(error)
             print("Search error: \(error)")
         }
-
+        
         isLoading = false
     }
     
@@ -195,23 +196,23 @@ extension DestinationSearchViewModel: CLLocationManagerDelegate {
         }
         return result
     }
-
+    
     // 정확도(원본 순서) 유지 + 동일 장소끼리만 거리 오름차순
     private func applyAccuracyWithDistanceTieBreak(_ items: [Place]) -> [Place] {
         // 원본(accuracy) 순서를 보존하기 위해 인덱스를 함께 보관
         let indexed = items.enumerated().map { (idx, p) in (idx, p) }
-
+        
         // “같은 장소” 정의: placeName + 주소(도로명 있으면 도로명 우선)
         func key(_ p: Place) -> String {
             let addr = p.roadAddressName.isEmpty ? p.addressName : p.roadAddressName
             return (p.placeName + "|" + addr).lowercased()
         }
-
+        
         // distance(m). 없으면 아주 큰 값으로
         func dist(_ p: Place) -> Double {
             p.distanceInMeters ?? .greatestFiniteMagnitude
         }
-
+        
         let grouped = Dictionary(grouping: indexed, by: { key($0.1) })
         // 그룹 전체 순서는 “그 그룹에서 가장 먼저 등장한 원본 인덱스”로 결정
         let orderedKeys = grouped.keys.sorted { a, b in
@@ -219,7 +220,7 @@ extension DestinationSearchViewModel: CLLocationManagerDelegate {
             let ib = grouped[b]?.map({ $0.0 }).min() ?? .max
             return ia < ib
         }
-
+        
         var output: [Place] = []
         output.reserveCapacity(items.count)
         for k in orderedKeys {
@@ -234,7 +235,7 @@ extension DestinationSearchViewModel: CLLocationManagerDelegate {
         }
         return output
     }
-
+    
     
     // MARK: - 내 위치로 주소값 불러오기
     func refreshLocation() {
