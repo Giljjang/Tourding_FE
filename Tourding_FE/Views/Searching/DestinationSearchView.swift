@@ -313,11 +313,11 @@ struct DestinationSearchView: View {
 #Preview {
     let filterViewModel = FilterBarViewModel(tourRepository: TourRepository())
     
-    return NavigationView {
+    NavigationView {
         DestinationSearchView(isFromHome: false, filterViewModel: filterViewModel)
             .environmentObject(NavigationManager())
             .environmentObject(RecentSearchViewModel())
             .environmentObject(RouteSharedManager())
-            .environmentObject(HomeViewModel(testRepository: TestRepository()))
+            .environmentObject(HomeViewModel(routeRepository: RouteRepository()))
     }
 }
