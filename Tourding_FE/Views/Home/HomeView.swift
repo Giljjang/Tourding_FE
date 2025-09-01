@@ -217,6 +217,7 @@ struct HomeView: View {
                         await viewModel.postRouteAPI(start: start, end: end)
                         navigationManager.push(.RidingView)
                     }
+                    routeSharedManager.clearRoute()
                 } // if-else
             }){
                 Text("코스 만들기")

@@ -130,7 +130,17 @@ struct RidingView: View {
         Button(action:{
             if !ridingViewModel.flag {
                 navigationManager.pop()
-            } else {
+            } else { //라이딩 시작 후 뒤로가기
+                Task{
+                    await ridingViewModel.getRouteLocationAPI()
+                    
+                    //화장실 마커 전부 제거
+                    ridingViewModel.additionalMarkerIcons.removeAll()
+                    ridingViewModel.additionalMarkerCoordinates.removeAll()
+                    
+                    ridingViewModel.showConvenienceStore = false
+                    ridingViewModel.showToilet = false
+                }
                 ridingViewModel.flag = false
             } //: if-else
         }){

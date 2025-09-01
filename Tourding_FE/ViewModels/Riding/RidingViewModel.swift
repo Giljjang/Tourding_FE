@@ -178,6 +178,7 @@ final class RidingViewModel: ObservableObject {
         }
     }
     
+    @MainActor
     func postRouteDragNDropAPI(locationData: [LocationNameModel]) async {
         isLoading = true
         guard let start = locationData.first,
