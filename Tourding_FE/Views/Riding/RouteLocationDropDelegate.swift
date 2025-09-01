@@ -31,8 +31,8 @@ struct RouteLocationDropDelegate: DropDelegate {
         guard let draggedItem = draggedItem else { return false }
 
         Task {
-            // ToDo
-//            await ridingViewModel.getRoutePathAPI()
+            await ridingViewModel.postRouteDragNDropAPI(locationData: ridingViewModel.routeLocation)
+            await ridingViewModel.getRoutePathAPI()
         }
         
         return true

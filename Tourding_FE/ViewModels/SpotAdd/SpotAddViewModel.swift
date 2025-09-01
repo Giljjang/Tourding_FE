@@ -183,4 +183,5 @@ final class SpotAddViewModel: ObservableObject {
             print("POST ERROR: /routes \(error)")
         }
     }
+    
 }

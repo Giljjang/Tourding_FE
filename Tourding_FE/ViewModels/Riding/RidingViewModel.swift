@@ -75,7 +75,7 @@ final class RidingViewModel: ObservableObject {
             return "자연"
         }
     }
-
+    
     
     //MARK: - API 호출
     @MainActor
@@ -143,22 +143,22 @@ final class RidingViewModel: ObservableObject {
               let end = originalData.last else {
             return
         }
-
+        
         // wayPoints (0, last 제외 + 선택된 데이터 삭제)
         let middlePoints = originalData.dropFirst().dropLast().filter { $0.sequenceNum != selectedData.sequenceNum }
         let wayPointsArray = middlePoints.map { "\($0.lon),\($0.lat)" }
         let wayPoints = wayPointsArray.joined(separator: "|")
-
+        
         // locateName (전체 이름 중 선택된 데이터 삭제)
         let locateNames = originalData.map { $0.name }.filter { $0 != selectedData.name }
         let locateName = locateNames.joined(separator: ",")
-
+        
         // typeCode (0번, 마지막 제외 + 선택된 데이터 삭제)
         let typeCodes = originalData.dropFirst().dropLast()
             .filter { $0.sequenceNum != selectedData.sequenceNum }
             .map { $0.typeCode }
         let typeCode = typeCodes.joined(separator: ",")
-
+        
         let requestBody = RequestRouteModel(
             userId: userId,
             start: "\(start.lon),\(start.lat)",
@@ -167,9 +167,9 @@ final class RidingViewModel: ObservableObject {
             locateName: locateName,
             typeCode: typeCode
         )
-
-//        print("requestBody: \(requestBody)")
-
+        
+        //        print("requestBody: \(requestBody)")
+        
         do {
             let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
             isLoading = false
@@ -177,7 +177,46 @@ final class RidingViewModel: ObservableObject {
             print("POST ERROR: /routes \(error)")
         }
     }
-
+    
+    func postRouteDragNDropAPI(locationData: [LocationNameModel]) async {
+        isLoading = true
+        guard let start = locationData.first,
+              let end = locationData.last else {
+            return
+        }
+        
+        // wayPoints (0, last 제외)
+        let middlePoints = locationData.dropFirst().dropLast()
+        let wayPointsArray = middlePoints.map { "\($0.lon),\($0.lat)" }
+        let wayPoints = wayPointsArray.joined(separator: "|")
+        
+        // locateName (모두 포함)
+        let locateNames = locationData.map { $0.name }
+        let locateName = locateNames.joined(separator: ",")
+        
+        // typeCode (0번, 마지막 제외)
+        let typeCodes = locationData.dropFirst().dropLast().map { $0.typeCode }
+        let typeCode = typeCodes.joined(separator: ",")
+        
+        let requestBody = RequestRouteModel(
+            userId: userId,
+            start: "\(start.lon),\(start.lat)",
+            goal: "\(end.lon),\(end.lat)",
+            wayPoints: wayPoints,
+            locateName: locateName,
+            typeCode: typeCode
+        )
+        
+        //    print("requestBody: \(requestBody)")
+        
+        do {
+            let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
+            isLoading = false
+        } catch {
+            print("POST ERROR: /routes \(error)")
+        }
+    }
+    
 }
 
 //MARK: -  Riding 시작하기 이후 라이딩 뷰 함수
