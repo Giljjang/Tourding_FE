@@ -36,7 +36,8 @@ struct Tourding_FEApp: App {
         let viewModels = DependencyProvider.makeTabViewModels()
         let ridingViewModel = DependencyProvider.makeRidingViewModel()
         let spotAddViewModel = DependencyProvider.makespotAddViewModel()
-        
+        let filterViewModel = DependencyProvider.makesFilterBarViewModel()
+
         WindowGroup {
             if showSplash {
                 SplashView()
@@ -77,8 +78,8 @@ struct Tourding_FEApp: App {
                                     RidingView(ridingViewModel: ridingViewModel)
                                 case .SpotAddView:
                                     SpotAddView(spotAddViewModel: spotAddViewModel)
-                                case .DestinationSearchView:
-                                    DestinationSearchView()
+                                case .DestinationSearchView(let isFromHome):
+                                    DestinationSearchView(isFromHome: isFromHome, filterViewModel: filterViewModel)
                                 default:
                                     EmptyView()
                                 }

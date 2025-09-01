@@ -107,7 +107,7 @@ struct SpotSearchView: View {
     private var searchBar: some View {
         HStack() {
             Button(action:{
-                navigationManager.push(.DestinationSearchView)
+                navigationManager.push(.DestinationSearchView(isFromHome: false))
             }
                    
             ){
@@ -188,9 +188,9 @@ struct SpotSearchView: View {
     }
     
 }
-
-#Preview {
-    SpotSearchView(
-        spotviewModel: SpotSearchViewModel(tourRepository: TourRepository()),
-        dsviewModel: DestinationSearchViewModel())
-}
+//
+//#Preview {
+//    SpotSearchView(
+//        spotviewModel: SpotSearchViewModel(tourRepository: TourRepository()),
+//        dsviewModel: DestinationSearchViewModel(tourRepository: TourRepository()))
+//}

@@ -30,7 +30,8 @@ class SpotSearchViewModel: ObservableObject {
                 pageNum: 0,
                 mapX: String(lng),
                 mapY: String(lat),
-                radius: "20000"
+                radius: "20000",
+                typeCode: ""
             )
         } catch {
             errorMessage = "스팟을 불러오는데 실패했습니다."

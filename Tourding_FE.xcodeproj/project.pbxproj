@@ -40,9 +40,30 @@
 		81D990DB2E36B569000A622B /* KakaoSDKFriendResources.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = KakaoSDKFriendResources.bundle; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		81FBE5B52E64976D006DA3C9 /* Exceptions for "Tourding_FE" folder in "Tourding_FETests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Model/Search/SpotSearchModels.swift,
+			);
+			target = 146757652E3244E60009354E /* Tourding_FETests */;
+		};
+		81FBE5B62E64976D006DA3C9 /* Exceptions for "Tourding_FE" folder in "Tourding_FEUITests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Model/Search/SpotSearchModels.swift,
+			);
+			target = 1467576F2E3244E60009354E /* Tourding_FEUITests */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1467575B2E3244E30009354E /* Tourding_FE */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				81FBE5B52E64976D006DA3C9 /* Exceptions for "Tourding_FE" folder in "Tourding_FETests" target */,
+				81FBE5B62E64976D006DA3C9 /* Exceptions for "Tourding_FE" folder in "Tourding_FEUITests" target */,
+			);
 			path = Tourding_FE;
 			sourceTree = "<group>";
 		};
