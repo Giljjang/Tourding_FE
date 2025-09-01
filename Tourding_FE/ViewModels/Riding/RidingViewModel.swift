@@ -137,7 +137,7 @@ final class RidingViewModel: ObservableObject {
     
     // 드래그앤 드랍 수정시
     @MainActor
-    func postRouteDragNDropAPI(originalData: [LocationNameModel], selectedData: LocationNameModel) async {
+    func postRouteDeleteAPI(originalData: [LocationNameModel], selectedData: LocationNameModel) async {
         isLoading = true
         guard let start = originalData.first,
               let end = originalData.last else {

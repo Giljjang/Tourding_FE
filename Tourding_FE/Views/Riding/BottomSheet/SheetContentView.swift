@@ -204,7 +204,7 @@ struct SheetContentView: View {
                     onActive: {
                         print("삭제됨")
                         Task{
-                            await ridingViewModel.postRouteDragNDropAPI(
+                            await ridingViewModel.postRouteDeleteAPI(
                                 originalData: ridingViewModel.routeLocation,
                                 selectedData: item
                             )
