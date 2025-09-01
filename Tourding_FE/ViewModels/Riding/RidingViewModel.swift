@@ -18,7 +18,6 @@ final class RidingViewModel: ObservableObject {
     @Published var routeLocation: [LocationNameModel] = []
     @Published var routeMapPaths: [RoutePathModel] = []
     
-    @Published var spotList: [RidingSpotModel]  = []
     @Published var nthLineHeight: Double = 0 // spotRow 왼쪽 라인 길이
     
     // 라이딩 시작 후
@@ -49,50 +48,34 @@ final class RidingViewModel: ObservableObject {
     init(routeRepository: RouteRepositoryProtocol) {
         self.routeRepository = routeRepository
         
-        showMockSpotList()
-        showMockGuideList()
-        
-        // spotList 변경 감지 후 nthLineHeight 계산
-        $spotList
-            .sink { [weak self] _ in
-                self?.calculateNthLineHeight()
-            }
-            .store(in: &cancellables)
-    }
-    
-    //MARK: - mock
-    private func showMockSpotList(){
-        let mock1 = RidingSpotModel(name: "태화강공원", themeType: .humanities)
-        let mock2 = RidingSpotModel(name: "어딘가.. 맛있는 곳", themeType: .food)
-        
-        spotList.insert(contentsOf: [mock1, mock2], at: 0)
-        
-    } // : func showMockSpotList
-    
-    private func showMockGuideList(){
-        let mock1 = GuideModel(
-            sequenceNum: 0,
-            distance: 17,
-            duration: 6119,
-            instructions: "'희망대로659번길' 방면으로 우회전",
-            pointIndex: 1,
-            type: 3)
-        let mock2 = GuideModel(
-            sequenceNum: 1,
-            distance: 475,
-            duration: 157222,
-            instructions: "'희망대로' 방면으로 우회전",
-            pointIndex: 22,
-            type: 3
-        )
-        
-        guideList.append(contentsOf: [mock1, mock2])
     }
     
     //MARK: - util
     private func calculateNthLineHeight() {
-        nthLineHeight = Double((spotList.count * 66) + (spotList.count + 1) * 8)
+        nthLineHeight = Double((routeLocation.count * 66) + (routeLocation.count + 1) * 8)
     } // : func calculateNthLineHeight
+    
+    func matchTitle(_ typeCode: String) -> String {
+        switch typeCode {
+        case "A01":
+            return "자연"
+        case "A02":
+            return "인문(문화/예술/역사)"
+        case "A03":
+            return "레포츠"
+        case "A04":
+            return "쇼핑"
+        case "A05":
+            return "음식"
+        case "B02":
+            return "숙박"
+        case "C01":
+            return "추천코스"
+        default:
+            return "자연"
+        }
+    }
+
     
     //MARK: - API 호출
     @MainActor

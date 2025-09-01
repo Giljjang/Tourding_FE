@@ -13,7 +13,7 @@ struct SheetContentView: View {
     
     @ObservedObject private var ridingViewModel: RidingViewModel
     
-    @State private var draggedSpot: RidingSpotModel? // 드래그된 아이템
+    @State private var draggedItem: LocationNameModel? // 드래그된 아이템
 
     init(ridingViewModel: RidingViewModel) {
         self.ridingViewModel = ridingViewModel
@@ -38,20 +38,24 @@ struct SheetContentView: View {
                     startPointView
                         .padding(.top, 20)
                     
-                    if ridingViewModel.spotList.isEmpty {
+                    if ridingViewModel.routeLocation.count <= 2 {
                         Spacer()
                             .frame(height: 14)
                     } else {
                         VStack(alignment: .leading, spacing: 8) {
-                            ForEach(ridingViewModel.spotList){ item in
+                            ForEach(Array(ridingViewModel.routeLocation.dropFirst().dropLast()), id: \.sequenceNum) { item in
                                 spotRow(item: item)
                                     .onDrag({
-                                        self.draggedSpot = item
-                                        return NSItemProvider(item: nil, typeIdentifier: item.id) // id가 string이어야함
+                                        self.draggedItem = item
+                                        return NSItemProvider(item: nil, typeIdentifier: String(item.sequenceNum))
                                     }) // : onDrag
                                     .onDrop(
-                                        of: [item.id], // id가 string이어야함
-                                        delegate: SpotDropDelegate(ridingViewModel: ridingViewModel, currentItem: item, draggedSpot: $draggedSpot)
+                                        of: [String(item.sequenceNum)],
+                                        delegate: RouteLocationDropDelegate(
+                                            ridingViewModel: ridingViewModel,
+                                            currentItem: item,
+                                            draggedItem: $draggedItem
+                                        )
                                     ) // : onDrop
                             } // : ForEach
                         } // : VStack
@@ -59,16 +63,19 @@ struct SheetContentView: View {
                         .padding(.trailing, 16)
                         .padding(.vertical, 12)
                         .overlay {
+                            let middleCount = max(0, ridingViewModel.routeLocation.count - 2)
+                            let lineHeight = Double((middleCount * 66) + (middleCount + 1) * 8)
                             Divider()
                                 .frame(
                                     width: 1, 
-                                    height: ridingViewModel.nthLineHeight)
+                                    height: lineHeight)
                                 .background(Color(hex: "#EDF0F6"))
-                                .position(x: 32, y: 6+(ridingViewModel.nthLineHeight/2))
+                                .position(x: 32, y: 6 + (lineHeight/2))
 
                         } // : overlay
                         .overlay {
-                            ForEach(1...ridingViewModel.spotList.count, id: \.self) { index in
+                            let middleCount = max(0, ridingViewModel.routeLocation.count - 2)
+                            ForEach(1...middleCount, id: \.self) { index in
                                 Text("\(index)")
                                     .foregroundColor(.white)
                                     .font(.pretendardMedium(size: 10.5))
@@ -168,7 +175,7 @@ struct SheetContentView: View {
     } // : endPointView
     
     @ViewBuilder
-    private func spotRow(item: RidingSpotModel) -> some View {
+    private func spotRow(item: LocationNameModel) -> some View {
         HStack(alignment: .top, spacing: 0) {
             VStack(alignment: .leading, spacing:2) {
                 Text(item.name.truncated(limit: 16))
@@ -176,7 +183,7 @@ struct SheetContentView: View {
                     .font(.pretendardSemiBold(size: 16))
                     .frame(height:22)
                 
-                Text(item.themeType.rawValue)
+                Text(ridingViewModel.matchTitle(item.typeCode))
                     .foregroundColor(.gray4)
                     .font(.pretendardRegular(size: 14))
                     .frame(height:20)

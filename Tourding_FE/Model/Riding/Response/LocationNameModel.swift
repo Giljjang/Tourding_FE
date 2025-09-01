@@ -14,5 +14,14 @@ struct LocationNameModel: Codable {
     let typeCode: String
     let lon: String
     let lat: String
+    
+    init(sequenceNum: Int, name: String, type: String, typeCode: String, lon: String, lat: String) {
+        self.sequenceNum = sequenceNum
+        self.name = name
+        self.type = type
+        self.typeCode = typeCode
+        self.lon = lon
+        self.lat = lat
+    }
 }
 
