@@ -28,6 +28,13 @@ struct RouteLocationDropDelegate: DropDelegate {
     }
     
     func performDrop(info: DropInfo) -> Bool {
+        guard let draggedItem = draggedItem else { return false }
+
+        Task {
+            // ToDo
+//            await ridingViewModel.getRoutePathAPI()
+        }
+        
         return true
     }
     

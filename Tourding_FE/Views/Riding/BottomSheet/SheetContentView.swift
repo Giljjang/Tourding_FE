@@ -203,6 +203,14 @@ struct SheetContentView: View {
                     },
                     onActive: {
                         print("삭제됨")
+                        Task{
+                            await ridingViewModel.postRouteDragNDropAPI(
+                                originalData: ridingViewModel.routeLocation,
+                                selectedData: item
+                            )
+                            await ridingViewModel.getRouteLocationAPI()
+                            await ridingViewModel.getRoutePathAPI()
+                        }
                     }
                 )
             }){
