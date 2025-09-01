@@ -207,7 +207,7 @@ struct SpotAddView: View {
                             title: "출발지와 도착지가 동일해요",
                             subText: "확인 후 다른 위치로 설정해 주세요",
                             activeText: "확인하기",
-                            showView: .tabView,
+                            showView: .spotAdd,
                             onCancel: {
                                 print("취소됨")
                             },
