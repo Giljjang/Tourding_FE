@@ -12,5 +12,6 @@ struct RequestRouteModel: Codable {
     let start: String //lat,lon
     let goal: String //lat,lon
     var wayPoints: String = "" // "alat,along|blat,blon"
-    let locateName: String // "aa,bb,cc,dd"
+    let locateName: String // "aa,bb,cc,dd",
+    let typeCode: String // "aa,bb"
 }

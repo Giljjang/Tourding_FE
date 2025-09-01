@@ -202,18 +202,37 @@ struct SpotAddView: View {
                 Spacer()
                 
                 Button(action:{
-                    modalManager.showModal(
-                        title: "코스에 이 스팟을 추가할까요?",
-                        subText: "'\(spot.title.truncated(limit: 21))'",
-                        activeText: "추가하기",
-                        showView: .spotAdd,
-                        onCancel: {
-                            print("취소됨")
-                        },
-                        onActive: {
-                            print("시작됨")
-                        }
-                    )
+                    if spotAddViewModel.containsCoordinate(originalData: spotAddViewModel.routeLocation, selectedData: spot){
+                        modalManager.showModal(
+                            title: "출발지와 도착지가 동일해요",
+                            subText: "확인 후 다른 위치로 설정해 주세요",
+                            activeText: "확인하기",
+                            showView: .tabView,
+                            onCancel: {
+                                print("취소됨")
+                            },
+                            onActive: {
+                                print("시작됨")
+                            }
+                        )
+                    } else {
+                        modalManager.showModal(
+                            title: "코스에 이 스팟을 추가할까요?",
+                            subText: "'\(spot.title.truncated(limit: 21))'",
+                            activeText: "추가하기",
+                            showView: .spotAdd,
+                            onCancel: {
+                                print("취소됨")
+                            },
+                            onActive: {
+                                print("추가됨")
+                                Task{
+                                    await spotAddViewModel.postRouteAPI(originalData: spotAddViewModel.routeLocation, updatedData: spot)
+                                    await spotAddViewModel.getRouteLocationAPI()
+                                }
+                            }
+                        )
+                    } // : if-else
                 }){
                     Text("추가")
                         .foregroundColor(.gray4)

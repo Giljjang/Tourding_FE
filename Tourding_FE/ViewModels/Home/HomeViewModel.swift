@@ -38,7 +38,8 @@ final class HomeViewModel: ObservableObject {
             start: "\(start.longitude),\(start.latitude)",
             goal: "\(end.longitude),\(end.latitude)",
             wayPoints: "",
-            locateName: "\(start.name),\(end.name)"
+            locateName: "\(start.name),\(end.name)",
+            typeCode: ""
         )
         
         do {
