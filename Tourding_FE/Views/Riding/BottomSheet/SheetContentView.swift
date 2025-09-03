@@ -14,9 +14,11 @@ struct SheetContentView: View {
     @ObservedObject private var ridingViewModel: RidingViewModel
     
     @State private var draggedItem: LocationNameModel? // 드래그된 아이템
-
-    init(ridingViewModel: RidingViewModel) {
+    private var currentPosition: BottomSheetPosition
+    
+    init(ridingViewModel: RidingViewModel, currentPosition: BottomSheetPosition) {
         self.ridingViewModel = ridingViewModel
+        self.currentPosition = currentPosition
     }
     
     var body: some View {
@@ -92,8 +94,13 @@ struct SheetContentView: View {
                     
                     endPointView
                     
-                    Spacer()
-                        .frame(height: 300)
+                    if currentPosition == .large {
+                        Spacer()
+                            .frame(height: 300)
+                    } else if currentPosition == .medium {
+                        Spacer()
+                            .frame(height: 500)
+                    }
                     
                 } // : VStack
             } // : ScrollView
@@ -236,10 +243,4 @@ struct SheetContentView: View {
                 radius: 3.5, x: 1, y: 1)
     } // : spotRow
     
-}
-
-#Preview {
-    SheetContentView(ridingViewModel: RidingViewModel(routeRepository: RouteRepository(),kakaoRepository: KakaoRepository()))
-        .environmentObject(NavigationManager())
-        .environmentObject(ModalManager())
 }

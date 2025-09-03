@@ -52,7 +52,9 @@ struct RidingView: View {
                 // 바텀 시트
                 if !ridingViewModel.flag {
                     CustomBottomSheet(
-                        content: SheetContentView(ridingViewModel: ridingViewModel),
+                        content: SheetContentView(
+                            ridingViewModel: ridingViewModel,
+                            currentPosition: currentPosition),
                         screenHeight: geometry.size.height,
                         currentPosition: $currentPosition,
                         isRiding: false,
@@ -65,7 +67,9 @@ struct RidingView: View {
                     
                 } else {
                     CustomBottomSheet(
-                        content: SheetGuideView(ridingViewModel: ridingViewModel),
+                        content: SheetGuideView(
+                            ridingViewModel: ridingViewModel,
+                            currentPosition: currentPosition),
                         screenHeight: geometry.size.height,
                         currentPosition: $currentPosition,
                         isRiding: true,

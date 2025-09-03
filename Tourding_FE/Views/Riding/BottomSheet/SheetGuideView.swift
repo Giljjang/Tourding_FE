@@ -12,9 +12,11 @@ struct SheetGuideView: View {
     @EnvironmentObject var modalManager: ModalManager
     
     @ObservedObject private var ridingViewModel: RidingViewModel
-
-    init(ridingViewModel: RidingViewModel) {
+    private var currentPosition: BottomSheetPosition
+    
+    init(ridingViewModel: RidingViewModel, currentPosition: BottomSheetPosition) {
         self.ridingViewModel = ridingViewModel
+        self.currentPosition = currentPosition
     }
     
     var body: some View {
@@ -29,8 +31,13 @@ struct SheetGuideView: View {
                                  time: item.duration)
                 }
                 
-                Spacer()
-                    .frame(height: 200)
+                if currentPosition == .large {
+                    Spacer()
+                        .frame(height: 200)
+                } else if currentPosition == .medium {
+                    Spacer()
+                        .frame(height: 400)
+                }
                 
             } // :ScrollView
             
@@ -148,10 +155,4 @@ struct guideRowView: View {
 //        .frame(height: 70)
         .background(Color.white)
     }
-}
-
-#Preview {
-    SheetGuideView(ridingViewModel: RidingViewModel(routeRepository: RouteRepository(),kakaoRepository: KakaoRepository()))
-        .environmentObject(NavigationManager())
-        .environmentObject(ModalManager())
 }
