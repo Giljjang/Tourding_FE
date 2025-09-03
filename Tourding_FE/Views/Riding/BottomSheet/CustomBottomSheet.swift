@@ -10,15 +10,18 @@ import NMapsMap
 
 // MARK: - 바텀 시트 위치 열거형
 enum BottomSheetPosition: CaseIterable {
-    case small   // 188
-    case medium  // 455 (기본값)
-    case large   // 706
+    case small   // 하드코딩 유지
+    case medium  // 화면의 절반 (동적 계산)
+    case large   // 전체 화면의 80% (동적 계산)
     
-    func height(isRiding: Bool = false) -> CGFloat {
+    func height(screenHeight: CGFloat, isRiding: Bool = false) -> CGFloat {
         switch self {
-        case .small: return isRiding ? 101 : 188 // flag가 true면 101, false면 158
-        case .medium: return 455 // 455
-        case .large: return 706 // 706
+        case .small:
+            return isRiding ? 91 : 178 
+        case .medium:
+            return screenHeight * 0.5 // 화면의 절반
+        case .large:
+            return screenHeight * 0.8 // 전체 화면의 80%
         }
     }
 }
@@ -72,8 +75,11 @@ struct CustomBottomSheet<Content: View>: View {
                     
                     // 컨텐츠
                     content
-                        .frame(maxWidth: .infinity)
+//                        .frame(maxWidth: .infinity)
+                        .frame(height: currentPosition.height(screenHeight: screenHeight, isRiding: isRiding))
                         .background(Color.white)
+                    
+                    Spacer()
                 }
                 .frame(height: screenHeight)
                 .background(
@@ -97,7 +103,7 @@ struct CustomBottomSheet<Content: View>: View {
         .ignoresSafeArea(.all, edges: .bottom)
         .onAppear {
             // 초기 위치 설정
-            offset = screenHeight - currentPosition.height(isRiding: isRiding)
+            offset = screenHeight - currentPosition.height(screenHeight: screenHeight, isRiding: isRiding)
         }
     }
     
@@ -143,7 +149,7 @@ struct CustomBottomSheet<Content: View>: View {
                 
                 // 드래그 시작 시점의 offset에서 변화량만큼 이동
                 let newOffset = dragStartOffset + value.translation.height
-                offset = max(0, min(screenHeight - BottomSheetPosition.small.height(isRiding: isRiding), newOffset))
+                offset = max(0, min(screenHeight - BottomSheetPosition.small.height(screenHeight: screenHeight, isRiding: isRiding), newOffset))
             }
             .onEnded { value in
                 isDragging = false
@@ -190,7 +196,7 @@ struct CustomBottomSheet<Content: View>: View {
     // MARK: - Animation
     private func animateToPosition(_ position: BottomSheetPosition) {
         currentPosition = position
-        let targetOffset = screenHeight - position.height(isRiding: isRiding)
+        let targetOffset = screenHeight - position.height(screenHeight: screenHeight, isRiding: isRiding)
         
         withAnimation(.easeInOut(duration: animationDuration)) {
             offset = targetOffset
