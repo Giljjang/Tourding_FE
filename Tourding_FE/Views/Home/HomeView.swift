@@ -224,12 +224,13 @@ struct HomeView: View {
                     .foregroundColor(routeSharedManager.hasValidPoints ? .white : .gray3)
                     .font(.pretendardSemiBold(size: 16))
                     .padding(.vertical, 15)
-                    .padding(.horizontal, 124)
+                    .frame(width: 318)
+//                    .padding(.horizontal, 124)
                     .background(routeSharedManager.hasValidPoints ? .gray5 : Color.gray2)
                     .cornerRadius(10)
             } // :Button
             .disabled(!routeSharedManager.hasValidPoints)
-            .padding(.leading, 20)
+            .padding(.horizontal, 20)
             .padding(.bottom, 20)
             
         } // : VStack

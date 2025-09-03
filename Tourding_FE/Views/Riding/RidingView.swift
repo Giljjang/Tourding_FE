@@ -65,6 +65,7 @@ struct RidingView: View {
                     
                     ridingStartButtom
                         .padding(.bottom, 30)
+                        .background(.white)
                     
                 } else {
                     CustomBottomSheet(
