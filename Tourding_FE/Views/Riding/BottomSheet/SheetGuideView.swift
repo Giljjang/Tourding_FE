@@ -138,14 +138,12 @@ struct guideRowView: View {
                     .padding(.top, time == nil ? 24 : 13)
                     .padding(.bottom, time == nil ? 24 : 4)
                 
-                if let t = time,
-                   guideType == .straight
-                {
-                    let minutes = Int(t / 1000 / 60)   // 밀리초 → 분 변환
-                        Text("\(minutes)분")
+                if let t = time {
+                    Text(RidingViewModel.formatMillisecondsToMinutes(Double(t)))
                         .font(.pretendardRegular(size: 14))
                         .foregroundColor(.gray4)
                 }
+
                 
             } // : VStack
             

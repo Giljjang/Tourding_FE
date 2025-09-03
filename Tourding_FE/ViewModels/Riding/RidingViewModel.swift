@@ -231,6 +231,7 @@ final class RidingViewModel: ObservableObject {
 //MARK: -  Riding 시작하기 중 라이딩 뷰 함수
 extension RidingViewModel {
     
+    //MARK: - Uils
     func splitCoordinateLatitude(location: String) -> String {
         let parts = location.split(separator: ",")
         return parts.count > 0 ? String(parts[0]).trimmingCharacters(in: .whitespaces) : "0.0"
@@ -241,6 +242,17 @@ extension RidingViewModel {
         return parts.count > 1 ? String(parts[1]).trimmingCharacters(in: .whitespaces) : "0.0"
     }
     
+    static func formatMillisecondsToMinutes(_ milliseconds: Double) -> String {
+        let minutes = milliseconds / 1000 / 60
+        let roundedMinutes = (minutes * 100).rounded() / 100
+        if roundedMinutes.truncatingRemainder(dividingBy: 1) == 0 {
+            return "\(Int(roundedMinutes))분"
+        } else {
+            return String(format: "%.2f분", roundedMinutes)
+        }
+    }
+    
+    //MARK: - View Logic
     // 편의점 토글
     func toggleConvenienceStore(locaion: String){
         showConvenienceStore.toggle()
@@ -330,6 +342,7 @@ extension RidingViewModel {
         }
     }
     
+    //MARK: - API 호출
     @MainActor
     func getRouteGuideAPI() async {
         isLoading = true
