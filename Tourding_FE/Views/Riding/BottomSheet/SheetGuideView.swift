@@ -133,7 +133,7 @@ struct guideRowView: View {
 }
 
 #Preview {
-    SheetGuideView(ridingViewModel: RidingViewModel(routeRepository: RouteRepository()))
+    SheetGuideView(ridingViewModel: RidingViewModel(routeRepository: RouteRepository(),kakaoRepository: KakaoRepository()))
         .environmentObject(NavigationManager())
         .environmentObject(ModalManager())
 }

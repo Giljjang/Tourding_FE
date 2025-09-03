@@ -14,7 +14,6 @@ final class LocationManager: NSObject {
     
     // MARK: - Properties
     private let locationManager = CLLocationManager()
-    private let cancelBag = CancelBag()
     private var currentHeading: CLLocationDirection = 0
     
     // MARK: - Callbacks

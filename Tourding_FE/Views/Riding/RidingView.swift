@@ -167,6 +167,10 @@ struct RidingView: View {
                 onActive: {
                     print("시작됨")
                     ridingViewModel.flag = true
+                    
+                    Task{
+                        await ridingViewModel.getRouteGuideAPI()
+                    }
                 }
             )
         }){
@@ -243,7 +247,8 @@ struct RidingView: View {
 }
 
 #Preview {
-    RidingView(ridingViewModel: RidingViewModel(routeRepository: RouteRepository()))
+    RidingView(ridingViewModel: RidingViewModel(routeRepository: RouteRepository(),
+                        kakaoRepository: KakaoRepository()))
         .environmentObject(NavigationManager())
         .environmentObject(ModalManager())
 }

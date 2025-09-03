@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Combine
 import NMapsMap
 
 final class RidingViewModel: ObservableObject {
@@ -42,11 +41,14 @@ final class RidingViewModel: ObservableObject {
     @Published var additionalMarkerCoordinates: [NMGLatLng] = []
     @Published var additionalMarkerIcons: [NMFOverlayImage] = []
     
-    private var cancellables = Set<AnyCancellable>()
     private let routeRepository: RouteRepositoryProtocol
+    private let kakaoRepository: KakaoRepositoryProtocol
     
-    init(routeRepository: RouteRepositoryProtocol) {
+    init(routeRepository: RouteRepositoryProtocol,
+         kakaoRepository: KakaoRepositoryProtocol
+    ) {
         self.routeRepository = routeRepository
+        self.kakaoRepository = kakaoRepository
         
     }
     
@@ -230,5 +232,50 @@ extension RidingViewModel {
     func toggleConvenienceStore(){
         showConvenienceStore.toggle()
     }
+    
+    @MainActor
+    func getRouteGuideAPI() async {
+        isLoading = true
+        do {
+            let response = try await routeRepository.getRoutesGuide(userId: userId)
+            guideList = response
+            
+            print("guideList: \(guideList)")
+        } catch {
+            print("GET ERROR: /routes/guide \(error)")
+        }
+        isLoading = false
+    }
+    
+    @MainActor
+    func postRoutesToiletAPI() async {
+        isLoading = true
+        
+        let requestBody: ReqFacilityInfoModel = ReqFacilityInfoModel(lon: "0.0", lat: "0.0")
+        do {
+            let response = try await kakaoRepository.postRouteToilet(requestBody: requestBody)
+            
+            print("postRoutesToiletAPI: \(response)")
+        } catch {
+            print("GET ERROR: /routes/toilet \(error)")
+        }
+        isLoading = false
+    }
+    
+    @MainActor
+    func postRoutesConvenienceStoreAPI() async {
+        isLoading = true
+        
+        let requestBody: ReqFacilityInfoModel = ReqFacilityInfoModel(lon: "0.0", lat: "0.0")
+        do {
+            let response = try await kakaoRepository.postRouteConvenienceStore(requestBody: requestBody)
+            
+            print("postRoutesConvenienceStoreAPI: \(response)")
+        } catch {
+            print("GET ERROR: /routes/convenience-store \(error)")
+        }
+        isLoading = false
+    }
+    
 }
 

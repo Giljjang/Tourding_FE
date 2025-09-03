@@ -18,7 +18,6 @@ final class MapViewController: UIViewController {
     private var mapView: NMFNaverMapView!
     let locationManager = LocationManager()
     private let locationButton = UIButton(type: .custom)
-    private let cancelBag = CancelBag()
     
     // MARK: - Data Properties
     var pathCoordinates: [NMGLatLng] = []

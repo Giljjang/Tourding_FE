@@ -234,7 +234,7 @@ struct SheetContentView: View {
 }
 
 #Preview {
-    SheetContentView(ridingViewModel: RidingViewModel(routeRepository: RouteRepository()))
+    SheetContentView(ridingViewModel: RidingViewModel(routeRepository: RouteRepository(),kakaoRepository: KakaoRepository()))
         .environmentObject(NavigationManager())
         .environmentObject(ModalManager())
 }

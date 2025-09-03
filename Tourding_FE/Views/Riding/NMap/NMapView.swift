@@ -60,5 +60,5 @@ struct NMapView: View {
 }
 
 #Preview {
-    NMapView(ridingViewModel: RidingViewModel(routeRepository: RouteRepository()))
+    NMapView(ridingViewModel: RidingViewModel(routeRepository: RouteRepository(),kakaoRepository: KakaoRepository()))
 }

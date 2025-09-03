@@ -27,7 +27,11 @@ struct DependencyProvider {
     
     @MainActor static func makeRidingViewModel() -> RidingViewModel {
         let RouteRepository = RouteRepository()
-        let ridingViewModel = RidingViewModel(routeRepository: RouteRepository)
+        let KakaoRepository = KakaoRepository()
+        let ridingViewModel = RidingViewModel(
+            routeRepository: RouteRepository,
+            kakaoRepository: KakaoRepository
+        )
         return ridingViewModel
     }
     
