@@ -15,10 +15,16 @@ struct MapViewRepresentable: UIViewRepresentable {
     
     // MARK: - Properties
     @Binding var pathCoordinates: [NMGLatLng]
+    
     @Binding var markerCoordinates: [NMGLatLng]
     @Binding var markerIcons: [NMFOverlayImage]
-    @Binding var additionalMarkerCoordinates: [NMGLatLng]
-    @Binding var additionalMarkerIcons: [NMFOverlayImage]
+    
+    @Binding var toiletMarkerCoordinates: [NMGLatLng]
+    @Binding var toiletMarkerIcons: [NMFOverlayImage]
+    
+    @Binding var csMarkerCoordinates: [NMGLatLng]
+    @Binding var csMarkerIcons: [NMFOverlayImage]
+    
     var ridingViewModel: RidingViewModel?
     
     // MARK: - Callbacks
@@ -34,12 +40,16 @@ struct MapViewRepresentable: UIViewRepresentable {
         mapViewController.pathCoordinates = pathCoordinates
         mapViewController.markerCoordinates = markerCoordinates
         mapViewController.markerIcons = markerIcons
-        mapViewController.additionalMarkerCoordinates = additionalMarkerCoordinates
-        mapViewController.additionalMarkerIcons = additionalMarkerIcons
+        
+        mapViewController.toiletMarkerCoordinates = toiletMarkerCoordinates
+        mapViewController.toiletMarkerIcons = toiletMarkerIcons
+        
+        mapViewController.csMarkerCoordinates = csMarkerCoordinates
+        mapViewController.csMarkerIcons = csMarkerIcons
+        
         mapViewController.onLocationUpdate = onLocationUpdate
         mapViewController.onMapTap = onMapTap
         
-
         
         // ViewController를 containerView에 추가
         context.coordinator.mapViewController = mapViewController
@@ -70,8 +80,10 @@ struct MapViewRepresentable: UIViewRepresentable {
         mapViewController.pathCoordinates = pathCoordinates
         mapViewController.markerCoordinates = markerCoordinates
         mapViewController.markerIcons = markerIcons
-        mapViewController.additionalMarkerCoordinates = additionalMarkerCoordinates
-        mapViewController.additionalMarkerIcons = additionalMarkerIcons
+        mapViewController.toiletMarkerCoordinates = toiletMarkerCoordinates
+        mapViewController.toiletMarkerIcons = toiletMarkerIcons
+        mapViewController.csMarkerCoordinates = csMarkerCoordinates
+        mapViewController.csMarkerIcons = csMarkerIcons
         mapViewController.onLocationUpdate = onLocationUpdate
         mapViewController.onMapTap = onMapTap
         

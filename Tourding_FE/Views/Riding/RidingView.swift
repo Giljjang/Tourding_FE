@@ -143,8 +143,12 @@ struct RidingView: View {
                     await ridingViewModel.getRouteLocationAPI()
                     
                     //화장실 마커 전부 제거
-                    ridingViewModel.additionalMarkerIcons.removeAll()
-                    ridingViewModel.additionalMarkerCoordinates.removeAll()
+                    ridingViewModel.toiletMarkerCoordinates.removeAll()
+                    ridingViewModel.toiletMarkerIcons.removeAll()
+                    
+                    //편의점 마커 전부 제거
+                    ridingViewModel.csMarkerCoordinates.removeAll()
+                    ridingViewModel.csMarkerIcons.removeAll()
                     
                     ridingViewModel.showConvenienceStore = false
                     ridingViewModel.showToilet = false

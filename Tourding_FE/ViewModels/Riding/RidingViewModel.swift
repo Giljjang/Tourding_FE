@@ -24,6 +24,9 @@ final class RidingViewModel: ObservableObject {
     @Published var showConvenienceStore: Bool = false
     @Published var guideList: [GuideModel] = []
     
+    @Published var toiletList: [FacilityInfoModel] = []
+    @Published var csList: [FacilityInfoModel] = []
+    
     // MARK: - 지도 관련 프로퍼티
     var locationManager: LocationManager?
     var mapView: NMFMapView?
@@ -34,12 +37,15 @@ final class RidingViewModel: ObservableObject {
     
     // 기존 마커 (경로 관련)
     @Published var markerCoordinates: [NMGLatLng] = []
-    
     @Published var markerIcons: [NMFOverlayImage] = []
     
-    // 추가 마커 (편의시설)
-    @Published var additionalMarkerCoordinates: [NMGLatLng] = []
-    @Published var additionalMarkerIcons: [NMFOverlayImage] = []
+    // 화장실 마커
+    @Published var toiletMarkerCoordinates: [NMGLatLng] = []
+    @Published var toiletMarkerIcons: [NMFOverlayImage] = []
+    
+    // 편의점 마커
+    @Published var csMarkerCoordinates: [NMGLatLng] = []
+    @Published var csMarkerIcons: [NMFOverlayImage] = []
     
     private let routeRepository: RouteRepositoryProtocol
     private let kakaoRepository: KakaoRepositoryProtocol
@@ -222,32 +228,20 @@ final class RidingViewModel: ObservableObject {
     
 }
 
-//MARK: -  Riding 시작하기 이후 라이딩 뷰 함수
+//MARK: -  Riding 시작하기 중 라이딩 뷰 함수
 extension RidingViewModel {
     
     func splitCoordinateLatitude(location: String) -> String {
         let parts = location.split(separator: ",")
         return parts.count > 0 ? String(parts[0]).trimmingCharacters(in: .whitespaces) : "0.0"
     }
-
+    
     func splitCoordinateLongitude(location: String) -> String {
         let parts = location.split(separator: ",")
         return parts.count > 1 ? String(parts[1]).trimmingCharacters(in: .whitespaces) : "0.0"
     }
     
-    func toggleToilet(locaion: String){
-        showToilet.toggle()
-        
-        if showToilet {
-            let lat = splitCoordinateLatitude(location: locaion)
-            let lon = splitCoordinateLongitude(location: locaion)
-            
-            Task{
-                await postRoutesToiletAPI(lon: lon, lat: lat)
-            }
-        } //: if
-    }
-    
+    // 편의점 토글
     func toggleConvenienceStore(locaion: String){
         showConvenienceStore.toggle()
         
@@ -257,8 +251,83 @@ extension RidingViewModel {
             
             Task{
                 await postRoutesConvenienceStoreAPI(lon: lon, lat: lat)
+                
+                // API 호출 완료 후 마커 추가 (메인 스레드에서 실행)
+                await MainActor.run {
+                    // 기존 마커는 유지하고 편의점 마커만 추가
+                    csMarkerCoordinates.removeAll()
+                    csMarkerIcons.removeAll()
+                    
+                    csMarkerCoordinates.append(
+                        contentsOf: csList.compactMap { item in
+                            if let lat = Double(item.lat), let lon = Double(item.lon) {
+                                return NMGLatLng(lat: lat, lng: lon)
+                            } else {
+                                return nil
+                            }
+                        }
+                    )
+                    
+                    csMarkerIcons.append(contentsOf: csList.map { _ in
+                        MarkerIcons.csMarker
+                    })
+                    
+                    // 디버깅용 로그
+                    print("편의점 마커 추가됨: \(csMarkerCoordinates.count)개")
+                    print("편의점 아이콘 추가됨: \(csMarkerIcons.count)개")
+                }
             }
-        } //: if
+        } else {
+            // 편의점 마커 제거
+            csMarkerCoordinates.removeAll()
+            csMarkerIcons.removeAll()
+            print("편의점 마커 제거됨")
+        }
+    }
+
+    // 화장실 토글도 동일하게 수정
+    func toggleToilet(locaion: String){
+        showToilet.toggle()
+        
+        if showToilet {
+            let lat = splitCoordinateLatitude(location: locaion)
+            let lon = splitCoordinateLongitude(location: locaion)
+            
+            Task{
+                await postRoutesToiletAPI(lon: lon, lat: lat)
+                
+                // API 호출 완료 후 마커 추가 (메인 스레드에서 실행)
+                await MainActor.run {
+                    // 기존 마커는 유지하고 화장실 마커만 추가
+                    toiletMarkerCoordinates.removeAll()
+                    toiletMarkerIcons.removeAll()
+                    
+                    toiletMarkerCoordinates.append(
+                        contentsOf: toiletList.compactMap { item in
+                            if let lat = Double(item.lat), let lon = Double(item.lon) {
+                                return NMGLatLng(lat: lat, lng: lon)
+                            } else {
+                                return nil
+                            }
+                        }
+                    )
+                    
+                    toiletMarkerIcons.append(contentsOf: toiletList.map { _ in
+                        MarkerIcons.toiletMarker
+                    })
+                    
+                    // 디버깅용 로그
+                    print("화장실 마커 추가됨: \(toiletMarkerCoordinates.count)개")
+                    print("화장실 아이콘 추가됨: \(toiletMarkerIcons.count)개")
+                }
+            }
+        } else {
+            // 화장실 마커 제거
+            toiletMarkerCoordinates.removeAll()
+            toiletMarkerIcons.removeAll()
+            print("화장실 마커 제거됨")
+            
+        }
     }
     
     @MainActor
@@ -268,7 +337,7 @@ extension RidingViewModel {
             let response = try await routeRepository.getRoutesGuide(userId: userId)
             guideList = response
             
-            print("guideList: \(guideList)")
+            //            print("guideList: \(guideList)")
         } catch {
             print("GET ERROR: /routes/guide \(error)")
         }
@@ -281,9 +350,9 @@ extension RidingViewModel {
         
         let requestBody: ReqFacilityInfoModel = ReqFacilityInfoModel(lon: lon, lat: lat)
         do {
-            let response = try await kakaoRepository.postRouteToilet(requestBody: requestBody)
+            toiletList = try await kakaoRepository.postRouteToilet(requestBody: requestBody)
             
-            print("postRoutesToiletAPI: \(response)")
+            //            print("postRoutesToiletAPI: \(toiletList)")
         } catch {
             print("GET ERROR: /routes/toilet \(error)")
         }
@@ -296,9 +365,9 @@ extension RidingViewModel {
         
         let requestBody: ReqFacilityInfoModel = ReqFacilityInfoModel(lon: lon, lat: lat)
         do {
-            let response = try await kakaoRepository.postRouteConvenienceStore(requestBody: requestBody)
+            csList = try await kakaoRepository.postRouteConvenienceStore(requestBody: requestBody)
             
-            print("postRoutesConvenienceStoreAPI: \(response)")
+            //            print("postRoutesConvenienceStoreAPI: \(csList)")
         } catch {
             print("GET ERROR: /routes/convenience-store \(error)")
         }

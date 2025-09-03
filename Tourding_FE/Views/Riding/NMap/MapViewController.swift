@@ -23,8 +23,12 @@ final class MapViewController: UIViewController {
     var pathCoordinates: [NMGLatLng] = []
     var markerCoordinates: [NMGLatLng] = []
     var markerIcons: [NMFOverlayImage] = []
-    var additionalMarkerCoordinates: [NMGLatLng] = []
-    var additionalMarkerIcons: [NMFOverlayImage] = []
+    
+    var toiletMarkerCoordinates: [NMGLatLng] = []
+    var toiletMarkerIcons: [NMFOverlayImage] = []
+    
+    var csMarkerCoordinates: [NMGLatLng] = []
+    var csMarkerIcons: [NMFOverlayImage] = []
     
     // MARK: - Callbacks
     var onLocationUpdate: ((CLLocation) -> Void)?
@@ -83,15 +87,33 @@ final class MapViewController: UIViewController {
         return self.mapView?.mapView
     }
     
+    // MARK: - Public Methods
+    func clearToiletMarkers() {
+        markerManager.clearToiletMarkers()
+    }
+
+    func clearCSMarkers() {
+        markerManager.clearCSMarkers()
+    }
+
     func updateMap() {
         // 기존 마커 업데이트
         if !markerCoordinates.isEmpty && !markerIcons.isEmpty {
             markerManager.addMarkers(coordinates: markerCoordinates, icons: markerIcons)
         }
         
-        // 추가 마커 업데이트
-        if !additionalMarkerCoordinates.isEmpty && !additionalMarkerIcons.isEmpty {
-            markerManager.addAdditionalMarkers(coordinates: additionalMarkerCoordinates, icons: additionalMarkerIcons)
+        // 화장실 마커 업데이트
+        if !toiletMarkerCoordinates.isEmpty && !toiletMarkerIcons.isEmpty {
+            markerManager.addToiletMarkers(coordinates: toiletMarkerCoordinates, icons: toiletMarkerIcons)
+        } else {
+            markerManager.clearToiletMarkers()
+        }
+        
+        // 편의점 마커 업데이트
+        if !csMarkerCoordinates.isEmpty && !csMarkerIcons.isEmpty {
+            markerManager.addCSMarkers(coordinates: csMarkerCoordinates, icons: csMarkerIcons)
+        } else {
+            markerManager.clearCSMarkers()
         }
         
         // 경로선 업데이트
