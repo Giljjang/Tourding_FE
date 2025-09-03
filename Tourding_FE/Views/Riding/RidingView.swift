@@ -17,6 +17,7 @@ struct RidingView: View {
     //객체 참조 문제: 모달이 열리고 닫힐 때 부모 뷰가 다시 렌더링되지 않아서 @ObservedObject가 업데이트를 감지하지 못합
     // 즉, 부모 뷰의 렌더링과 관계없이 @Published 속성 변경을 즉시 감지해야함
     @StateObject private var ridingViewModel: RidingViewModel
+    @StateObject private var locationManager = UserLocationManager()
     
     @State private var currentPosition: BottomSheetPosition = .medium
     @State private var forceUpdate: Bool = false
@@ -118,6 +119,9 @@ struct RidingView: View {
         .ignoresSafeArea()
         .navigationBarBackButtonHidden()
         .onAppear{
+            // 위치 권한 요청 및 현재 위치 가져오기
+            locationManager.getCurrentLocation()
+            
             Task{
                 await ridingViewModel.getRouteLocationAPI()
                 await ridingViewModel.getRoutePathAPI()
@@ -207,7 +211,9 @@ struct RidingView: View {
     //MARK: - Riding 중
     private var toiletButton: some View {
         Button(action:{
-            ridingViewModel.toggleToilet()
+            let position = locationManager.getCurrentLocationString()
+//            print("position: \(position)")
+            ridingViewModel.toggleToilet(locaion: position)
         }){
             HStack(spacing: 2){
                 Image(ridingViewModel.showToilet ? "toilet_on": "toilet_off")
@@ -227,7 +233,10 @@ struct RidingView: View {
     
     private var csButton: some View {
         Button(action:{
-            ridingViewModel.toggleConvenienceStore()
+            let position = locationManager.getCurrentLocationString()
+//            print("position: \(position)")
+            
+            ridingViewModel.toggleConvenienceStore(locaion: position)
         }){
             HStack(spacing: 2){
                 Image(ridingViewModel.showConvenienceStore ? "cs_on": "cs_off")

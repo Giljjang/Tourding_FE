@@ -225,12 +225,40 @@ final class RidingViewModel: ObservableObject {
 //MARK: -  Riding 시작하기 이후 라이딩 뷰 함수
 extension RidingViewModel {
     
-    func toggleToilet(){
-        showToilet.toggle()
+    func splitCoordinateLatitude(location: String) -> String {
+        let parts = location.split(separator: ",")
+        return parts.count > 0 ? String(parts[0]).trimmingCharacters(in: .whitespaces) : "0.0"
+    }
+
+    func splitCoordinateLongitude(location: String) -> String {
+        let parts = location.split(separator: ",")
+        return parts.count > 1 ? String(parts[1]).trimmingCharacters(in: .whitespaces) : "0.0"
     }
     
-    func toggleConvenienceStore(){
+    func toggleToilet(locaion: String){
+        showToilet.toggle()
+        
+        if showToilet {
+            let lat = splitCoordinateLatitude(location: locaion)
+            let lon = splitCoordinateLongitude(location: locaion)
+            
+            Task{
+                await postRoutesToiletAPI(lon: lon, lat: lat)
+            }
+        } //: if
+    }
+    
+    func toggleConvenienceStore(locaion: String){
         showConvenienceStore.toggle()
+        
+        if showConvenienceStore {
+            let lat = splitCoordinateLatitude(location: locaion)
+            let lon = splitCoordinateLongitude(location: locaion)
+            
+            Task{
+                await postRoutesConvenienceStoreAPI(lon: lon, lat: lat)
+            }
+        } //: if
     }
     
     @MainActor
@@ -248,10 +276,10 @@ extension RidingViewModel {
     }
     
     @MainActor
-    func postRoutesToiletAPI() async {
+    private func postRoutesToiletAPI(lon: String, lat: String) async {
         isLoading = true
         
-        let requestBody: ReqFacilityInfoModel = ReqFacilityInfoModel(lon: "0.0", lat: "0.0")
+        let requestBody: ReqFacilityInfoModel = ReqFacilityInfoModel(lon: lon, lat: lat)
         do {
             let response = try await kakaoRepository.postRouteToilet(requestBody: requestBody)
             
@@ -263,10 +291,10 @@ extension RidingViewModel {
     }
     
     @MainActor
-    func postRoutesConvenienceStoreAPI() async {
+    private func postRoutesConvenienceStoreAPI(lon: String, lat: String) async {
         isLoading = true
         
-        let requestBody: ReqFacilityInfoModel = ReqFacilityInfoModel(lon: "0.0", lat: "0.0")
+        let requestBody: ReqFacilityInfoModel = ReqFacilityInfoModel(lon: lon, lat: lat)
         do {
             let response = try await kakaoRepository.postRouteConvenienceStore(requestBody: requestBody)
             
