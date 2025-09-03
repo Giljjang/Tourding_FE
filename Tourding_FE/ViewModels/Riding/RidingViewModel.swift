@@ -231,7 +231,7 @@ final class RidingViewModel: ObservableObject {
 //MARK: -  Riding 시작하기 중 라이딩 뷰 함수
 extension RidingViewModel {
     
-    //MARK: - Uils
+    //MARK: - Utils
     func splitCoordinateLatitude(location: String) -> String {
         let parts = location.split(separator: ",")
         return parts.count > 0 ? String(parts[0]).trimmingCharacters(in: .whitespaces) : "0.0"
@@ -247,9 +247,37 @@ extension RidingViewModel {
         if minutes == 0 {
             return "" // 0분이면 빈 문자열
         } else {
-            return "\(minutes)분"
+            return "약 \(minutes)분"
         }
     }
+    
+    static func insertLineBreakAtMiddleWord(_ text: String) -> String {
+        // 22자 이하이면 그대로 반환
+        guard text.count > 22 else { return text }
+        
+        let words = text.split(separator: " ")
+        let totalLength = text.count
+        let halfLength = totalLength / 2
+        
+        var currentLength = 0
+        var breakIndex = 0
+        
+        // 중간에 가장 가까운 단어 경계 찾기
+        for (i, word) in words.enumerated() {
+            currentLength += word.count + 1 // 단어 + 공백
+            if currentLength >= halfLength {
+                breakIndex = i
+                break
+            }
+        }
+        
+        let firstPart = words[0...breakIndex].joined(separator: " ")
+        let secondPart = words[(breakIndex+1)...].joined(separator: " ")
+        
+        return firstPart + "\n" + secondPart
+    }
+
+
     
     //MARK: - View Logic
     // 편의점 토글

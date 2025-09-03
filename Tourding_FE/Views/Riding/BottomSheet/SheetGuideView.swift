@@ -25,10 +25,11 @@ struct SheetGuideView: View {
             header
             
             ScrollView(showsIndicators: false) {
-                ForEach(ridingViewModel.guideList, id:\.self){ item in
+                ForEach(Array(ridingViewModel.guideList.enumerated()), id:\.1.sequenceNum){ index, item in
                     guideRowView(text: item.instructions,
                                  guideType: item.guideType ?? .straight,
                                  time: item.duration)
+                    .background(index == 0 ? Color.gray1 : Color.white)
                 }
                 
                 if currentPosition == .large {
@@ -102,7 +103,7 @@ struct guideRowView: View {
     let time: Int?
     
     var body: some View {
-        HStack(alignment: .top, spacing: 0) {
+        HStack(spacing: 0) {
             
             switch guideType {
             case .rightTurn:
@@ -131,26 +132,20 @@ struct guideRowView: View {
                     .padding(.horizontal, 16)
             }
             
-            VStack(alignment: .leading, spacing: 0) {
-                Text(text)
-                    .foregroundColor(.gray6)
-                    .font(.pretendardSemiBold(size: 16))
-                    .padding(.top, time == nil ? 24 : 13)
-                    .padding(.bottom, time == nil ? 24 : 4)
-                
-                if let t = time {
-                    Text(RidingViewModel.formatMillisecondsToMinutes(Double(t)))
-                        .font(.pretendardRegular(size: 14))
-                        .foregroundColor(.gray4)
-                }
-
-                
-            } // : VStack
+            Text(RidingViewModel.insertLineBreakAtMiddleWord(text))
+                .foregroundColor(.gray6)
+                .font(.pretendardSemiBold(size: 16))
             
             Spacer()
             
+            if let t = time {
+                Text(RidingViewModel.formatMillisecondsToMinutes(Double(t)))
+                    .font(.pretendardRegular(size: 14))
+                    .foregroundColor(.gray4)
+                    .padding(.trailing, 28)
+            }
+            
         } // : HStack
-//        .frame(height: 70)
-        .background(Color.white)
+        .frame(height: 70)
     }
 }

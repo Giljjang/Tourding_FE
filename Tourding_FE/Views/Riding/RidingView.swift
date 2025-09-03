@@ -284,8 +284,9 @@ struct RidingView: View {
 }
 
 #Preview {
-    RidingView(ridingViewModel: RidingViewModel(routeRepository: RouteRepository(),
-                                                kakaoRepository: KakaoRepository()))
+    RidingView(ridingViewModel: RidingViewModel(
+        routeRepository: RouteRepository(),
+        kakaoRepository: KakaoRepository()))
     .environmentObject(NavigationManager())
     .environmentObject(ModalManager())
 }
