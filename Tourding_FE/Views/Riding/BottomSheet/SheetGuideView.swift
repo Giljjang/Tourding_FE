@@ -28,6 +28,10 @@ struct SheetGuideView: View {
                                  guideType: item.guideType ?? .straight,
                                  time: item.duration)
                 }
+                
+                Spacer()
+                    .frame(height: 200)
+                
             } // :ScrollView
             
             Spacer()

@@ -58,6 +58,7 @@ struct SheetContentView: View {
                                         )
                                     ) // : onDrop
                             } // : ForEach
+                            
                         } // : VStack
                         .padding(.leading, 54)
                         .padding(.trailing, 16)
@@ -90,6 +91,10 @@ struct SheetContentView: View {
                     } // : if - else
                     
                     endPointView
+                    
+                    Spacer()
+                        .frame(height: 300)
+                    
                 } // : VStack
             } // : ScrollView
             
