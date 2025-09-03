@@ -23,7 +23,11 @@ struct SheetGuideView: View {
             header
             
             ScrollView(showsIndicators: false) {
-                guideRowView()
+                ForEach(ridingViewModel.guideList, id:\.self){ item in
+                    guideRowView(text: item.instructions,
+                                 guideType: item.guideType ?? .straight,
+                                 time: item.duration)
+                }
             } // :ScrollView
             
             Spacer()
@@ -82,9 +86,9 @@ struct SheetGuideView: View {
 
 //MARK: - guide View
 struct guideRowView: View {
-    let text: String = "도착지"
-    let guideType: GuideModel.GuideType = .rightTurn
-    let time: Int? = nil
+    let text: String
+    let guideType: GuideModel.GuideType
+    let time: Int?
     
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
@@ -106,16 +110,26 @@ struct guideRowView: View {
                 Image("icon_stopover")
                     .padding(.vertical, 13)
                     .padding(.horizontal, 16)
+            case .end:
+                Image("end")
+                    .padding(.vertical, 13)
+                    .padding(.horizontal, 16)
+            case .start:
+                Image("start")
+                    .padding(.vertical, 13)
+                    .padding(.horizontal, 16)
             }
             
             VStack(alignment: .leading, spacing: 0) {
-                Text(text.truncated(limit: 21))
+                Text(text)
                     .foregroundColor(.gray6)
                     .font(.pretendardSemiBold(size: 16))
                     .padding(.top, time == nil ? 24 : 13)
                     .padding(.bottom, time == nil ? 24 : 4)
                 
-                if let t = time {
+                if let t = time,
+                   guideType == .straight
+                {
                     let minutes = Int(t / 1000 / 60)   // 밀리초 → 분 변환
                         Text("\(minutes)분")
                         .font(.pretendardRegular(size: 14))
@@ -127,7 +141,7 @@ struct guideRowView: View {
             Spacer()
             
         } // : HStack
-        .frame(height: 70)
+//        .frame(height: 70)
         .background(Color.white)
     }
 }
