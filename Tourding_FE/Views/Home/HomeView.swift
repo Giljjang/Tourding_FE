@@ -21,14 +21,12 @@ struct HomeView: View {
     }
     
     enum HomeMenu {
-        case header
         case headerText
         case routeMaking
         case routeContinue
     }
     
     private let menus: [HomeMenu] = [
-        .header,
         .headerText,
         .routeMaking,
         .routeContinue
@@ -38,20 +36,27 @@ struct HomeView: View {
         ZStack{
             VStack(alignment: .leading,spacing:0){
                 
-                ForEach(menus, id:\.self) { menu in
-                    switch menu {
-                    case .header:
-                        header
-                    case .headerText:
-                        headerText
-                    case .routeMaking:
-                        routeMaking
-                    case .routeContinue:
-                        if !viewModel.routeLocation.isEmpty{
-                            routeContinue
-                        }
-                    }
-                }//ForEach
+                header
+                
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading,spacing:0){
+                        ForEach(menus, id:\.self) { menu in
+                            switch menu {
+                            case .headerText:
+                                headerText
+                            case .routeMaking:
+                                routeMaking
+                            case .routeContinue:
+                                if !viewModel.routeLocation.isEmpty{
+                                    routeContinue
+                                }
+                            }
+                        }//ForEach
+                    }//: VStack
+                    
+                    Spacer()
+                        .frame(height: 150)
+                } // : ScrollView
                 
                 Spacer()
                 
@@ -114,7 +119,6 @@ struct HomeView: View {
             
             Spacer()
         } // : HStack
-        .padding(.bottom, 67.93)
     } // : header
     
     private var headerText: some View {
@@ -122,6 +126,7 @@ struct HomeView: View {
             .foregroundColor(Color.gray6)
             .font(.pretendardSemiBold(size: 26))
             .padding(.bottom, 26)
+            .padding(.top, 67.93)
     } // : headerText
     
     private var routeMaking: some View {
