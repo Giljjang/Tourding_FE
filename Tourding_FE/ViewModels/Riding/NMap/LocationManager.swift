@@ -79,9 +79,9 @@ final class LocationManager: NSObject {
         // 방향 설정 (NMFLocationOverlay는 bearing 대신 다른 방식 사용)
         updateLocationOverlayHeading(on: mapView)
         
-        // 카메라 중심점을 위쪽으로 조정 (pivot: 0.5, 0.5가 중앙, 0.5, 0.3은 위쪽)
+        // 카메라 중심점을 위쪽으로 조정 (pivot: 0.5, 0.5가 중앙, 0.5, 0.4은 위쪽)
         let cameraUpdate = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng))
-        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.3) // x: 0.5(가로 중앙), y: 0.3(세로 위쪽)
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.4) // x: 0.5(가로 중앙), y: 0.4(세로 위쪽)
         cameraUpdate.animation = .easeIn
         mapView.moveCamera(cameraUpdate)
     }
