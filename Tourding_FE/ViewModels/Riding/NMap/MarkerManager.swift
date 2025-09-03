@@ -52,7 +52,7 @@ final class MarkerManager {
             let size = getMarkerSize(for: icon)
             marker.width = size.width
             marker.height = size.height
-            marker.anchor = CGPoint(x: 0.5, y: 0.5) // 중앙 기준
+            marker.anchor = CGPoint(x: 0.5, y: 0.3) // 중앙 기준 살짝 위
             marker.mapView = mapView
             toiletMarkers.append(marker)
         }
@@ -70,7 +70,7 @@ final class MarkerManager {
             let size = getMarkerSize(for: icon)
             marker.width = size.width
             marker.height = size.height
-            marker.anchor = CGPoint(x: 0.5, y: 0.5) // 중앙 기준
+            marker.anchor = CGPoint(x: 0.5, y: 0.3) // 중앙 기준 살짝 위
             marker.mapView = mapView
             csMarkers.append(marker)
         }
