@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import NMapsMap
 
 struct RidingView: View {
     @EnvironmentObject var navigationManager: NavigationManager
@@ -32,7 +33,7 @@ struct RidingView: View {
                 // 배경 컨텐츠
                 NMapView(ridingViewModel: ridingViewModel)
                     .ignoresSafeArea(edges: .top)
-                 
+                
                 if currentPosition == .large {
                     Color.black.opacity(0.3)
                         .ignoresSafeArea()
@@ -129,8 +130,27 @@ struct RidingView: View {
             Task{
                 await ridingViewModel.getRouteLocationAPI()
                 await ridingViewModel.getRoutePathAPI()
-            }
+                
+                // API 호출 완료 후 초기 카메라 위치 설정
+                await MainActor.run {
+                    if let firstLocation = ridingViewModel.routeLocation.first,
+                       let lat = Double(firstLocation.lat),
+                       let lon = Double(firstLocation.lon) {
+                        
+                        let coordinate = NMGLatLng(lat: lat, lng: lon)
+                        ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: ridingViewModel.mapView!)
+                        print("초기 카메라 위치를 경로 첫 번째 좌표로 설정: \(lat), \(lon)")
+                        
+                    }
+                }
+            } // : Task
         }// : onAppear
+        .onChange(of: ridingViewModel.flag) { newValue in
+            // flag가 변경될 때마다 currentPosition을 .medium으로 설정
+            withAnimation(.easeInOut(duration: 0.3)) {
+                currentPosition = .medium
+            }
+        } // : onChange
     }
     
     //MARK: - View
@@ -220,7 +240,7 @@ struct RidingView: View {
     private var toiletButton: some View {
         Button(action:{
             let position = locationManager.getCurrentLocationString()
-//            print("position: \(position)")
+            //            print("position: \(position)")
             ridingViewModel.toggleToilet(locaion: position)
         }){
             HStack(spacing: 2){
@@ -242,7 +262,7 @@ struct RidingView: View {
     private var csButton: some View {
         Button(action:{
             let position = locationManager.getCurrentLocationString()
-//            print("position: \(position)")
+            //            print("position: \(position)")
             
             ridingViewModel.toggleConvenienceStore(locaion: position)
         }){
@@ -265,7 +285,7 @@ struct RidingView: View {
 
 #Preview {
     RidingView(ridingViewModel: RidingViewModel(routeRepository: RouteRepository(),
-                        kakaoRepository: KakaoRepository()))
-        .environmentObject(NavigationManager())
-        .environmentObject(ModalManager())
+                                                kakaoRepository: KakaoRepository()))
+    .environmentObject(NavigationManager())
+    .environmentObject(ModalManager())
 }

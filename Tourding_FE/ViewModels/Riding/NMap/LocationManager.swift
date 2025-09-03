@@ -55,6 +55,14 @@ final class LocationManager: NSObject {
         return locationManager.location
     }
     
+    // 초기 카메라 위치를 특정 좌표로 설정하는 메서드 추가
+    func setInitialCameraPosition(to coordinate: NMGLatLng, on mapView: NMFMapView) {
+        let cameraUpdate = NMFCameraUpdate(scrollTo: coordinate)
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.3) // x: 0.5(가로 중앙), y: 0.3(세로 위쪽)
+        cameraUpdate.animation = .easeIn
+        mapView.moveCamera(cameraUpdate)
+    }
+    
     func moveToCurrentLocation(on mapView: NMFMapView) {
         guard let location = locationManager.location else { return }
         

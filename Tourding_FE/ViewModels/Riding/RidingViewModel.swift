@@ -243,12 +243,11 @@ extension RidingViewModel {
     }
     
     static func formatMillisecondsToMinutes(_ milliseconds: Double) -> String {
-        let minutes = milliseconds / 1000 / 60
-        let roundedMinutes = (minutes * 100).rounded() / 100
-        if roundedMinutes.truncatingRemainder(dividingBy: 1) == 0 {
-            return "\(Int(roundedMinutes))분"
+        let minutes = Int((milliseconds / 1000 / 60).rounded()) // 밀리초 → 분, 정수 반올림
+        if minutes == 0 {
+            return "" // 0분이면 빈 문자열
         } else {
-            return String(format: "%.2f분", roundedMinutes)
+            return "\(minutes)분"
         }
     }
     
