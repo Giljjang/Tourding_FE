@@ -15,7 +15,8 @@ struct SpotAddView: View {
     let lat: String
     let lon: String
     
-    init(spotAddViewModel: SpotAddViewModel, lat: String, lon: String) {
+    init(spotAddViewModel: SpotAddViewModel,
+         lat: String, lon: String) {
         self._spotAddViewModel = StateObject(wrappedValue: spotAddViewModel)
         self.lat = lat
         self.lon = lon
@@ -25,12 +26,16 @@ struct SpotAddView: View {
         ZStack{
             VStack(alignment: .leading,spacing:0){
                 
-                header
-                
-                section
-                
-                filterSection
-                    .padding(.bottom, 24)
+                VStack(alignment: .leading, spacing: 0) {
+                    header
+                    
+                    section
+                    
+                    filterSection
+                }
+                .background(Color(hex: "#F7F9FC").opacity(0.8))
+                .background(.ultraThinMaterial)
+                .cornerRadius(25)
                 
                 if spotAddViewModel.spots.isEmpty {
                     emptyView
@@ -267,6 +272,7 @@ struct SpotAddView: View {
             .background(.white)
             .cornerRadius(16)
             .padding(.horizontal, 16)
+            .padding(.top, 24)
         } // : ScrollView
     }
     
@@ -292,5 +298,6 @@ struct SpotAddView: View {
             Spacer()
         } // : VStack
         .frame(maxHeight: .infinity)
+        .padding(.top, 24)
     }
 }

@@ -119,6 +119,9 @@ struct HomeView: View {
             
             Spacer()
         } // : HStack
+        .background(Color(hex: "#F7F9FC").opacity(0.8))
+        .background(.ultraThinMaterial)
+        .cornerRadius(25)
     } // : header
     
     private var headerText: some View {
