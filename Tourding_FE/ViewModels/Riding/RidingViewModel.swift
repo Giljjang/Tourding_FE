@@ -84,6 +84,35 @@ final class RidingViewModel: ObservableObject {
         }
     }
     
+    // 드래그앤 드랍 후 마커 업데이트 메서드 추가
+    @MainActor
+    private func updateMarkersAfterDragDrop(locationData: [LocationNameModel]) async {
+        // 마커 좌표 업데이트
+        markerCoordinates = locationData.compactMap { item in
+            if let lat = Double(item.lat), let lon = Double(item.lon) {
+                return NMGLatLng(lat: lat, lng: lon)
+            } else {
+                return nil
+            }
+        }
+        
+        // 마커 아이콘 순서 업데이트 (새로운 순서 반영)
+        markerIcons = locationData.enumerated().map { (index, item) in
+            switch item.type {
+            case "Start":
+                return MarkerIcons.startMarker
+            case "Goal":
+                return MarkerIcons.goalMarker
+            case "WayPoint":
+                return MarkerIcons.numberMarker(index) // 새로운 순서의 index 사용
+            default:
+                return MarkerIcons.numberMarker(0)
+            }
+        }
+        
+        print("드래그앤 드랍 후 마커 순서 업데이트 완료: \(markerIcons.count)개")
+    }
+    
     
     //MARK: - API 호출
     @MainActor
@@ -92,7 +121,7 @@ final class RidingViewModel: ObservableObject {
         do {
             let response = try await routeRepository.getRoutesLocationName(userId: userId)
             routeLocation = response
-            //            print("response : \(routeLocation)")
+            print("response : \(routeLocation)")
             
             markerCoordinates = routeLocation.compactMap { item in
                 if let lat = Double(item.lat), let lon = Double(item.lon) {
@@ -180,6 +209,7 @@ final class RidingViewModel: ObservableObject {
         
         do {
             let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
+        
             isLoading = false
         } catch {
             print("POST ERROR: /routes \(error)")
@@ -220,6 +250,10 @@ final class RidingViewModel: ObservableObject {
         
         do {
             let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
+            
+            // 드래그앤 드랍 후 마커 순서 업데이트
+           await updateMarkersAfterDragDrop(locationData: locationData)
+            
             isLoading = false
         } catch {
             print("POST ERROR: /routes \(error)")
@@ -377,7 +411,7 @@ extension RidingViewModel {
             let response = try await routeRepository.getRoutesGuide(userId: userId)
             guideList = response
             
-            //            print("guideList: \(guideList)")
+                        print("guideList: \(guideList)")
         } catch {
             print("GET ERROR: /routes/guide \(error)")
         }
