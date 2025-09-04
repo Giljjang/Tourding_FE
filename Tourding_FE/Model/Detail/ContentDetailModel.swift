@@ -8,9 +8,9 @@
 import Foundation
 
 struct ContentDetailModel: Codable {
-    let contentid: String?
-    let typeCode: String?
-    let contenttypeid: String?
+    let contentid: String
+    let typeCode: String
+    let contenttypeid: String
     let homepage: String?
     let tel: String?
     let telname: String?

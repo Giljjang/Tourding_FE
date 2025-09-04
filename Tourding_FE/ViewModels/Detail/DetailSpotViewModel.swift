@@ -27,9 +27,9 @@ final class DetailSpotViewModel: ObservableObject {
         do {
             
             print("ReqDetailModel: \(requestBody)")
-//            let response = try await tourRepository.getTourAreaDetail(requestBody: requestBody)
+            let response = try await tourRepository.getTourAreaDetail(requestBody: requestBody)
             
-//            print("Detail: \(response)")
+            print("Detail: \(response)")
             
         } catch {
             print("GET ERROR: /tour/area-detail \(error)")
