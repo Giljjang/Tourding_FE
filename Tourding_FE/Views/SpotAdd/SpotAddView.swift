@@ -259,6 +259,9 @@ struct SpotAddView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
         } // : ForEach
+        .onTapGesture {
+            navigationManager.push(.DetailSpotView)
+        }
     }
     
     private var scrollSpotListView: some View {

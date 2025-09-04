@@ -190,7 +190,7 @@ struct DestinationSearchView: View {
             shouldShowRecentSearches = true
             didSubmit = false
             dsViewModel.clearResults()
-            print("2222222onChange가 눌리는겨")
+//            print("2222222onChange가 눌리는겨")
             
         } else {
             if isFromHome{
@@ -198,7 +198,7 @@ struct DestinationSearchView: View {
                 shouldShowRecentSearches = false
                 didSubmit = true
                 dsViewModel.searchPlaces(query: newValue)
-                print("33333333onChange가 눌리는겨")
+//                print("33333333onChange가 눌리는겨")
                 
             } else { // 여기서는 아무것도 안뜨고 그냥 최근 검색어만 숨기기
                 // 엔터로 제출된 경우 didSubmit을 false로 재설정하지 않음
@@ -206,7 +206,7 @@ struct DestinationSearchView: View {
                     shouldShowRecentSearches = true
                     didSubmit = false
                 }
-                print("4444444onChange가 눌리는겨")
+//                print("4444444onChange가 눌리는겨")
                 
             }
         }

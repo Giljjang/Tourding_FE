@@ -184,7 +184,7 @@ struct RidingView: View {
                 .background(Color.white)
                 .cornerRadius(30)
         }
-        .position(x: 36, y: 93)
+        .position(x: 36, y: 73)
     } // : backButton
     
     private var ridingStartButtom: some View {
@@ -257,7 +257,7 @@ struct RidingView: View {
             .background(ridingViewModel.showToilet ? Color.gray5 : Color.white)
             .cornerRadius(12)
         }
-        .position(x: 110, y: 93)
+        .position(x: 110, y: 73)
     } // : toiletButton
     
     private var csButton: some View {
@@ -280,7 +280,7 @@ struct RidingView: View {
             .background(ridingViewModel.showConvenienceStore ? Color.gray5 : Color.white)
             .cornerRadius(12)
         }
-        .position(x: 208, y: 93)
+        .position(x: 208, y: 73)
     } // : csButton
 }
 
