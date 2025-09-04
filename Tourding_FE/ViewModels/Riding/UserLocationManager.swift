@@ -12,6 +12,8 @@ import NMapsMap
 @MainActor
 final class UserLocationManager: NSObject, ObservableObject {
     
+    var onLocationUpdate: ((NMGLatLng) -> Void)?
+    
     // MARK: - Published Properties
     @Published var currentLocation: CLLocation?
     @Published var currentLocationString: String = "위치를 가져오는 중..."
@@ -113,6 +115,15 @@ final class UserLocationManager: NSObject, ObservableObject {
     func isLocationServicesEnabled() -> Bool {
         return CLLocationManager.locationServicesEnabled()
     }
+    
+    // 위치 업데이트 시작
+    func startLocationUpdates() {
+        guard isLocationAuthorized else {
+            getCurrentLocation() // 권한이 없으면 먼저 권한 요청
+            return
+        }
+        locationManager.startUpdatingLocation()
+    }
 }
 
 // MARK: - CLLocationManagerDelegate
@@ -127,6 +138,10 @@ extension UserLocationManager: CLLocationManagerDelegate {
         
         // 위치 업데이트 후 중지 (필요시 계속 업데이트하려면 이 줄을 제거)
         // locationManager.stopUpdatingLocation()
+        
+        if let onLocationUpdate = onLocationUpdate {
+            onLocationUpdate(NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude))
+        }
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {

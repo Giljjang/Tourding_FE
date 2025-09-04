@@ -128,6 +128,10 @@ struct RidingView: View {
             // 위치 권한 요청 및 현재 위치 가져오기
             locationManager.getCurrentLocation()
             
+            // 위치 업데이트 콜백 설정
+            locationManager.onLocationUpdate = { newLocation in
+                ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+            }
             Task{
                 await ridingViewModel.getRouteLocationAPI()
                 await ridingViewModel.getRoutePathAPI()
@@ -160,6 +164,9 @@ struct RidingView: View {
             if !ridingViewModel.flag {
                 navigationManager.pop()
             } else { //라이딩 시작 후 뒤로가기
+                // 위치 추적 중지
+                locationManager.stopLocationUpdates()
+                
                 Task{
                     await ridingViewModel.getRouteLocationAPI()
                     
@@ -200,6 +207,9 @@ struct RidingView: View {
                 onActive: {
                     print("시작됨")
                     ridingViewModel.flag = true
+                    
+                    // 위치 추적 시작
+                    locationManager.startLocationUpdates()
                     
                     Task{
                         // 기존 마커 제거
