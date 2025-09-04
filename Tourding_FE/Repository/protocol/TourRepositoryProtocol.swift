@@ -10,5 +10,6 @@ import Foundation
 protocol TourRepositoryProtocol {
     func searchLocationSpots(pageNum: Int, mapX: String, mapY: String, radius: String, typeCode: String) async throws -> [SpotData]
     func searchByKeyword(keyword: String, pageNum: Int, typeCode: String, areaCode: Int) async throws -> [SpotData]
+    func getTourAreaDetail(requestBody: ReqDetailModel) async throws -> ContentDetailModel
 }
 

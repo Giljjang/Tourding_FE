@@ -10,7 +10,7 @@ import SwiftUI
 // MARK: - 바텀 시트 위치 열거형
 enum DetailBottomSheetPosition: CaseIterable {
     case standard
-    case large   // 706
+    case large
     
     func height(screenHeight: CGFloat) -> CGFloat {
         switch self {

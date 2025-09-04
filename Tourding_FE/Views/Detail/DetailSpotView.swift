@@ -87,6 +87,11 @@ struct DetailSpotView: View {
         } // :GeometryReader
         .ignoresSafeArea()
         .navigationBarBackButtonHidden()
+        .onAppear{
+            Task{
+                await detailViewModel.getTourAreaDetailAPI(requestBody: detailId)
+            }
+        } // :onAppear
     }
     
     //MARK: - View

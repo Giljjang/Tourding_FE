@@ -15,6 +15,8 @@ struct GuideModel: Codable, Hashable {
     let instructions: String
     let pointIndex: Int
     let type: Int
+    let lon: String
+    let lat: String
 
     enum GuideType: String {
         case rightTurn = "우회전"

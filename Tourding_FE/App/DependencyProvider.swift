@@ -54,7 +54,12 @@ struct DependencyProvider {
         return FilterBarViewModel
     }
     
-    static func makeDetailViewModel() -> DetailSpotViewModel {
-        return DetailSpotViewModel()
+    @MainActor static func makeDetailViewModel() -> DetailSpotViewModel {
+        let Tourerepository = TourRepository()
+        let RouteRepository = RouteRepository()
+        
+        return DetailSpotViewModel(
+            tourRepository: Tourerepository,
+            routeRepository: RouteRepository)
     }
 }
