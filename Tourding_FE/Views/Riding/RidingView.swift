@@ -163,6 +163,16 @@ struct RidingView: View {
                 // 위치 추적 중지
                 locationManager.stopLocationUpdates()
                 
+                if let firstLocation = ridingViewModel.routeLocation.first,
+                   let lat = Double(firstLocation.lat),
+                   let lon = Double(firstLocation.lon) {
+                    
+                    let coordinate = NMGLatLng(lat: lat, lng: lon)
+                    ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: ridingViewModel.mapView!)
+                    print("초기 카메라 위치를 경로 첫 번째 좌표로 설정: \(lat), \(lon)")
+                    
+                }
+                
                 Task{
                     await ridingViewModel.getRouteLocationAPI()
                     
@@ -315,9 +325,11 @@ struct RidingView: View {
             // 권한이 허용된 경우 현재 위치 가져오기
             locationManager.getCurrentLocation()
             
-            // 위치 업데이트 콜백 설정
-            locationManager.onLocationUpdate = { newLocation in
-                ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+            if ridingViewModel.flag {
+                // 위치 업데이트 콜백 설정
+                locationManager.onLocationUpdate = { newLocation in
+                    ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+                }
             }
             
         @unknown default:
