@@ -258,10 +258,12 @@ struct SpotAddView: View {
             } // : HStack
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
+            .onTapGesture {
+                let req = ReqDetailModel(contentid: spot.contentid, contenttypeid: spot.contenttypeid)
+                
+                navigationManager.push(.DetailSpotView(isSpotAdd: true, detailId: req))
+            }
         } // : ForEach
-        .onTapGesture {
-            navigationManager.push(.DetailSpotView)
-        }
     }
     
     private var scrollSpotListView: some View {

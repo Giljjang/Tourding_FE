@@ -15,8 +15,15 @@ struct DetailSpotView: View {
     
     @State private var currentPosition: DetailBottomSheetPosition = .standard
     
-    init(detailViewModel: DetailSpotViewModel) {
+    let isSpotAdd: Bool
+    let detailId: ReqDetailModel
+    
+    init(detailViewModel: DetailSpotViewModel,
+         isSpotAdd: Bool, detailId: ReqDetailModel
+    ) {
         self._detailViewModel = StateObject(wrappedValue: detailViewModel)
+        self.isSpotAdd = isSpotAdd
+        self.detailId = detailId
     }
     
     var body: some View {
@@ -43,6 +50,10 @@ struct DetailSpotView: View {
                 }
                 
                 backButton
+                
+                if isSpotAdd {
+                    ridingStartButtom
+                }
                 
                 //커스텀 모달
                 if modalManager.isPresented && modalManager.showView == .detail {
@@ -117,10 +128,40 @@ struct DetailSpotView: View {
         }
         .ignoresSafeArea(edges: .top)
     }
-}
-
-#Preview {
-    DetailSpotView(detailViewModel: DetailSpotViewModel())
-        .environmentObject(NavigationManager())
-        .environmentObject(ModalManager())
+    
+    private var ridingStartButtom: some View {
+        Button(action:{
+            modalManager.showModal(
+                title: "코스에 이 스팟을 추가할까요?",
+                subText: "",
+                activeText: "추가하기",
+                showView: .detail,
+                onCancel: {
+                    print("취소됨")
+                },
+                onActive: {
+                    print("시작됨")
+                }
+            )
+        }){
+            
+            HStack(spacing: 0){
+                
+                Spacer()
+                
+                Text("스팟 추가하기")
+                    .foregroundColor(.white)
+                    .font(.pretendardSemiBold(size: 16))
+                    .frame(height: 22)
+                
+                Spacer()
+            }
+            .padding(.vertical, 16)
+            .background(Color.gray5)
+            .cornerRadius(10)
+            .padding(.horizontal, 16)
+        }
+        .padding(.bottom, 18)
+        .shadow(color: .white.opacity(0.8), radius: 8, x: 0, y: -14)
+    } // : ridingStartButtom
 }

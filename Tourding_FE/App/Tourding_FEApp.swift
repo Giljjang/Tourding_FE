@@ -84,8 +84,12 @@ struct Tourding_FEApp: App {
                                         lon: lon)
                                 case .DestinationSearchView(let isFromHome):
                                     DestinationSearchView(isFromHome: isFromHome, filterViewModel: filterViewModel)
-                                case .DetailSpotView:
-                                    DetailSpotView(detailViewModel: detailViewModel)
+                                case .DetailSpotView(let isSpotAdd, let detailId):
+                                    DetailSpotView(
+                                        detailViewModel: detailViewModel,
+                                        isSpotAdd: isSpotAdd,
+                                        detailId: detailId
+                                    )
                                 default:
                                     EmptyView()
                                 }
