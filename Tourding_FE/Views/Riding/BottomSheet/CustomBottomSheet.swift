@@ -17,7 +17,7 @@ enum BottomSheetPosition: CaseIterable {
     func height(screenHeight: CGFloat, isRiding: Bool = false) -> CGFloat {
         switch self {
         case .small:
-            return isRiding ? 91 : 178 
+            return isRiding ? 85 : 178 
         case .medium:
             return screenHeight * 0.5 // 화면의 절반
         case .large:

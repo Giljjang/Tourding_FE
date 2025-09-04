@@ -8,7 +8,6 @@
 import Foundation
 import CoreLocation
 import NMapsMap
-import Combine
 
 @MainActor
 final class UserLocationManager: NSObject, ObservableObject {
@@ -21,7 +20,6 @@ final class UserLocationManager: NSObject, ObservableObject {
     
     // MARK: - Private Properties
     private let locationManager = CLLocationManager()
-    private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Initialization
     override init() {

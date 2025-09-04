@@ -102,14 +102,14 @@ final class RidingViewModel: ObservableObject {
                 }
             }
             
-            markerIcons = routeLocation.map { item in
+            markerIcons = routeLocation.enumerated().map { (index, item) in
                 switch item.type {
                 case "Start":
                     return MarkerIcons.startMarker
                 case "Goal":
                     return MarkerIcons.goalMarker
                 case "WayPoint":
-                    return MarkerIcons.numberMarker(item.sequenceNum)
+                    return MarkerIcons.numberMarker(index) // index 사용
                 default:
                     return MarkerIcons.numberMarker(0)
                 }

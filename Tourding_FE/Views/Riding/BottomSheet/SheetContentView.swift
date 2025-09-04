@@ -94,12 +94,13 @@ struct SheetContentView: View {
                     
                     endPointView
                     
+                    //컨텐츠뷰 하단 여백 추가
                     if currentPosition == .large {
                         Spacer()
-                            .frame(height: 300)
+                            .frame(height: 150)
                     } else if currentPosition == .medium {
                         Spacer()
-                            .frame(height: 500)
+                            .frame(height: 200)
                     }
                     
                 } // : VStack

@@ -32,12 +32,13 @@ struct SheetGuideView: View {
                     .background(index == 0 ? Color.gray1 : Color.white)
                 }
                 
+                //컨텐츠뷰 하단 여백 추가
                 if currentPosition == .large {
                     Spacer()
-                        .frame(height: 200)
+                        .frame(height: 40)
                 } else if currentPosition == .medium {
                     Spacer()
-                        .frame(height: 400)
+                        .frame(height: 100)
                 }
                 
             } // :ScrollView
