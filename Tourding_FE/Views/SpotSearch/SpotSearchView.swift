@@ -142,6 +142,7 @@ struct SpotSearchView: View {
                 
                 Text("근처에 이런곳은 어때요?")
                     .font(.pretendardSemiBold(size: 20))
+                    .foregroundColor(.gray5)
             }
             
             Spacer()
