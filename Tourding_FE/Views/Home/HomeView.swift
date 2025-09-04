@@ -14,21 +14,19 @@ struct HomeView: View {
     @EnvironmentObject private var ridingViewModel: RidingViewModel
     
     
-    @ObservedObject private var viewModel: HomeViewModel
+    @StateObject private var viewModel: HomeViewModel
     
     init(viewModel: HomeViewModel) {
-        self.viewModel = viewModel
+        self._viewModel = StateObject(wrappedValue: viewModel)
     }
     
     enum HomeMenu {
-        case header
         case headerText
         case routeMaking
         case routeContinue
     }
     
     private let menus: [HomeMenu] = [
-        .header,
         .headerText,
         .routeMaking,
         .routeContinue
@@ -38,24 +36,58 @@ struct HomeView: View {
         ZStack{
             VStack(alignment: .leading,spacing:0){
                 
-                ForEach(menus, id:\.self) { menu in
-                    switch menu {
-                    case .header:
-                        header
-                    case .headerText:
-                        headerText
-                    case .routeMaking:
-                        routeMaking
-                    case .routeContinue:
-                        routeContinue
-                    }
-                }//ForEach
+                header
+                
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading,spacing:0){
+                        ForEach(menus, id:\.self) { menu in
+                            switch menu {
+                            case .headerText:
+                                headerText
+                            case .routeMaking:
+                                routeMaking
+                            case .routeContinue:
+                                if !viewModel.routeLocation.isEmpty{
+                                    routeContinue
+                                }
+                            }
+                        }//ForEach
+                    }//: VStack
+                    
+                    Spacer()
+                        .frame(height: 150)
+                } // : ScrollView
                 
                 Spacer()
                 
             } // : VStack
             .padding(.horizontal, 16)
             .background(Color.gray1)
+            
+            // 커스텀 모달 뷰
+            if modalManager.isPresented && modalManager.showView == .tabView {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        modalManager.hideModal()
+                    }
+                
+                CustomModalView(modalManager: modalManager)
+            }
+            
+            // 로딩뷰
+            if viewModel.isLoading {
+                Color.white.opacity(0.5)
+                    .ignoresSafeArea()
+                
+                VStack{
+                    Spacer()
+                    
+                    DotsLoadingView()
+                    
+                    Spacer()
+                }
+            }// if 로딩 상태
             
             if modalManager.isToastMessage {
                 ToastMessageView()
@@ -71,6 +103,11 @@ struct HomeView: View {
             } // : if modalManager.isToastMessage
         } // :Zstack
         .animation(.easeInOut, value: modalManager.isToastMessage)
+        .onAppear{
+            Task{
+                await viewModel.getRouteLocationAPI()
+            }
+        } // : onAppear
     }
     
     //MARK: - View
@@ -82,7 +119,9 @@ struct HomeView: View {
             
             Spacer()
         } // : HStack
-        .padding(.bottom, 67.93)
+        .background(Color(hex: "#F7F9FC").opacity(0.8))
+        .background(.ultraThinMaterial)
+        .cornerRadius(25)
     } // : header
     
     private var headerText: some View {
@@ -90,6 +129,7 @@ struct HomeView: View {
             .foregroundColor(Color.gray6)
             .font(.pretendardSemiBold(size: 26))
             .padding(.bottom, 26)
+            .padding(.top, 67.93)
     } // : headerText
     
     private var routeMaking: some View {
@@ -115,7 +155,7 @@ struct HomeView: View {
                     routeSharedManager.currentSelectionMode = .startLocation
                     navigationManager.push(.DestinationSearchView(isFromHome: true))
                 }){
-                    Text(routeSharedManager.routeData.startLocation.isEmpty ? "출발지를 입력해주세요" : "\(routeSharedManager.routeData.startLocation.name)")
+                    Text(routeSharedManager.routeData.startLocation.isEmpty ? "출발지를 입력해주세요" : "\(routeSharedManager.routeData.startLocation.name.truncated(limit: 17))")
                         .foregroundColor(routeSharedManager.routeData.startLocation.isEmpty ? .gray2 : .gray6)
                         .font(.pretendardMedium(size: 18))
                 }
@@ -147,7 +187,7 @@ struct HomeView: View {
                     routeSharedManager.currentSelectionMode = .endLocation
                     navigationManager.push(.DestinationSearchView(isFromHome: true))
                 }){
-                    Text(routeSharedManager.routeData.endLocation.isEmpty ? "도착지를 입력해주세요" : "\(routeSharedManager.routeData.endLocation.name)")
+                    Text(routeSharedManager.routeData.endLocation.isEmpty ? "도착지를 입력해주세요" : "\(routeSharedManager.routeData.endLocation.name.truncated(limit: 17))")
                         .foregroundColor(routeSharedManager.routeData.endLocation.isEmpty ? .gray2 : .gray6)
                         .font(.pretendardMedium(size: 18))
                 }
@@ -164,19 +204,41 @@ struct HomeView: View {
             .padding(.bottom, 31)
             
             Button(action: {
-                routeSharedManager.printCurrentRouteState()
-                navigationManager.push(.RidingView)
+                let start = routeSharedManager.routeData.startLocation
+                let end = routeSharedManager.routeData.endLocation
+                
+                if viewModel.isFirstAndLastCoordinateEqual(start: start, end: end){
+                    modalManager.showModal(
+                        title: "출발지와 도착지가 동일해요",
+                        subText: "확인 후 다른 위치로 설정해 주세요",
+                        activeText: "확인하기",
+                        showView: .tabView,
+                        onCancel: {
+                            print("취소됨")
+                        },
+                        onActive: {
+                            print("시작됨")
+                        }
+                    )
+                } else {
+                    Task {
+                        await viewModel.postRouteAPI(start: start, end: end)
+                        navigationManager.push(.RidingView)
+                    }
+                    routeSharedManager.clearRoute()
+                } // if-else
             }){
                 Text("코스 만들기")
                     .foregroundColor(routeSharedManager.hasValidPoints ? .white : .gray3)
                     .font(.pretendardSemiBold(size: 16))
                     .padding(.vertical, 15)
-                    .padding(.horizontal, 124)
+                    .frame(width: 318)
+//                    .padding(.horizontal, 124)
                     .background(routeSharedManager.hasValidPoints ? .gray5 : Color.gray2)
                     .cornerRadius(10)
             } // :Button
             .disabled(!routeSharedManager.hasValidPoints)
-            .padding(.leading, 20)
+            .padding(.horizontal, 20)
             .padding(.bottom, 20)
             
         } // : VStack
@@ -200,13 +262,13 @@ struct HomeView: View {
                 
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .top, spacing: 2) {
-                        Text("한동대")
+                        Text(viewModel.routeLocation.first?.name.truncated(limit: 8) ?? "")
                             .foregroundColor(.gray4)
                             .font(.pretendardMedium(size: 14))
                         
                         Image("icon_right")
                         
-                        Text("영남대")
+                        Text(viewModel.routeLocation.last?.name.truncated(limit: 8) ?? "")
                             .foregroundColor(.gray4)
                             .font(.pretendardMedium(size: 14))
                         
@@ -241,7 +303,7 @@ struct HomeView: View {
 }
 
 #Preview {
-    HomeView(viewModel: HomeViewModel(testRepository: TestRepository()))
+    HomeView(viewModel: HomeViewModel(routeRepository: RouteRepository()))
         .environmentObject(NavigationManager())
         .environmentObject(RouteSharedManager())
 }

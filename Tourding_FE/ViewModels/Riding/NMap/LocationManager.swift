@@ -10,11 +10,10 @@ import CoreLocation
 import NMapsMap
 import Combine
 
-class LocationManager: NSObject {
+final class LocationManager: NSObject {
     
     // MARK: - Properties
     private let locationManager = CLLocationManager()
-    private let cancelBag = CancelBag()
     private var currentHeading: CLLocationDirection = 0
     
     // MARK: - Callbacks
@@ -56,6 +55,14 @@ class LocationManager: NSObject {
         return locationManager.location
     }
     
+    // 초기 카메라 위치를 특정 좌표로 설정하는 메서드 추가
+    func setInitialCameraPosition(to coordinate: NMGLatLng, on mapView: NMFMapView) {
+        let cameraUpdate = NMFCameraUpdate(scrollTo: coordinate)
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.3) // x: 0.5(가로 중앙), y: 0.3(세로 위쪽)
+        cameraUpdate.animation = .easeIn
+        mapView.moveCamera(cameraUpdate)
+    }
+    
     func moveToCurrentLocation(on mapView: NMFMapView) {
         guard let location = locationManager.location else { return }
         
@@ -72,7 +79,9 @@ class LocationManager: NSObject {
         // 방향 설정 (NMFLocationOverlay는 bearing 대신 다른 방식 사용)
         updateLocationOverlayHeading(on: mapView)
         
+        // 카메라 중심점을 위쪽으로 조정 (pivot: 0.5, 0.5가 중앙, 0.5, 0.4은 위쪽)
         let cameraUpdate = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng))
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.4) // x: 0.5(가로 중앙), y: 0.4(세로 위쪽)
         cameraUpdate.animation = .easeIn
         mapView.moveCamera(cameraUpdate)
     }
@@ -86,6 +95,16 @@ class LocationManager: NSObject {
         // 이미지가 오른쪽 하단을 가리키므로 -45도 오프셋 적용
         let adjustedHeading = currentHeading - 45.0
         locationOverlay.heading = CGFloat(adjustedHeading)
+    }
+    
+    // 위치 권한 상태 확인
+    func checkLocationAuthorizationStatus() -> CLAuthorizationStatus {
+        return locationManager.authorizationStatus
+    }
+
+    // 위치 권한 요청
+    func requestLocationPermission() {
+        locationManager.requestWhenInUseAuthorization()
     }
 }
 

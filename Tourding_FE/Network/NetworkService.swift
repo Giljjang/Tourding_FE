@@ -43,18 +43,6 @@ enum NetworkService {
         }
     }
     
-    //MARK: - HTTP 메소드 요청 (기존 - 하위 호환성)
-    static func request<T: Codable>(
-        url: String = RequestURL.baseURL,
-        endpoint: String,
-        parameters: [String: String]? = nil,
-        body: Codable? = nil,
-        method: String = "GET"
-    ) async throws -> T {
-        let destination = try makeURL(url: url, endpoint: endpoint, parameters: parameters)
-        return try await requestToServer(url: destination, method: method, body: body)
-    }
-    
     //MARK: - HTTP 메소드 요청 (개선된 버전 - APIType 사용)
     static func request<T: Codable>(
         apiType: APIType,
@@ -204,3 +192,89 @@ enum ErrorType: Error {
         }
     }
 }
+
+// MARK: - 다운로드 전용 요청 (대용량 데이터)
+extension NetworkService {
+    
+    // 대용량 요청용 downloadTask
+    static func downloadRequest<T: Codable>(
+        apiType: APIType,
+        endpoint: String,
+        method: String = "GET",
+        parameters: [String: String]? = nil,
+        headers: [String: String]? = nil,
+        body: Codable? = nil
+    ) async throws -> T {
+        
+        let baseURL = RequestURL.getURL(for: apiType)
+        let destination = try makeURL(url: baseURL, endpoint: endpoint, parameters: parameters)
+        
+        return try await downloadFromServer(
+            url: destination,
+            method: method,
+            headers: headers,
+            body: body
+        )
+    }
+    private static func downloadFromServer<T: Codable>(
+        url: URL,
+        method: String = "GET",
+        headers: [String: String]? = nil,
+        body: Codable? = nil
+    ) async throws -> T {
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        
+        // 헤더 설정
+        if let headers = headers {
+            for (key, value) in headers {
+                request.setValue(value, forHTTPHeaderField: key)
+            }
+        }
+        
+        // body가 있으면 JSON으로 인코딩
+        if let body = body {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try JSONEncoder().encode(body)
+            
+            // 디버깅: body 출력
+            if let jsonString = String(data: request.httpBody!, encoding: .utf8) {
+//                print("🔹 Request Body:\n\(jsonString)")
+            }
+        }
+        
+        // downloadTask 실행
+        let (tempURL, response) = try await URLSession.shared.download(for: request)
+        
+        // HTTP 상태 코드 체크
+        if let httpResponse = response as? HTTPURLResponse {
+            print("🔹 HTTP Status Code: \(httpResponse.statusCode)")
+            
+            if let definedError = NetworkErrorCode(rawValue: httpResponse.statusCode) {
+                throw ErrorType.serverDefinedError(definedError)
+            }
+        }
+        
+        // 임시 파일 읽기
+        let data = try Data(contentsOf: tempURL)
+        
+        // 디버깅: 서버에서 내려온 원본 데이터 출력
+        if let jsonString = String(data: data, encoding: .utf8) {
+//            print("🔹 Response Data:\n\(jsonString)")
+        } else {
+            print("🔹 Response Data: Cannot convert to string")
+        }
+        
+        // JSON 디코딩
+        do {
+            let decoded = try JSONDecoder().decode(T.self, from: data)
+            return decoded
+        } catch {
+            print("❌ Decoding error: \(error)")
+            throw ErrorType.decodingFailure(underlying: error)
+        }
+    }
+
+}
+

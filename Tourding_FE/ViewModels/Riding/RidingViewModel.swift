@@ -6,16 +6,17 @@
 //
 
 import Foundation
-import Combine
 import NMapsMap
 
 final class RidingViewModel: ObservableObject {
-    @Published var flag: Bool = false // 라이딩 전 <-> 라이딩 후
+    @Published var userId: Int = 2
+    @Published var isLoading: Bool = false
+    @Published var flag: Bool = false // 라이딩 전 <-> 라이딩 후 화면 변경
     
     //라이딩 시작 전
-    @Published var start: RidingSpotModel = RidingSpotModel(name: "출발지")
-    @Published var end: RidingSpotModel = RidingSpotModel(name: "도착지")
-    @Published var spotList: [RidingSpotModel]  = []
+    @Published var routeLocation: [LocationNameModel] = []
+    @Published var routeMapPaths: [RoutePathModel] = []
+    
     @Published var nthLineHeight: Double = 0 // spotRow 왼쪽 라인 길이
     
     // 라이딩 시작 후
@@ -23,95 +24,166 @@ final class RidingViewModel: ObservableObject {
     @Published var showConvenienceStore: Bool = false
     @Published var guideList: [GuideModel] = []
     
+    @Published var toiletList: [FacilityInfoModel] = []
+    @Published var csList: [FacilityInfoModel] = []
+    
     // MARK: - 지도 관련 프로퍼티
     var locationManager: LocationManager?
     var mapView: NMFMapView?
     
     
     // MARK: - 지도 관련 프로퍼티
-    @Published var pathCoordinates: [NMGLatLng] = [
-        NMGLatLng(lat: 37.5665, lng: 126.9780),
-        NMGLatLng(lat: 35.1796, lng: 129.0756),
-        NMGLatLng(lat: 35.9078, lng: 127.7669),
-        NMGLatLng(lat: 37.4563, lng: 126.7052)
-    ]
+    @Published var pathCoordinates: [NMGLatLng] = []
     
-    // 특정 좌표에 marker 넣기
-    @Published var markerCoordinates: [NMGLatLng] = [
-        NMGLatLng(lat: 37.5665, lng: 126.9780),  // 첫 번째 위치
-        NMGLatLng(lat: 35.9078, lng: 127.7669)   // 세 번째 위치
-    ]
-    @Published var markerIcons: [NMFOverlayImage] = [
-        MarkerIcons.goalMarker,
-        MarkerIcons.startMarker
-    ]
+    // 기존 마커 (경로 관련)
+    @Published var markerCoordinates: [NMGLatLng] = []
+    @Published var markerIcons: [NMFOverlayImage] = []
     
-    private var cancellables = Set<AnyCancellable>()
+    // 화장실 마커
+    @Published var toiletMarkerCoordinates: [NMGLatLng] = []
+    @Published var toiletMarkerIcons: [NMFOverlayImage] = []
     
-    init() {
-        showMockSpotList()
-        showMockGuideList()
+    // 편의점 마커
+    @Published var csMarkerCoordinates: [NMGLatLng] = []
+    @Published var csMarkerIcons: [NMFOverlayImage] = []
+    
+    // MARK: - 사용자 위치 추적 관련
+    @Published var currentUserLocation: NMGLatLng?
+    let markerPassThreshold: Double = 50.0 // 마커를 지나간 것으로 판단하는 거리 (미터)
+    
+    let routeRepository: RouteRepositoryProtocol
+    let kakaoRepository: KakaoRepositoryProtocol
+    
+    init(routeRepository: RouteRepositoryProtocol,
+         kakaoRepository: KakaoRepositoryProtocol
+    ) {
+        self.routeRepository = routeRepository
+        self.kakaoRepository = kakaoRepository
         
-        // spotList 변경 감지 후 nthLineHeight 계산
-        $spotList
-            .sink { [weak self] _ in
-                self?.calculateNthLineHeight()
-            }
-            .store(in: &cancellables)
-        
-        // flag 변경 감지
-        $flag
-            .sink { [weak self] newValue in
-                print("flag 변경됨: \(newValue)")
-            }
-            .store(in: &cancellables)
     }
     
-    //MARK: - mock
-    private func showMockSpotList(){
-        let mock1 = RidingSpotModel(name: "태화강공원", themeType: .humanities)
-        let mock2 = RidingSpotModel(name: "어딘가.. 맛있는 곳", themeType: .food)
+    // 드래그앤 드랍 후 마커 업데이트 메서드 추가
+    @MainActor
+    func updateMarkersAfterDragDrop(locationData: [LocationNameModel]) async {
+        // 마커 좌표 업데이트
+        markerCoordinates = locationData.compactMap { item in
+            if let lat = Double(item.lat), let lon = Double(item.lon) {
+                return NMGLatLng(lat: lat, lng: lon)
+            } else {
+                return nil
+            }
+        }
         
-        spotList.insert(contentsOf: [mock1, mock2], at: 0)
+        // 마커 아이콘 순서 업데이트 (새로운 순서 반영)
+        markerIcons = locationData.enumerated().map { (index, item) in
+            switch item.type {
+            case "Start":
+                return MarkerIcons.startMarker
+            case "Goal":
+                return MarkerIcons.goalMarker
+            case "WayPoint":
+                return MarkerIcons.numberMarker(index) // 새로운 순서의 index 사용
+            default:
+                return MarkerIcons.numberMarker(0)
+            }
+        }
         
-    } // : func showMockSpotList
-    
-    private func showMockGuideList(){
-        let mock1 = GuideModel(
-            sequenceNum: 0,
-            distance: 17,
-            duration: 6119,
-            instructions: "'희망대로659번길' 방면으로 우회전",
-            pointIndex: 1,
-            type: 3)
-        let mock2 = GuideModel(
-            sequenceNum: 1,
-            distance: 475,
-            duration: 157222,
-            instructions: "'희망대로' 방면으로 우회전",
-            pointIndex: 22,
-            type: 3
-        )
-        
-        guideList.append(contentsOf: [mock1, mock2])
+        print("드래그앤 드랍 후 마커 순서 업데이트 완료: \(markerIcons.count)개")
     }
     
-    //MARK: - util
-    private func calculateNthLineHeight() {
-        nthLineHeight = Double((spotList.count * 66) + (spotList.count + 1) * 8)
-    } // : func calculateNthLineHeight
     
 }
 
-//MARK: -  Riding 시작하기 이후 라이딩 뷰 함수
+//MARK: -  Riding 시작하기 중 라이딩 뷰 함수
 extension RidingViewModel {
     
-    func toggleToilet(){
+    // 편의점 토글
+    func toggleConvenienceStore(locaion: String){
+        showConvenienceStore.toggle()
+        
+        if showConvenienceStore {
+            let lat = splitCoordinateLatitude(location: locaion)
+            let lon = splitCoordinateLongitude(location: locaion)
+            
+            Task{
+                await postRoutesConvenienceStoreAPI(lon: lon, lat: lat)
+                
+                // API 호출 완료 후 마커 추가 (메인 스레드에서 실행)
+                await MainActor.run {
+                    // 기존 마커는 유지하고 편의점 마커만 추가
+                    csMarkerCoordinates.removeAll()
+                    csMarkerIcons.removeAll()
+                    
+                    csMarkerCoordinates.append(
+                        contentsOf: csList.compactMap { item in
+                            if let lat = Double(item.lat), let lon = Double(item.lon) {
+                                return NMGLatLng(lat: lat, lng: lon)
+                            } else {
+                                return nil
+                            }
+                        }
+                    )
+                    
+                    csMarkerIcons.append(contentsOf: csList.map { _ in
+                        MarkerIcons.csMarker
+                    })
+                    
+                    // 디버깅용 로그
+                    print("편의점 마커 추가됨: \(csMarkerCoordinates.count)개")
+                    print("편의점 아이콘 추가됨: \(csMarkerIcons.count)개")
+                }
+            }
+        } else {
+            // 편의점 마커 제거
+            csMarkerCoordinates.removeAll()
+            csMarkerIcons.removeAll()
+            print("편의점 마커 제거됨")
+        }
+    }
+
+    // 화장실 토글도 동일하게 수정
+    func toggleToilet(locaion: String){
         showToilet.toggle()
+        
+        if showToilet {
+            let lat = splitCoordinateLatitude(location: locaion)
+            let lon = splitCoordinateLongitude(location: locaion)
+            
+            Task{
+                await postRoutesToiletAPI(lon: lon, lat: lat)
+                
+                // API 호출 완료 후 마커 추가 (메인 스레드에서 실행)
+                await MainActor.run {
+                    // 기존 마커는 유지하고 화장실 마커만 추가
+                    toiletMarkerCoordinates.removeAll()
+                    toiletMarkerIcons.removeAll()
+                    
+                    toiletMarkerCoordinates.append(
+                        contentsOf: toiletList.compactMap { item in
+                            if let lat = Double(item.lat), let lon = Double(item.lon) {
+                                return NMGLatLng(lat: lat, lng: lon)
+                            } else {
+                                return nil
+                            }
+                        }
+                    )
+                    
+                    toiletMarkerIcons.append(contentsOf: toiletList.map { _ in
+                        MarkerIcons.toiletMarker
+                    })
+                    
+                    // 디버깅용 로그
+                    print("화장실 마커 추가됨: \(toiletMarkerCoordinates.count)개")
+                    print("화장실 아이콘 추가됨: \(toiletMarkerIcons.count)개")
+                }
+            }
+        } else {
+            // 화장실 마커 제거
+            toiletMarkerCoordinates.removeAll()
+            toiletMarkerIcons.removeAll()
+            print("화장실 마커 제거됨")
+            
+        }
     }
     
-    func toggleConvenienceStore(){
-        showConvenienceStore.toggle()
-    }
 }
-

@@ -10,7 +10,7 @@ import CoreLocation
 import Combine
 
 @MainActor
-class SpotSearchViewModel: ObservableObject {
+final class SpotSearchViewModel: ObservableObject {
     @Published var spots: [SpotData] = []
     @Published var isLoading = false
     @Published var errorMessage: String?

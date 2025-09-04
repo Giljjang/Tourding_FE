@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import NMapsMap
 
 struct RidingView: View {
     @EnvironmentObject var navigationManager: NavigationManager
@@ -17,6 +18,7 @@ struct RidingView: View {
     //객체 참조 문제: 모달이 열리고 닫힐 때 부모 뷰가 다시 렌더링되지 않아서 @ObservedObject가 업데이트를 감지하지 못합
     // 즉, 부모 뷰의 렌더링과 관계없이 @Published 속성 변경을 즉시 감지해야함
     @StateObject private var ridingViewModel: RidingViewModel
+    @StateObject private var locationManager = UserLocationManager()
     
     @State private var currentPosition: BottomSheetPosition = .medium
     @State private var forceUpdate: Bool = false
@@ -31,7 +33,7 @@ struct RidingView: View {
                 // 배경 컨텐츠
                 NMapView(ridingViewModel: ridingViewModel)
                     .ignoresSafeArea(edges: .top)
-                 
+                
                 if currentPosition == .large {
                     Color.black.opacity(0.3)
                         .ignoresSafeArea()
@@ -51,7 +53,9 @@ struct RidingView: View {
                 // 바텀 시트
                 if !ridingViewModel.flag {
                     CustomBottomSheet(
-                        content: SheetContentView(ridingViewModel: ridingViewModel),
+                        content: SheetContentView(
+                            ridingViewModel: ridingViewModel,
+                            currentPosition: currentPosition),
                         screenHeight: geometry.size.height,
                         currentPosition: $currentPosition,
                         isRiding: false,
@@ -61,10 +65,13 @@ struct RidingView: View {
                     
                     ridingStartButtom
                         .padding(.bottom, 30)
+                        .background(.white)
                     
                 } else {
                     CustomBottomSheet(
-                        content: SheetGuideView(ridingViewModel: ridingViewModel),
+                        content: SheetGuideView(
+                            ridingViewModel: ridingViewModel,
+                            currentPosition: currentPosition),
                         screenHeight: geometry.size.height,
                         currentPosition: $currentPosition,
                         isRiding: true,
@@ -100,13 +107,51 @@ struct RidingView: View {
                         )
                 } // : if - else if
                 
+                if ridingViewModel.isLoading {
+                    Color.white.opacity(0.5)
+                        .ignoresSafeArea()
+                    
+                    VStack{
+                        Spacer()
+                        
+                        DotsLoadingView()
+                        
+                        Spacer()
+                    }
+                }// if 로딩 상태
+                
             } // : ZStack
         } // : GeometryReader
         .ignoresSafeArea()
         .navigationBarBackButtonHidden()
         .onAppear{
-            // api 데이터 추가
+            // 위치 권한 확인 및 요청
+            checkAndRequestLocationPermission()
+            
+            Task{
+                await ridingViewModel.getRouteLocationAPI()
+                await ridingViewModel.getRoutePathAPI()
+                
+                // API 호출 완료 후 초기 카메라 위치 설정
+                await MainActor.run {
+                    if let firstLocation = ridingViewModel.routeLocation.first,
+                       let lat = Double(firstLocation.lat),
+                       let lon = Double(firstLocation.lon) {
+                        
+                        let coordinate = NMGLatLng(lat: lat, lng: lon)
+                        ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: ridingViewModel.mapView!)
+                        print("초기 카메라 위치를 경로 첫 번째 좌표로 설정: \(lat), \(lon)")
+                        
+                    }
+                }
+            } // : Task
         }// : onAppear
+        .onChange(of: ridingViewModel.flag) { newValue in
+            // flag가 변경될 때마다 currentPosition을 .medium으로 설정
+            withAnimation(.easeInOut(duration: 0.3)) {
+                currentPosition = .medium
+            }
+        } // : onChange
     }
     
     //MARK: - View
@@ -114,7 +159,34 @@ struct RidingView: View {
         Button(action:{
             if !ridingViewModel.flag {
                 navigationManager.pop()
-            } else {
+            } else { //라이딩 시작 후 뒤로가기
+                // 위치 추적 중지
+                locationManager.stopLocationUpdates()
+                
+                if let firstLocation = ridingViewModel.routeLocation.first,
+                   let lat = Double(firstLocation.lat),
+                   let lon = Double(firstLocation.lon) {
+                    
+                    let coordinate = NMGLatLng(lat: lat, lng: lon)
+                    ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: ridingViewModel.mapView!)
+                    print("초기 카메라 위치를 경로 첫 번째 좌표로 설정: \(lat), \(lon)")
+                    
+                }
+                
+                Task{
+                    await ridingViewModel.getRouteLocationAPI()
+                    
+                    //화장실 마커 전부 제거
+                    ridingViewModel.toiletMarkerCoordinates.removeAll()
+                    ridingViewModel.toiletMarkerIcons.removeAll()
+                    
+                    //편의점 마커 전부 제거
+                    ridingViewModel.csMarkerCoordinates.removeAll()
+                    ridingViewModel.csMarkerIcons.removeAll()
+                    
+                    ridingViewModel.showConvenienceStore = false
+                    ridingViewModel.showToilet = false
+                }
                 ridingViewModel.flag = false
             } //: if-else
         }){
@@ -125,7 +197,7 @@ struct RidingView: View {
                 .background(Color.white)
                 .cornerRadius(30)
         }
-        .position(x: 36, y: 93)
+        .position(x: 36, y: 73)
     } // : backButton
     
     private var ridingStartButtom: some View {
@@ -141,6 +213,17 @@ struct RidingView: View {
                 onActive: {
                     print("시작됨")
                     ridingViewModel.flag = true
+                    
+                    // 위치 추적 시작
+                    locationManager.startLocationUpdates()
+                    
+                    Task{
+                        // 기존 마커 제거
+                        ridingViewModel.markerCoordinates.removeAll()
+                        ridingViewModel.markerIcons.removeAll()
+                        
+                        await ridingViewModel.getRouteGuideAPI()
+                    }
                 }
             )
         }){
@@ -162,22 +245,15 @@ struct RidingView: View {
             .padding(.horizontal, 16)
         }
         .padding(.bottom, 18)
-        .background(
-            LinearGradient(
-                stops: [
-                    Gradient.Stop(color: .white.opacity(0), location: 0.00),
-                    Gradient.Stop(color: .white, location: 0.15),
-                ],
-                startPoint: UnitPoint(x: 0.5, y: 0),
-                endPoint: UnitPoint(x: 0.5, y: 1)
-            )
-        ) // : background
+        .shadow(color: .white.opacity(0.8), radius: 8, x: 0, y: -14)
     } // : ridingStartButtom
     
     //MARK: - Riding 중
     private var toiletButton: some View {
         Button(action:{
-            ridingViewModel.toggleToilet()
+            let position = locationManager.getCurrentLocationString()
+            //            print("position: \(position)")
+            ridingViewModel.toggleToilet(locaion: position)
         }){
             HStack(spacing: 2){
                 Image(ridingViewModel.showToilet ? "toilet_on": "toilet_off")
@@ -192,12 +268,15 @@ struct RidingView: View {
             .background(ridingViewModel.showToilet ? Color.gray5 : Color.white)
             .cornerRadius(12)
         }
-        .position(x: 110, y: 93)
+        .position(x: 110, y: 73)
     } // : toiletButton
     
     private var csButton: some View {
         Button(action:{
-            ridingViewModel.toggleConvenienceStore()
+            let position = locationManager.getCurrentLocationString()
+            //            print("position: \(position)")
+            
+            ridingViewModel.toggleConvenienceStore(locaion: position)
         }){
             HStack(spacing: 2){
                 Image(ridingViewModel.showConvenienceStore ? "cs_on": "cs_off")
@@ -212,12 +291,57 @@ struct RidingView: View {
             .background(ridingViewModel.showConvenienceStore ? Color.gray5 : Color.white)
             .cornerRadius(12)
         }
-        .position(x: 208, y: 93)
+        .position(x: 208, y: 73)
     } // : csButton
+    
+    private func checkAndRequestLocationPermission() {
+        let authStatus = locationManager.checkLocationAuthorizationStatus()
+        
+        switch authStatus {
+        case .denied, .restricted:
+            // 권한이 거부된 경우 사용자에게 안내
+            print("위치 권한이 거부되었습니다. 설정에서 권한을 허용해주세요.")
+            modalManager.showModal(
+                title: "위치 권한이 거부되었습니다.",
+                subText: "설정에서 권한을 허용해주세요.",
+                activeText: "허용하기",
+                showView: .ridingView,
+                onCancel: {
+                    print("취소됨")
+                },
+                onActive: {
+                    // 설정 앱으로 이동
+                    if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(settingsUrl)
+                    }
+                }
+            )
+            
+        case .notDetermined:
+            // 권한을 아직 결정하지 않은 경우 권한 요청
+            locationManager.requestLocationPermission()
+            
+        case .authorizedWhenInUse, .authorizedAlways:
+            // 권한이 허용된 경우 현재 위치 가져오기
+            locationManager.getCurrentLocation()
+            
+            if ridingViewModel.flag {
+                // 위치 업데이트 콜백 설정
+                locationManager.onLocationUpdate = { newLocation in
+                    ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+                }
+            }
+            
+        @unknown default:
+            break
+        }
+    }
 }
 
 #Preview {
-    RidingView(ridingViewModel: RidingViewModel())
-        .environmentObject(NavigationManager())
-        .environmentObject(ModalManager())
+    RidingView(ridingViewModel: RidingViewModel(
+        routeRepository: RouteRepository(),
+        kakaoRepository: KakaoRepository()))
+    .environmentObject(NavigationManager())
+    .environmentObject(ModalManager())
 }

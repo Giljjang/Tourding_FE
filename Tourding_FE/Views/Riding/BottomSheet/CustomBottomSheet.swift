@@ -10,15 +10,18 @@ import NMapsMap
 
 // MARK: - 바텀 시트 위치 열거형
 enum BottomSheetPosition: CaseIterable {
-    case small   // 188
-    case medium  // 455 (기본값)
-    case large   // 706
+    case small   // 하드코딩 유지
+    case medium  // 동적 계산
+    case large   // 동적 계산
     
-    func height(isRiding: Bool = false) -> CGFloat {
+    func height(screenHeight: CGFloat, isRiding: Bool = false) -> CGFloat {
         switch self {
-        case .small: return isRiding ? 101 : 188 // flag가 true면 101, false면 158
-        case .medium: return 455 // 455
-        case .large: return 706 // 706
+        case .small:
+            return isRiding ? 85 : 178
+        case .medium:
+            return screenHeight * 0.5
+        case .large:
+            return screenHeight * 0.8
         }
     }
 }
@@ -72,12 +75,15 @@ struct CustomBottomSheet<Content: View>: View {
                     
                     // 컨텐츠
                     content
-                        .frame(maxWidth: .infinity)
+//                        .frame(maxWidth: .infinity)
+                        .frame(height: currentPosition.height(screenHeight: screenHeight, isRiding: isRiding))
                         .background(Color.white)
+                    
+                    Spacer()
                 }
                 .frame(height: screenHeight)
                 .background(
-                    RoundedRectangle(cornerRadius: 20)
+                    RoundedRectangle(cornerRadius: 16)
                         .fill(Color.white)
                 )
                 .offset(y: offset)
@@ -97,16 +103,34 @@ struct CustomBottomSheet<Content: View>: View {
         .ignoresSafeArea(.all, edges: .bottom)
         .onAppear {
             // 초기 위치 설정
-            offset = screenHeight - currentPosition.height(isRiding: isRiding)
+            offset = screenHeight - currentPosition.height(screenHeight: screenHeight, isRiding: isRiding)
         }
     }
     
     //MARK: - View
     private var moveToLocationButton: some View {
         Button(action: {
-            // 위치 이동 액션
-            if let locationManager = locationManager, let mapView = mapView {
-                locationManager.moveToCurrentLocation(on: mapView)
+            // 위치 권한 확인 및 요청
+            if let locationManager = locationManager {
+                let authStatus = locationManager.checkLocationAuthorizationStatus()
+                
+                switch authStatus {
+                case .denied, .restricted:
+                    // 권한이 거부된 경우 설정으로 이동하도록 안내
+                    if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(settingsUrl)
+                    }
+                case .notDetermined:
+                    // 권한을 아직 결정하지 않은 경우 권한 요청
+                    locationManager.requestLocationPermission()
+                case .authorizedWhenInUse, .authorizedAlways:
+                    // 권한이 허용된 경우 현재 위치로 이동
+                    if let mapView = mapView {
+                        locationManager.moveToCurrentLocation(on: mapView)
+                    }
+                @unknown default:
+                    break
+                }
             }
         }) {
             VStack(spacing: 0) {
@@ -143,7 +167,7 @@ struct CustomBottomSheet<Content: View>: View {
                 
                 // 드래그 시작 시점의 offset에서 변화량만큼 이동
                 let newOffset = dragStartOffset + value.translation.height
-                offset = max(0, min(screenHeight - BottomSheetPosition.small.height(isRiding: isRiding), newOffset))
+                offset = max(0, min(screenHeight - BottomSheetPosition.small.height(screenHeight: screenHeight, isRiding: isRiding), newOffset))
             }
             .onEnded { value in
                 isDragging = false
@@ -190,7 +214,7 @@ struct CustomBottomSheet<Content: View>: View {
     // MARK: - Animation
     private func animateToPosition(_ position: BottomSheetPosition) {
         currentPosition = position
-        let targetOffset = screenHeight - position.height(isRiding: isRiding)
+        let targetOffset = screenHeight - position.height(screenHeight: screenHeight, isRiding: isRiding)
         
         withAnimation(.easeInOut(duration: animationDuration)) {
             offset = targetOffset

@@ -9,7 +9,7 @@ import Foundation
 import KakaoSDKUser
 import SwiftUI
 
-class MyPageViewModel: ObservableObject {
+final class MyPageViewModel: ObservableObject {
     @Published var logoutCompleted: Bool = false  // 로그아웃 완료 상태
     
     func logout(globalLoginViewModel: LoginViewModel) {

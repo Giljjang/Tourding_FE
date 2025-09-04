@@ -1,0 +1,232 @@
+//
+//  RidingViewModel+API.swift
+//  Tourding_FE
+//
+//  Created by 이유현 on 9/4/25.
+//
+
+import Foundation
+import NMapsMap
+
+extension RidingViewModel {
+    //MARK: - 라이딩 시작하기 전 API 호출
+    @MainActor
+    func getRouteLocationAPI() async {
+        isLoading = true
+        do {
+            let response = try await routeRepository.getRoutesLocationName(userId: userId)
+            routeLocation = response
+            print("response : \(routeLocation)")
+            
+            markerCoordinates = routeLocation.compactMap { item in
+                if let lat = Double(item.lat), let lon = Double(item.lon) {
+                    return NMGLatLng(lat: lat, lng: lon)
+                } else {
+                    return nil
+                }
+            }
+            
+            markerIcons = routeLocation.enumerated().map { (index, item) in
+                switch item.type {
+                case "Start":
+                    return MarkerIcons.startMarker
+                case "Goal":
+                    return MarkerIcons.goalMarker
+                case "WayPoint":
+                    return MarkerIcons.numberMarker(index) // index 사용
+                default:
+                    return MarkerIcons.numberMarker(0)
+                }
+            }
+        } catch {
+            print("GET ERROR: /routes/location-name \(error)")
+        }
+        isLoading = false
+    }
+    
+    //초기 출발지, 도착지만 입력시 POST
+    @MainActor
+    func getRoutePathAPI() async {
+        isLoading = true
+        do {
+            let response = try await routeRepository.getRoutesPath(userId: userId)
+            routeMapPaths = response
+            
+            pathCoordinates = routeMapPaths.compactMap { item in
+                if let lat = Double(item.lat),
+                   let lon = Double(item.lon) {
+                    return NMGLatLng(lat: lat, lng: lon)
+                } else {
+                    return nil // 변환 실패 시 무시
+                }
+            }
+            
+        } catch {
+            print("GET ERROR: /routes/path \(error)")
+        }
+        isLoading = false
+    }
+    
+    // 드래그앤 드랍 수정시
+    @MainActor
+    func postRouteDeleteAPI(originalData: [LocationNameModel], selectedData: LocationNameModel) async {
+        isLoading = true
+        guard let start = originalData.first,
+              let end = originalData.last else {
+            return
+        }
+        
+        // wayPoints (0, last 제외 + 선택된 데이터 삭제)
+        let middlePoints = originalData.dropFirst().dropLast().filter { $0.sequenceNum != selectedData.sequenceNum }
+        let wayPointsArray = middlePoints.map { "\($0.lon),\($0.lat)" }
+        let wayPoints = wayPointsArray.joined(separator: "|")
+        
+        // locateName (전체 이름 중 선택된 데이터 삭제)
+        let locateNames = originalData.map { $0.name }.filter { $0 != selectedData.name }
+        let locateName = locateNames.joined(separator: ",")
+        
+        // typeCode (0번, 마지막 제외 + 선택된 데이터 삭제)
+        let typeCodes = originalData.dropFirst().dropLast()
+            .filter { $0.sequenceNum != selectedData.sequenceNum }
+            .map { $0.typeCode }
+        let typeCode = typeCodes.joined(separator: ",")
+        
+        let requestBody = RequestRouteModel(
+            userId: userId,
+            start: "\(start.lon),\(start.lat)",
+            goal: "\(end.lon),\(end.lat)",
+            wayPoints: wayPoints,
+            locateName: locateName,
+            typeCode: typeCode
+        )
+        
+        //        print("requestBody: \(requestBody)")
+        
+        do {
+            let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
+        
+            isLoading = false
+        } catch {
+            print("POST ERROR: /routes \(error)")
+        }
+    }
+    
+    @MainActor
+    func postRouteDragNDropAPI(locationData: [LocationNameModel]) async {
+        isLoading = true
+        guard let start = locationData.first,
+              let end = locationData.last else {
+            return
+        }
+        
+        // wayPoints (0, last 제외)
+        let middlePoints = locationData.dropFirst().dropLast()
+        let wayPointsArray = middlePoints.map { "\($0.lon),\($0.lat)" }
+        let wayPoints = wayPointsArray.joined(separator: "|")
+        
+        // locateName (모두 포함)
+        let locateNames = locationData.map { $0.name }
+        let locateName = locateNames.joined(separator: ",")
+        
+        // typeCode (0번, 마지막 제외)
+        let typeCodes = locationData.dropFirst().dropLast().map { $0.typeCode }
+        let typeCode = typeCodes.joined(separator: ",")
+        
+        let requestBody = RequestRouteModel(
+            userId: userId,
+            start: "\(start.lon),\(start.lat)",
+            goal: "\(end.lon),\(end.lat)",
+            wayPoints: wayPoints,
+            locateName: locateName,
+            typeCode: typeCode
+        )
+        
+        //    print("requestBody: \(requestBody)")
+        
+        do {
+            let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
+            
+            // 드래그앤 드랍 후 마커 순서 업데이트
+           await updateMarkersAfterDragDrop(locationData: locationData)
+            
+            isLoading = false
+        } catch {
+            print("POST ERROR: /routes \(error)")
+        }
+    }
+    
+    //MARK: - 라이딩 중 API 호출
+    @MainActor
+    func getRouteGuideAPI() async {
+        isLoading = true
+        do {
+            let response = try await routeRepository.getRoutesGuide(userId: userId)
+            guideList = response
+            
+            print("guideList: \(guideList)")
+            
+            markerCoordinates.append(
+                contentsOf: guideList.compactMap { item in
+                    if let lat = Double(item.lat), let lon = Double(item.lon) {
+                        return NMGLatLng(lat: lat, lng: lon)
+                    } else {
+                        return nil
+                    }
+                }
+            )
+            
+            markerIcons.append(contentsOf: guideList.map { item in
+                switch item.guideType {
+                case .start:
+                    return MarkerIcons.startMarker
+                case .end:
+                    return MarkerIcons.goalMarker
+                case .leftTurn:
+                    return MarkerIcons.leftMarker
+                case .rightTurn:
+                    return MarkerIcons.rightMarker
+                case .straight:
+                    return MarkerIcons.straightMarker
+                case .stopOver:
+                    return MarkerIcons.stopoverMarker
+                case .none:
+                    return MarkerIcons.straightMarker
+                }
+            })
+            
+        } catch {
+            print("GET ERROR: /routes/guide \(error)")
+        }
+        isLoading = false
+    }
+    
+    @MainActor
+    func postRoutesToiletAPI(lon: String, lat: String) async {
+        isLoading = true
+        
+        let requestBody: ReqFacilityInfoModel = ReqFacilityInfoModel(lon: lon, lat: lat)
+        do {
+            toiletList = try await kakaoRepository.postRouteToilet(requestBody: requestBody)
+            
+            //            print("postRoutesToiletAPI: \(toiletList)")
+        } catch {
+            print("GET ERROR: /routes/toilet \(error)")
+        }
+        isLoading = false
+    }
+    
+    @MainActor
+    func postRoutesConvenienceStoreAPI(lon: String, lat: String) async {
+        isLoading = true
+        
+        let requestBody: ReqFacilityInfoModel = ReqFacilityInfoModel(lon: lon, lat: lat)
+        do {
+            csList = try await kakaoRepository.postRouteConvenienceStore(requestBody: requestBody)
+            
+            //            print("postRoutesConvenienceStoreAPI: \(csList)")
+        } catch {
+            print("GET ERROR: /routes/convenience-store \(error)")
+        }
+        isLoading = false
+    }
+}

@@ -13,10 +13,12 @@ struct SheetContentView: View {
     
     @ObservedObject private var ridingViewModel: RidingViewModel
     
-    @State private var draggedSpot: RidingSpotModel? // 드래그된 아이템
-
-    init(ridingViewModel: RidingViewModel) {
+    @State private var draggedItem: LocationNameModel? // 드래그된 아이템
+    private var currentPosition: BottomSheetPosition
+    
+    init(ridingViewModel: RidingViewModel, currentPosition: BottomSheetPosition) {
         self.ridingViewModel = ridingViewModel
+        self.currentPosition = currentPosition
     }
     
     var body: some View {
@@ -38,37 +40,45 @@ struct SheetContentView: View {
                     startPointView
                         .padding(.top, 20)
                     
-                    if ridingViewModel.spotList.isEmpty {
+                    if ridingViewModel.routeLocation.count <= 2 {
                         Spacer()
                             .frame(height: 14)
                     } else {
                         VStack(alignment: .leading, spacing: 8) {
-                            ForEach(ridingViewModel.spotList){ item in
+                            ForEach(Array(ridingViewModel.routeLocation.dropFirst().dropLast()), id: \.sequenceNum) { item in
                                 spotRow(item: item)
                                     .onDrag({
-                                        self.draggedSpot = item
-                                        return NSItemProvider(item: nil, typeIdentifier: item.id) // id가 string이어야함
+                                        self.draggedItem = item
+                                        return NSItemProvider(item: nil, typeIdentifier: String(item.sequenceNum))
                                     }) // : onDrag
                                     .onDrop(
-                                        of: [item.id], // id가 string이어야함
-                                        delegate: SpotDropDelegate(ridingViewModel: ridingViewModel, currentItem: item, draggedSpot: $draggedSpot)
+                                        of: [String(item.sequenceNum)],
+                                        delegate: RouteLocationDropDelegate(
+                                            ridingViewModel: ridingViewModel,
+                                            currentItem: item,
+                                            draggedItem: $draggedItem
+                                        )
                                     ) // : onDrop
                             } // : ForEach
+                            
                         } // : VStack
                         .padding(.leading, 54)
                         .padding(.trailing, 16)
                         .padding(.vertical, 12)
                         .overlay {
+                            let middleCount = max(0, ridingViewModel.routeLocation.count - 2)
+                            let lineHeight = Double((middleCount * 66) + (middleCount + 1) * 8)
                             Divider()
                                 .frame(
                                     width: 1, 
-                                    height: ridingViewModel.nthLineHeight)
+                                    height: lineHeight)
                                 .background(Color(hex: "#EDF0F6"))
-                                .position(x: 32, y: 6+(ridingViewModel.nthLineHeight/2))
+                                .position(x: 32, y: 6 + (lineHeight/2))
 
                         } // : overlay
                         .overlay {
-                            ForEach(1...ridingViewModel.spotList.count, id: \.self) { index in
+                            let middleCount = max(0, ridingViewModel.routeLocation.count - 2)
+                            ForEach(1...middleCount, id: \.self) { index in
                                 Text("\(index)")
                                     .foregroundColor(.white)
                                     .font(.pretendardMedium(size: 10.5))
@@ -83,6 +93,16 @@ struct SheetContentView: View {
                     } // : if - else
                     
                     endPointView
+                    
+                    //컨텐츠뷰 하단 여백 추가
+                    if currentPosition == .large {
+                        Spacer()
+                            .frame(height: 150)
+                    } else if currentPosition == .medium {
+                        Spacer()
+                            .frame(height: 200)
+                    }
+                    
                 } // : VStack
             } // : ScrollView
             
@@ -104,7 +124,12 @@ struct SheetContentView: View {
             Spacer()
             
             Button(action:{
-                navigationManager.push(.SpotAddView)
+                if let lastLocation = ridingViewModel.routeLocation.last {
+                    navigationManager.push(.SpotAddView(
+                        lat: lastLocation.lat,
+                        lon: lastLocation.lon
+                    ))
+                }
             }){
                 Image("icon_plus")
                 Text("스팟 추가")
@@ -131,7 +156,7 @@ struct SheetContentView: View {
             .padding(.horizontal, 4)
             .padding(.trailing, 6)
             
-            Text(ridingViewModel.start.name)
+            Text(ridingViewModel.routeLocation.first?.name.truncated(limit: 21) ?? "출발지")
                 .foregroundColor(.gray6)
                 .font(.pretendardSemiBold(size: 16))
                 .padding(.vertical, 11)
@@ -153,7 +178,7 @@ struct SheetContentView: View {
             .padding(.horizontal, 4)
             .padding(.trailing, 6)
             
-            Text(ridingViewModel.end.name)
+            Text(ridingViewModel.routeLocation.last?.name.truncated(limit: 21) ?? "도착지")
                 .foregroundColor(.gray6)
                 .font(.pretendardSemiBold(size: 16))
                 .padding(.vertical, 11)
@@ -163,15 +188,15 @@ struct SheetContentView: View {
     } // : endPointView
     
     @ViewBuilder
-    private func spotRow(item: RidingSpotModel) -> some View {
+    private func spotRow(item: LocationNameModel) -> some View {
         HStack(alignment: .top, spacing: 0) {
             VStack(alignment: .leading, spacing:2) {
-                Text(item.name)
+                Text(item.name.truncated(limit: 16))
                     .foregroundColor(.gray6)
                     .font(.pretendardSemiBold(size: 16))
                     .frame(height:22)
                 
-                Text(item.themeType.rawValue)
+                Text(ridingViewModel.matchTitle(item.typeCode))
                     .foregroundColor(.gray4)
                     .font(.pretendardRegular(size: 14))
                     .frame(height:20)
@@ -191,6 +216,14 @@ struct SheetContentView: View {
                     },
                     onActive: {
                         print("삭제됨")
+                        Task{
+                            await ridingViewModel.postRouteDeleteAPI(
+                                originalData: ridingViewModel.routeLocation,
+                                selectedData: item
+                            )
+                            await ridingViewModel.getRouteLocationAPI()
+                            await ridingViewModel.getRoutePathAPI()
+                        }
                     }
                 )
             }){
@@ -211,10 +244,4 @@ struct SheetContentView: View {
                 radius: 3.5, x: 1, y: 1)
     } // : spotRow
     
-}
-
-#Preview {
-    SheetContentView(ridingViewModel: RidingViewModel())
-        .environmentObject(NavigationManager())
-        .environmentObject(ModalManager())
 }

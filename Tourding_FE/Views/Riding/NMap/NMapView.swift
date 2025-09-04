@@ -26,6 +26,10 @@ struct NMapView: View {
                 pathCoordinates: $ridingViewModel.pathCoordinates,
                 markerCoordinates: $ridingViewModel.markerCoordinates,
                 markerIcons: $ridingViewModel.markerIcons,
+                toiletMarkerCoordinates: $ridingViewModel.toiletMarkerCoordinates,
+                toiletMarkerIcons: $ridingViewModel.toiletMarkerIcons,
+                csMarkerCoordinates: $ridingViewModel.csMarkerCoordinates,
+                csMarkerIcons: $ridingViewModel.csMarkerIcons,
                 ridingViewModel: ridingViewModel,
                 onLocationUpdate: { location in
                     currentLocation = location
@@ -58,5 +62,5 @@ struct NMapView: View {
 }
 
 #Preview {
-    NMapView(ridingViewModel: RidingViewModel())
+    NMapView(ridingViewModel: RidingViewModel(routeRepository: RouteRepository(),kakaoRepository: KakaoRepository()))
 }

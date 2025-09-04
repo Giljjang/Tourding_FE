@@ -12,18 +12,23 @@ import CoreLocation
 import Combine
 
 // MARK: - MapViewController
-class MapViewController: UIViewController {
+final class MapViewController: UIViewController {
     
     // MARK: - Properties
     private var mapView: NMFNaverMapView!
     let locationManager = LocationManager()
     private let locationButton = UIButton(type: .custom)
-    private let cancelBag = CancelBag()
     
     // MARK: - Data Properties
     var pathCoordinates: [NMGLatLng] = []
     var markerCoordinates: [NMGLatLng] = []
     var markerIcons: [NMFOverlayImage] = []
+    
+    var toiletMarkerCoordinates: [NMGLatLng] = []
+    var toiletMarkerIcons: [NMFOverlayImage] = []
+    
+    var csMarkerCoordinates: [NMGLatLng] = []
+    var csMarkerIcons: [NMFOverlayImage] = []
     
     // MARK: - Callbacks
     var onLocationUpdate: ((CLLocation) -> Void)?
@@ -56,8 +61,15 @@ class MapViewController: UIViewController {
     }
     
     private func setupLocationManager() {
+        var isFirstLocationUpdate = true
+        
         // 위치 업데이트 콜백
         locationManager.onLocationUpdate = { [weak self] location in
+            if isFirstLocationUpdate {
+                // 첫 번째 위치 업데이트 시 초기 카메라 위치 설정
+                self?.setupInitialCameraPosition(location: location)
+                isFirstLocationUpdate = false
+            }
             self?.updateUserLocation(location)
             self?.onLocationUpdate?(location)
         }
@@ -75,10 +87,33 @@ class MapViewController: UIViewController {
         return self.mapView?.mapView
     }
     
+    // MARK: - Public Methods
+    func clearToiletMarkers() {
+        markerManager.clearToiletMarkers()
+    }
+
+    func clearCSMarkers() {
+        markerManager.clearCSMarkers()
+    }
+
     func updateMap() {
-        // 마커 업데이트
+        // 기존 마커 업데이트
         if !markerCoordinates.isEmpty && !markerIcons.isEmpty {
             markerManager.addMarkers(coordinates: markerCoordinates, icons: markerIcons)
+        }
+        
+        // 화장실 마커 업데이트
+        if !toiletMarkerCoordinates.isEmpty && !toiletMarkerIcons.isEmpty {
+            markerManager.addToiletMarkers(coordinates: toiletMarkerCoordinates, icons: toiletMarkerIcons)
+        } else {
+            markerManager.clearToiletMarkers()
+        }
+        
+        // 편의점 마커 업데이트
+        if !csMarkerCoordinates.isEmpty && !csMarkerIcons.isEmpty {
+            markerManager.addCSMarkers(coordinates: csMarkerCoordinates, icons: csMarkerIcons)
+        } else {
+            markerManager.clearCSMarkers()
         }
         
         // 경로선 업데이트
@@ -88,6 +123,17 @@ class MapViewController: UIViewController {
     }
     
     // MARK: - Location Methods
+    private func setupInitialCameraPosition(location: CLLocation) {
+        let lat = location.coordinate.latitude
+        let lng = location.coordinate.longitude
+        
+        // 초기 카메라 위치를 사용자 현재 위치로 설정
+        let cameraUpdate = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng))
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.4) // moveToCurrentLocation과 동일한 pivot 설정
+        cameraUpdate.animation = .easeIn
+        mapView.mapView.moveCamera(cameraUpdate)
+    }
+    
     private func updateUserLocation(_ location: CLLocation) {
         let lat = location.coordinate.latitude
         let lng = location.coordinate.longitude
@@ -99,7 +145,9 @@ class MapViewController: UIViewController {
         // 사용자 위치 마커를 항상 userMarker으로 설정
         locationOverlay.icon = MarkerIcons.userMarker
         
+        // moveToCurrentLocation과 동일한 카메라 설정
         let cameraUpdate = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng))
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.4) // 카메라 중심점을 위쪽으로 조정
         cameraUpdate.animation = .easeIn
         
         mapView.mapView.moveCamera(cameraUpdate)

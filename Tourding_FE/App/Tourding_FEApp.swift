@@ -36,6 +36,7 @@ struct Tourding_FEApp: App {
         let ridingViewModel = DependencyProvider.makeRidingViewModel()
         let spotAddViewModel = DependencyProvider.makespotAddViewModel()
         let filterViewModel = DependencyProvider.makesFilterBarViewModel()
+        let detailViewModel = DependencyProvider.makeDetailViewModel()
         let RecentSearchViewModel = DependencyProvider.makeRecentSearchViewModel()
 
         WindowGroup {
@@ -76,10 +77,19 @@ struct Tourding_FEApp: App {
                                     ServiceView()
                                 case .RidingView:
                                     RidingView(ridingViewModel: ridingViewModel)
-                                case .SpotAddView:
-                                    SpotAddView(spotAddViewModel: spotAddViewModel)
+                                case .SpotAddView(let lat, let lon):
+                                    SpotAddView(
+                                        spotAddViewModel: spotAddViewModel,
+                                        lat: lat,
+                                        lon: lon)
                                 case .DestinationSearchView(let isFromHome):
                                     DestinationSearchView(isFromHome: isFromHome, filterViewModel: filterViewModel, RecentSearchViewModel: RecentSearchViewModel)
+                                case .DetailSpotView(let isSpotAdd, let detailId):
+                                    DetailSpotView(
+                                        detailViewModel: detailViewModel,
+                                        isSpotAdd: isSpotAdd,
+                                        detailId: detailId
+                                    )
                                 default:
                                     EmptyView()
                                 }

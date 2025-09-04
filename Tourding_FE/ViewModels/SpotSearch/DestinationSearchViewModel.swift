@@ -10,9 +10,10 @@
 import Foundation
 import CoreLocation
 import Combine
+import SwiftUI
 
 @MainActor
-class DestinationSearchViewModel: NSObject, ObservableObject {
+final class DestinationSearchViewModel: NSObject, ObservableObject {
     // MARK: - Published Properties
     @Published var searchResults: [Place] = []
     @Published var isLoading = false
@@ -26,7 +27,7 @@ class DestinationSearchViewModel: NSObject, ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private let locationManager = CLLocationManager()
     private var currentSearchQuery = ""
-        
+    
     // MARK: - Initialization
     override init() {
         super.init()                         // 2) 슈퍼 초기화
@@ -42,7 +43,7 @@ class DestinationSearchViewModel: NSObject, ObservableObject {
         locationManager.requestWhenInUseAuthorization()
         locationManager.startUpdatingLocation()
     }
-
+    
     
     // MARK: - Search Methods
     
@@ -247,13 +248,15 @@ extension DestinationSearchViewModel: CLLocationManagerDelegate {
         case .notDetermined:
             locationManager.requestWhenInUseAuthorization()
         case .denied, .restricted:
-            // 설정 이동 안내 등 처리(옵션)
-            break
+            // 설정 앱으로 이동
+            // 권한이 거부된 경우 설정으로 이동하도록 안내
+            if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                UIApplication.shared.open(settingsUrl)
+            }
         @unknown default:
             break
         }
     }
-    
     
     
 }

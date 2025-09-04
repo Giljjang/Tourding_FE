@@ -46,4 +46,15 @@ class TourRepository: TourRepositoryProtocol {
         )
         return spots
     }
+    
+    // 상세정보
+    func getTourAreaDetail(requestBody: ReqDetailModel) async throws -> ContentDetailModel {
+        let detail: ContentDetailModel = try await NetworkService.downloadRequest(
+            apiType: .main,
+            endpoint: "/tour/area-detail",
+            method: "POST",
+            body: requestBody
+        )
+        return detail
+    }
 }

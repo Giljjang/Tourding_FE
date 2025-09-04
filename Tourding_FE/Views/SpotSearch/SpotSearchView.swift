@@ -29,33 +29,44 @@ struct SpotSearchView: View {
             Color.gray1.edgesIgnoringSafeArea(.all)
             
             VStack(alignment: .leading, spacing:0){
-                headerSpot
-                    .padding(.bottom, 12)
-                    .padding(.top, 50)
-                    .padding(.leading, 16)
+                VStack(alignment: .leading, spacing:0){
+                    headerSpot
+                        .padding(.bottom, 12)
+                        .padding(.top, 50)
+                        .padding(.leading, 16)
+                    
+                    searchBar
+                        .padding(.bottom, 20)
+                        .padding(.leading, 16)
+                } //:VStack
+                .background(Color(hex: "#F7F9FC").opacity(0.8))
+                .background(.ultraThinMaterial)
+                .cornerRadius(25)
                 
-                searchBar
-                    .padding(.bottom, 39)
-                    .padding(.leading, 16)
-                
-                myPosition
-                    .padding(.bottom, 17)
-                    .padding(.leading, 16)
-                
-                if spotviewModel.spots.isEmpty {
-                    spotEmptyStateView
-                        .padding(.horizontal, 16)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                } else {
-                    // 목록 상태: 가로 스크롤
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        CustomSpotView(
-                            spots: spotviewModel.spots,
-                            errorMessage: nil
-                        )
-                        .padding(.horizontal, 16)
+                ScrollView(showsIndicators: false) {
+                    myPosition
+                        .padding(.top, 19)
+                        .padding(.bottom, 17)
+                        .padding(.leading, 16)
+                    
+                    if spotviewModel.spots.isEmpty {
+                        spotEmptyStateView
+                            .padding(.horizontal, 16)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    } else {
+                        // 목록 상태: 가로 스크롤
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            CustomSpotView(
+                                spots: spotviewModel.spots,
+                                errorMessage: nil
+                            )
+                            .padding(.horizontal, 16)
+                        }
                     }
-                }
+                    
+                    Spacer()
+                        .frame(height: 150)
+                } // :ScrollView
                 
                 Spacer()
                 

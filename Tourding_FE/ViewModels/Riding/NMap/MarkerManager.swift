@@ -8,10 +8,12 @@
 import UIKit
 import NMapsMap
 
-class MarkerManager {
+final class MarkerManager {
     
     // MARK: - Properties
     private var markers: [NMFMarker] = []
+    private var toiletMarkers: [NMFMarker] = []
+    private var csMarkers: [NMFMarker] = []
     private weak var mapView: NMFMapView?
     
     // MARK: - Initialization
@@ -38,6 +40,42 @@ class MarkerManager {
         }
     }
     
+    func addToiletMarkers(coordinates: [NMGLatLng], icons: [NMFOverlayImage]) {
+        clearToiletMarkers()
+        
+        for (index, coordinate) in coordinates.enumerated() {
+            let marker = NMFMarker(position: coordinate)
+            let icon = icons[index % icons.count]
+            marker.iconImage = icon
+            
+            // 마커 타입에 따라 크기 설정
+            let size = getMarkerSize(for: icon)
+            marker.width = size.width
+            marker.height = size.height
+            marker.anchor = CGPoint(x: 0.5, y: 0.3) // 중앙 기준 살짝 위
+            marker.mapView = mapView
+            toiletMarkers.append(marker)
+        }
+    }
+    
+    func addCSMarkers(coordinates: [NMGLatLng], icons: [NMFOverlayImage]) {
+        clearCSMarkers()
+        
+        for (index, coordinate) in coordinates.enumerated() {
+            let marker = NMFMarker(position: coordinate)
+            let icon = icons[index % icons.count]
+            marker.iconImage = icon
+            
+            // 마커 타입에 따라 크기 설정
+            let size = getMarkerSize(for: icon)
+            marker.width = size.width
+            marker.height = size.height
+            marker.anchor = CGPoint(x: 0.5, y: 0.3) // 중앙 기준 살짝 위
+            marker.mapView = mapView
+            csMarkers.append(marker)
+        }
+    }
+    
     func addMarker(at coordinate: NMGLatLng, icon: NMFOverlayImage) {
         let marker = NMFMarker(position: coordinate)
         marker.iconImage = icon
@@ -54,6 +92,22 @@ class MarkerManager {
     func clearMarkers() {
         markers.forEach { $0.mapView = nil }
         markers.removeAll()
+    }
+    
+    func clearToiletMarkers() {
+        toiletMarkers.forEach { $0.mapView = nil }
+        toiletMarkers.removeAll()
+    }
+    
+    func clearCSMarkers() {
+        csMarkers.forEach { $0.mapView = nil }
+        csMarkers.removeAll()
+    }
+    
+    func clearAllMarkers() {
+        clearMarkers()
+        clearToiletMarkers()
+        clearCSMarkers()
     }
     
     func getMarkerCoordinates() -> [NMGLatLng] {
@@ -80,6 +134,8 @@ class MarkerManager {
         case .rightMarker:
             return CGSize(width: 60, height: 60)
         case .straightMarker:
+            return CGSize(width: 60, height: 60)
+        case .stopoverMarker:
             return CGSize(width: 60, height: 60)
             
         case .csMarker:
