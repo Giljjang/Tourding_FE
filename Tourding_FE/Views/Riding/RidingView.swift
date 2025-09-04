@@ -225,16 +225,7 @@ struct RidingView: View {
             .padding(.horizontal, 16)
         }
         .padding(.bottom, 18)
-        .background(
-            LinearGradient(
-                stops: [
-                    Gradient.Stop(color: .white.opacity(0), location: 0.00),
-                    Gradient.Stop(color: .white, location: 0.15),
-                ],
-                startPoint: UnitPoint(x: 0.5, y: 0),
-                endPoint: UnitPoint(x: 0.5, y: 1)
-            )
-        ) // : background
+        .shadow(color: .white.opacity(0.8), radius: 8, x: 0, y: -14)
     } // : ridingStartButtom
     
     //MARK: - Riding 중
