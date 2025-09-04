@@ -64,7 +64,7 @@ struct DetailBottomSheet<Content: View>: View {
                         .background(Color(.systemBackground))
                 }
                 .frame(height: screenHeight)
-                .cornerRadius(currentPosition != .large ? 20 : 0)
+                .cornerRadius(currentPosition != .large ? 16 : 0)
                 .offset(y: offset)
                 .gesture(dragGesture(geometry: geometry))
             }

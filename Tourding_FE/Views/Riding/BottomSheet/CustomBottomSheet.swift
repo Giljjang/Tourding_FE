@@ -11,17 +11,17 @@ import NMapsMap
 // MARK: - 바텀 시트 위치 열거형
 enum BottomSheetPosition: CaseIterable {
     case small   // 하드코딩 유지
-    case medium  // 화면의 절반 (동적 계산)
-    case large   // 전체 화면의 80% (동적 계산)
+    case medium  // 동적 계산
+    case large   // 동적 계산
     
     func height(screenHeight: CGFloat, isRiding: Bool = false) -> CGFloat {
         switch self {
         case .small:
-            return isRiding ? 85 : 178 
+            return isRiding ? 85 : 178
         case .medium:
-            return screenHeight * 0.5 // 화면의 절반
+            return screenHeight * 0.5
         case .large:
-            return screenHeight * 0.8 // 전체 화면의 80%
+            return screenHeight * 0.8
         }
     }
 }
@@ -83,7 +83,7 @@ struct CustomBottomSheet<Content: View>: View {
                 }
                 .frame(height: screenHeight)
                 .background(
-                    RoundedRectangle(cornerRadius: 20)
+                    RoundedRectangle(cornerRadius: 16)
                         .fill(Color.white)
                 )
                 .offset(y: offset)
