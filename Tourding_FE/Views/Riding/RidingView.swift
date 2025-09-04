@@ -202,6 +202,10 @@ struct RidingView: View {
                     ridingViewModel.flag = true
                     
                     Task{
+                        // 기존 마커 제거
+                        ridingViewModel.markerCoordinates.removeAll()
+                        ridingViewModel.markerIcons.removeAll()
+                        
                         await ridingViewModel.getRouteGuideAPI()
                     }
                 }

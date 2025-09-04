@@ -135,6 +135,8 @@ final class MarkerManager {
             return CGSize(width: 60, height: 60)
         case .straightMarker:
             return CGSize(width: 60, height: 60)
+        case .stopoverMarker:
+            return CGSize(width: 60, height: 60)
             
         case .csMarker:
             return CGSize(width: 38, height: 38)

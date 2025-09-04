@@ -411,7 +411,37 @@ extension RidingViewModel {
             let response = try await routeRepository.getRoutesGuide(userId: userId)
             guideList = response
             
-                        print("guideList: \(guideList)")
+            print("guideList: \(guideList)")
+            
+            markerCoordinates.append(
+                contentsOf: guideList.compactMap { item in
+                    if let lat = Double(item.lat), let lon = Double(item.lon) {
+                        return NMGLatLng(lat: lat, lng: lon)
+                    } else {
+                        return nil
+                    }
+                }
+            )
+            
+            markerIcons.append(contentsOf: guideList.map { item in
+                switch item.guideType {
+                case .start:
+                    return MarkerIcons.startMarker
+                case .end:
+                    return MarkerIcons.goalMarker
+                case .leftTurn:
+                    return MarkerIcons.leftMarker
+                case .rightTurn:
+                    return MarkerIcons.rightMarker
+                case .straight:
+                    return MarkerIcons.straightMarker
+                case .stopOver:
+                    return MarkerIcons.stopoverMarker
+                case .none:
+                    return MarkerIcons.straightMarker
+                }
+            })
+            
         } catch {
             print("GET ERROR: /routes/guide \(error)")
         }
