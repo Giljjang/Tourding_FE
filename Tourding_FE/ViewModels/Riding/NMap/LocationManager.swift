@@ -96,6 +96,16 @@ final class LocationManager: NSObject {
         let adjustedHeading = currentHeading - 45.0
         locationOverlay.heading = CGFloat(adjustedHeading)
     }
+    
+    // 위치 권한 상태 확인
+    func checkLocationAuthorizationStatus() -> CLAuthorizationStatus {
+        return locationManager.authorizationStatus
+    }
+
+    // 위치 권한 요청
+    func requestLocationPermission() {
+        locationManager.requestWhenInUseAuthorization()
+    }
 }
 
 // MARK: - CLLocationManagerDelegate

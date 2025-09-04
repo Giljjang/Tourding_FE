@@ -125,13 +125,9 @@ struct RidingView: View {
         .ignoresSafeArea()
         .navigationBarBackButtonHidden()
         .onAppear{
-            // 위치 권한 요청 및 현재 위치 가져오기
-            locationManager.getCurrentLocation()
+            // 위치 권한 확인 및 요청
+            checkAndRequestLocationPermission()
             
-            // 위치 업데이트 콜백 설정
-            locationManager.onLocationUpdate = { newLocation in
-                ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
-            }
             Task{
                 await ridingViewModel.getRouteLocationAPI()
                 await ridingViewModel.getRoutePathAPI()
@@ -287,6 +283,47 @@ struct RidingView: View {
         }
         .position(x: 208, y: 73)
     } // : csButton
+    
+    private func checkAndRequestLocationPermission() {
+        let authStatus = locationManager.checkLocationAuthorizationStatus()
+        
+        switch authStatus {
+        case .denied, .restricted:
+            // 권한이 거부된 경우 사용자에게 안내
+            print("위치 권한이 거부되었습니다. 설정에서 권한을 허용해주세요.")
+            modalManager.showModal(
+                title: "위치 권한이 거부되었습니다.",
+                subText: "설정에서 권한을 허용해주세요.",
+                activeText: "허용하기",
+                showView: .ridingView,
+                onCancel: {
+                    print("취소됨")
+                },
+                onActive: {
+                    // 설정 앱으로 이동
+                    if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(settingsUrl)
+                    }
+                }
+            )
+            
+        case .notDetermined:
+            // 권한을 아직 결정하지 않은 경우 권한 요청
+            locationManager.requestLocationPermission()
+            
+        case .authorizedWhenInUse, .authorizedAlways:
+            // 권한이 허용된 경우 현재 위치 가져오기
+            locationManager.getCurrentLocation()
+            
+            // 위치 업데이트 콜백 설정
+            locationManager.onLocationUpdate = { newLocation in
+                ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+            }
+            
+        @unknown default:
+            break
+        }
+    }
 }
 
 #Preview {
