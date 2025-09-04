@@ -17,14 +17,18 @@ struct LocalSearchResultsListComponent: View {
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
-                ForEach(Array(results.enumerated()), id: \.element.contentid) { index, spot in
+                // 허용된 카테고리 코드만 노출 (unknown/기타 제외)
+                let allowedTypeCodes: Set<String> = ["A01", "A02", "A03", "A04", "A05", "B02"]
+                let filteredResults = results.filter { allowedTypeCodes.contains($0.typeCode.uppercased()) }
+
+                ForEach(Array(filteredResults.enumerated()), id: \.element.contentid) { index, spot in
                     LocalSpotRowItemComponent(spot: spot)
                         .contentShape(Rectangle())
                         .onTapGesture { onSelect(spot) }
-                        .onAppear { onLoadMore(index) } // 마지막 셀에서 다음 페이지 로드
+                        .onAppear { onLoadMore(index) } // 마지막 셀에서 다음 페이지 로드 (필터된 기준)
                 }
 
-                if isLoading && !results.isEmpty {
+                if isLoading && !filteredResults.isEmpty {
                     HStack { Spacer(); ProgressView().padding(); Spacer() }
                 }
             }

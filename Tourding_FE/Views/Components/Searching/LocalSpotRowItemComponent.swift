@@ -29,7 +29,7 @@ struct LocalSpotRowItemComponent: View {
 
                     // 주소
                     if !spot.addr1.isEmpty {
-                        Text(spot.addr1)
+                        Text(spot.addr1.split(separator: " ").prefix(3).joined(separator: " "))
                             .font(.pretendardRegular(size: 14))
                             .foregroundColor(.gray4)
                             .lineLimit(1)
@@ -51,13 +51,13 @@ struct LocalSpotRowItemComponent: View {
                                     .resizable()
                                     .aspectRatio(1, contentMode: .fill)
                             default:
-                                Image("common")
+                                Image("bicycle")
                                     .resizable()
                                     .aspectRatio(1, contentMode: .fill)
                             }
                         }
                     } else {
-                        Image("common")
+                        Image("bicycle")
                             .resizable()
                             .aspectRatio(1, contentMode: .fill)
                     }

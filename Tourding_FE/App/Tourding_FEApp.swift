@@ -17,7 +17,6 @@ struct Tourding_FEApp: App {
     @StateObject private var loginViewModel = LoginViewModel()
     @StateObject private var modalManager = ModalManager()
     @StateObject private var routeManager = RouteSharedManager()
-    @StateObject private var recentSearchViewModel = RecentSearchViewModel()
     
     @State private var showSplash = true
     
@@ -38,6 +37,7 @@ struct Tourding_FEApp: App {
         let spotAddViewModel = DependencyProvider.makespotAddViewModel()
         let filterViewModel = DependencyProvider.makesFilterBarViewModel()
         let detailViewModel = DependencyProvider.makeDetailViewModel()
+        let RecentSearchViewModel = DependencyProvider.makeRecentSearchViewModel()
 
         WindowGroup {
             if showSplash {
@@ -83,7 +83,7 @@ struct Tourding_FEApp: App {
                                         lat: lat,
                                         lon: lon)
                                 case .DestinationSearchView(let isFromHome):
-                                    DestinationSearchView(isFromHome: isFromHome, filterViewModel: filterViewModel)
+                                    DestinationSearchView(isFromHome: isFromHome, filterViewModel: filterViewModel, RecentSearchViewModel: RecentSearchViewModel)
                                 case .DetailSpotView(let isSpotAdd, let detailId):
                                     DetailSpotView(
                                         detailViewModel: detailViewModel,
@@ -102,7 +102,7 @@ struct Tourding_FEApp: App {
                 .environmentObject(modalManager)
                 .environmentObject(loginViewModel)
                 .environmentObject(routeManager)
-                .environmentObject(recentSearchViewModel)
+//                .environmentObject(recentSearchViewModel)
                 .onOpenURL { url in
                     if AuthApi.isKakaoTalkLoginUrl(url) {
                         _ = AuthController.handleOpenUrl(url: url)

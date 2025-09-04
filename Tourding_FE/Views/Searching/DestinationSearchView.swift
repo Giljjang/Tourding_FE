@@ -12,10 +12,11 @@ struct DestinationSearchView: View {
     @EnvironmentObject var navigationManager: NavigationManager
     @EnvironmentObject var homeViewModel: HomeViewModel
     @EnvironmentObject var routeManager: RouteSharedManager
-    @EnvironmentObject var recentSearchViewModel : RecentSearchViewModel
+//    @EnvironmentObject var recentSearchViewModel : RecentSearchViewModel
     
     @StateObject private var dsViewModel = DestinationSearchViewModel()
     @ObservedObject private var filterViewModel: FilterBarViewModel
+    @ObservedObject private var recentSearchViewModel: RecentSearchViewModel
     
     @State private var searchText = ""
     @State private var shouldShowRecentSearches = true  // 최근 검색어 표시 여부를 직접 제어
@@ -27,13 +28,14 @@ struct DestinationSearchView: View {
     @State private var selectedTheme: String? = nil
     
     @State private var isSearchInProgress = false     // 검색 중 상태 보호용 플래그 추가
-
+    
     
     let isFromHome: Bool
     
-    init(isFromHome: Bool, filterViewModel: FilterBarViewModel) {
+    init(isFromHome: Bool, filterViewModel: FilterBarViewModel, RecentSearchViewModel: RecentSearchViewModel) {
         self.isFromHome = isFromHome
         self.filterViewModel = filterViewModel
+        self.recentSearchViewModel = RecentSearchViewModel
     }
     
     var body: some View {
@@ -50,7 +52,7 @@ struct DestinationSearchView: View {
                 },
                 onTextChange: {
                     // onChange(of: searchText)를 사용하므로 여기서는 아무것도 하지 않음
-                    handleSearchTextChange(searchText)
+//                    handleSearchTextChange(searchText)
                 }
             )
             .padding(.bottom, 18)
@@ -97,7 +99,7 @@ struct DestinationSearchView: View {
             }
             
             // 구분선
-            if !searchText.isEmpty && (!dsViewModel.searchResults.isEmpty || !filterViewModel.localResults.isEmpty) {
+            if !searchText.isEmpty && (!dsViewModel.searchResults.isEmpty || !filterViewModel.localResults.isEmpty && didSubmit) {
                 Rectangle()
                     .frame(height: 8)
                     .foregroundStyle(Color.gray1)
@@ -107,14 +109,15 @@ struct DestinationSearchView: View {
             contentArea
         }
         .contentShape(Rectangle())
+        .background(Color(.white).ignoresSafeArea())
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .onTapGesture {hideKeyboard() }
         .navigationBarHidden(true)
         .navigationBarBackButtonHidden(true)
-//        .onChange(of: searchText) { newValue in
-//            print("?????onChange가 눌리는겨")
-//            handleSearchTextChange(newValue)
-//        }
+        .onChange(of: searchText) { newValue in
+            print("?????onChange가 눌리는겨")
+            handleSearchTextChange(newValue)
+        }
         .onDisappear {
             dsViewModel.clearResults()
         }
@@ -123,20 +126,19 @@ struct DestinationSearchView: View {
     // MARK: - 이벤트 핸들러들
     private func handleSearchSubmit() {
           print("🔍 검색 제출: '\(searchText)' isFromHome: \(isFromHome)")
-          let trimmedText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-          guard !trimmedText.isEmpty else { return }
+//          let trimmedText = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+//          guard !trimmedText.isEmpty else { return }
           
           // 🆕 검색 진행 중 플래그 설정
           isSearchInProgress = true
           didSubmit = true
           shouldShowRecentSearches = false
-          recentSearchViewModel.add(trimmedText)
-          
-          // 엔터의 경우 suppressNextOnChange를 설정하지 않음 (이미 텍스트가 변경된 후이므로)
+          recentSearchViewModel.add(searchText)
+          suppressNextOnChange = true
           
           if isFromHome {
               print("🏠 홈에서 카카오 API 검색 시작")
-              dsViewModel.searchPlaces(query: trimmedText)
+              dsViewModel.searchPlaces(query: searchText)
           } else {
               print("🌍 로컬 검색 준비 중...")
               print("📊 검색 전 상태 - didSubmit: \(didSubmit), isLoading: \(filterViewModel.isLoading)")
@@ -144,11 +146,14 @@ struct DestinationSearchView: View {
               selectedRegion = nil
               selectedTheme = nil
               
+//              handleChipTap(trimmedText)
+              
               filterViewModel.searchLocalWithFilters(
-                  query: trimmedText,
+                  query: searchText,
                   region: selectedRegion,
                   theme: selectedTheme
               )
+              
               
               print("📊 검색 후 즉시 상태 - isLoading: \(filterViewModel.isLoading)")
           }
@@ -167,11 +172,15 @@ struct DestinationSearchView: View {
         shouldShowRecentSearches = false          // 섹션 숨김
         suppressNextOnChange = true               // 다음 onChange는 무시
         didSubmit = true
+        selectedRegion = nil
+        selectedTheme = nil
         searchText = searchTerm                   //
         if isFromHome{
             dsViewModel.searchPlaces(query: searchTerm)
         } else {
             // TODO: 여기서 로컬 서버 주소로 하는거 추가
+            print("칩 탭: '\(searchTerm)'")
+
             filterViewModel.searchLocalWithFilters(query: searchTerm, region: selectedRegion , theme: selectedTheme)
         }
     }
@@ -195,7 +204,7 @@ struct DestinationSearchView: View {
         } else {
             if isFromHome{
                 // 타이핑 중이면 실시간 검색
-                shouldShowRecentSearches = false
+                shouldShowRecentSearches = true
                 didSubmit = true
                 dsViewModel.searchPlaces(query: newValue)
 //                print("33333333onChange가 눌리는겨")
@@ -309,15 +318,15 @@ struct DestinationSearchView: View {
     }
 }
 
-// MARK: - 미리보기
-#Preview {
-    let filterViewModel = FilterBarViewModel(tourRepository: TourRepository())
-    
-    NavigationView {
-        DestinationSearchView(isFromHome: false, filterViewModel: filterViewModel)
-            .environmentObject(NavigationManager())
-            .environmentObject(RecentSearchViewModel())
-            .environmentObject(RouteSharedManager())
-            .environmentObject(HomeViewModel(routeRepository: RouteRepository()))
-    }
-}
+//// MARK: - 미리보기
+//#Preview {
+//    let filterViewModel = FilterBarViewModel(tourRepository: TourRepository())
+//    
+//    return NavigationView {
+//        DestinationSearchView(isFromHome: false, filterViewModel: filterViewModel)
+//            .environmentObject(NavigationManager())
+//            .environmentObject(RecentSearchViewModel())
+//            .environmentObject(RouteSharedManager())
+//            .environmentObject(HomeViewModel(testRepository: TestRepository()))
+//    }
+//}

@@ -49,6 +49,11 @@ struct DependencyProvider {
         return spotAddViewModel
     }
     
+    static func makeRecentSearchViewModel() -> RecentSearchViewModel {
+        let makeRecentSearchViewModel = RecentSearchViewModel()
+        return makeRecentSearchViewModel
+    }
+    
     @MainActor static func makesFilterBarViewModel() -> FilterBarViewModel {
         let FilterBarViewModel = FilterBarViewModel(tourRepository: TourRepository())
         return FilterBarViewModel

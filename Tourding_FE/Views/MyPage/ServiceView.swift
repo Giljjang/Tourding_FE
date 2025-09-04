@@ -13,6 +13,7 @@ struct ServiceView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             
+            
             // MARK: - Top Navigation Bar
             ZStack {
                 HStack {
@@ -63,7 +64,7 @@ struct ServiceView: View {
             
             Spacer()
         }
-        .background(Color(.systemBackground).ignoresSafeArea())
+        .background(Color(.white).ignoresSafeArea())
         .navigationBarHidden(true)  // ✅ 시스템 네비게이션 바 숨김
     }
 }
