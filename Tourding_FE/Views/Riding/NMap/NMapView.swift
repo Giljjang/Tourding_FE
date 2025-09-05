@@ -13,12 +13,14 @@ struct NMapView: View {
     
     // MARK: - Properties
     @ObservedObject private var ridingViewModel: RidingViewModel
+    @ObservedObject private var userLocationManager: UserLocationManager
     
     @State private var currentLocation: CLLocation?
     @State private var locationText: String = "위치 정보 없음"
     
-    init(ridingViewModel: RidingViewModel) {
+    init(ridingViewModel: RidingViewModel, userLocationManager: UserLocationManager) {
         self.ridingViewModel = ridingViewModel
+        self.userLocationManager = userLocationManager
     }
     
     var body: some View {
@@ -31,6 +33,7 @@ struct NMapView: View {
                 csMarkerCoordinates: $ridingViewModel.csMarkerCoordinates,
                 csMarkerIcons: $ridingViewModel.csMarkerIcons,
                 ridingViewModel: ridingViewModel,
+                userLocationManager: userLocationManager,
                 onLocationUpdate: { location in
                     currentLocation = location
                     locationText = "위도: \(location.coordinate.latitude), 경도: \(location.coordinate.longitude)"
@@ -62,5 +65,6 @@ struct NMapView: View {
 }
 
 #Preview {
-    NMapView(ridingViewModel: RidingViewModel(routeRepository: RouteRepository(),kakaoRepository: KakaoRepository()))
+    NMapView(ridingViewModel: RidingViewModel(routeRepository: RouteRepository(),kakaoRepository: KakaoRepository()),
+             userLocationManager: UserLocationManager())
 }

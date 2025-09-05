@@ -31,7 +31,7 @@ struct RidingView: View {
         GeometryReader { geometry in
             ZStack(alignment: .bottom) {
                 // 배경 컨텐츠
-                NMapView(ridingViewModel: ridingViewModel)
+                NMapView(ridingViewModel: ridingViewModel, userLocationManager: locationManager)
                     .ignoresSafeArea(edges: .top)
                 
                 if currentPosition == .large {
@@ -322,10 +322,11 @@ struct RidingView: View {
             locationManager.requestLocationPermission()
             
         case .authorizedWhenInUse, .authorizedAlways:
-            // 권한이 허용된 경우 현재 위치 가져오기
-            locationManager.getCurrentLocation()
             
             if ridingViewModel.flag {
+                // 권한이 허용된 경우 현재 위치 가져오기
+                locationManager.getCurrentLocation()
+                
                 // 위치 업데이트 콜백 설정
                 locationManager.onLocationUpdate = { newLocation in
                     ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)

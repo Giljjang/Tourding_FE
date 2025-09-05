@@ -26,6 +26,7 @@ struct MapViewRepresentable: UIViewRepresentable {
     @Binding var csMarkerIcons: [NMFOverlayImage]
     
     var ridingViewModel: RidingViewModel?
+    var userLocationManager: UserLocationManager?
     
     // MARK: - Callbacks
     var onLocationUpdate: ((CLLocation) -> Void)?
@@ -49,6 +50,14 @@ struct MapViewRepresentable: UIViewRepresentable {
         
         mapViewController.onLocationUpdate = onLocationUpdate
         mapViewController.onMapTap = onMapTap
+        
+        // ridingViewModel 전달
+        mapViewController.ridingViewModel = ridingViewModel
+        
+        // userLocationManager 설정
+        if let userLocationManager = userLocationManager {
+            mapViewController.setupUserLocationManager(userLocationManager)
+        }
         
         
         // ViewController를 containerView에 추가
@@ -93,6 +102,14 @@ struct MapViewRepresentable: UIViewRepresentable {
             if let nmfMapView = mapViewController.nmfMapView {
                 ridingViewModel.mapView = nmfMapView
             }
+        }
+        
+        // ridingViewModel 업데이트
+        mapViewController.ridingViewModel = ridingViewModel
+        
+        // userLocationManager 업데이트
+        if let userLocationManager = userLocationManager {
+            mapViewController.setupUserLocationManager(userLocationManager)
         }
         
         // UI 업데이트
