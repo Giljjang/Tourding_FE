@@ -20,43 +20,44 @@ extension RidingViewModel {
         checkAndRemovePassedMarkers()
     }
     
-    // 지나간 마커를 확인하고 제거
+    // 지나간 마커를 확인하고 제거 (특정 좌표를 지나가면 그 이전의 모든 좌표들 제거)
     private func checkAndRemovePassedMarkers() {
         guard let userLocation = currentUserLocation else { return }
         
-        // 기존 마커들 확인
-        var indicesToRemove: [Int] = []
+        // 가장 가까운 마커의 인덱스 찾기
+        var closestMarkerIndex: Int? = nil
+        var minDistance = Double.infinity
         
         for (index, markerCoord) in markerCoordinates.enumerated() {
             let distance = calculateDistance(from: userLocation, to: markerCoord)
-            if distance <= markerPassThreshold {
-                indicesToRemove.append(index)
+            if distance <= markerPassThreshold && distance < minDistance {
+                minDistance = distance
+                closestMarkerIndex = index
             }
         }
         
-        // 지나간 마커들 제거 (역순으로 제거하여 인덱스 변화 방지)
-        for index in indicesToRemove.reversed() {
-            if index < markerCoordinates.count {
-                markerCoordinates.remove(at: index)
+        // 가장 가까운 마커를 지나갔다면, 그 마커 이전의 모든 마커들 제거
+        if let closestIndex = closestMarkerIndex {
+            let removedCount = closestIndex + 1
+            
+            // 마커 좌표와 아이콘에서 제거 (0부터 closestIndex까지)
+            markerCoordinates.removeFirst(removedCount)
+            markerIcons.removeFirst(removedCount)
+            
+            // 가이드 리스트에서도 제거
+            if removedCount <= guideList.count {
+                guideList.removeFirst(removedCount)
             }
-            if index < markerIcons.count {
-                markerIcons.remove(at: index)
+            
+            // 경로 좌표에서도 제거 (경로선 업데이트)
+            if removedCount <= pathCoordinates.count {
+                pathCoordinates.removeFirst(removedCount)
             }
-        }
-        
-        // 가이드 리스트에서도 제거
-        if !indicesToRemove.isEmpty {
-            for index in indicesToRemove.reversed() {
-                if index < guideList.count {
-                    guideList.remove(at: index)
-                }
-            }
-        }
-        
-        // 디버깅용 로그
-        if !indicesToRemove.isEmpty {
-            print("지나간 마커 \(indicesToRemove.count)개 제거됨")
+            
+            // 디버깅용 로그
+            print("지나간 마커 \(removedCount)개 제거됨 (인덱스 0~\(closestIndex))")
             print("남은 마커: \(markerCoordinates.count)개")
+            print("남은 경로 좌표: \(pathCoordinates.count)개")
         }
     }
     
