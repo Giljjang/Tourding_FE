@@ -153,7 +153,7 @@ struct HomeView: View {
             VStack(alignment: .leading) {
                 Button(action:{
                     routeSharedManager.currentSelectionMode = .startLocation
-                    navigationManager.push(.DestinationSearchView(isFromHome: true))
+                    navigationManager.push(.DestinationSearchView(isFromHome: true, isAddSpot: false))
                 }){
                     Text(routeSharedManager.routeData.startLocation.isEmpty ? "출발지를 입력해주세요" : "\(routeSharedManager.routeData.startLocation.name.truncated(limit: 17))")
                         .foregroundColor(routeSharedManager.routeData.startLocation.isEmpty ? .gray2 : .gray6)
@@ -185,7 +185,7 @@ struct HomeView: View {
             VStack(alignment: .leading) {
                 Button(action:{
                     routeSharedManager.currentSelectionMode = .endLocation
-                    navigationManager.push(.DestinationSearchView(isFromHome: true))
+                    navigationManager.push(.DestinationSearchView(isFromHome: true, isAddSpot: false))
                 }){
                     Text(routeSharedManager.routeData.endLocation.isEmpty ? "도착지를 입력해주세요" : "\(routeSharedManager.routeData.endLocation.name.truncated(limit: 17))")
                         .foregroundColor(routeSharedManager.routeData.endLocation.isEmpty ? .gray2 : .gray6)

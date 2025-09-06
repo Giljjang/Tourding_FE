@@ -124,7 +124,7 @@ struct SpotSearchView: View {
     private var searchBar: some View {
         HStack() {
             Button(action:{
-                navigationManager.push(.DestinationSearchView(isFromHome: false))
+                navigationManager.push(.DestinationSearchView(isFromHome: false, isAddSpot: false))
             }
                    
             ){

@@ -17,7 +17,7 @@ enum ViewType : Hashable {
     case RidingView
     case SpotAddView(lat: String, lon: String)
     case ServiceView
-    case DestinationSearchView(isFromHome: Bool)
+    case DestinationSearchView(isFromHome: Bool, isAddSpot: Bool)
     case DetailSpotView(isSpotAdd: Bool, detailId: ReqDetailModel)
 }
 

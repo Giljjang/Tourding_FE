@@ -102,6 +102,7 @@ struct SpotAddView: View {
             
             Button(action:{
                 //Todo: 검색 페이지로 이동
+                navigationManager.push(.DestinationSearchView(isFromHome: false, isAddSpot: true))
             }){
                 Image("spotAdd_search")
                     .padding(.trailing, 16)
