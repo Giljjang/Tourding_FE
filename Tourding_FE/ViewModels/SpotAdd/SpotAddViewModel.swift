@@ -96,7 +96,7 @@ final class SpotAddViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            spots = try await tourRepository.searchLocationSpots(
+            var results = try await tourRepository.searchLocationSpots(
                 pageNum: 0,
                 mapX: lng,
                 mapY: lat,
@@ -104,7 +104,8 @@ final class SpotAddViewModel: ObservableObject {
                 typeCode: typeCode
             )
             
-//            print("spots : \(spots)")
+            //추천 코스 제외
+            spots = results.filter { $0.typeCode != "C01" }
         
         } catch {
             errorMessage = "스팟을 불러오는데 실패했습니다."

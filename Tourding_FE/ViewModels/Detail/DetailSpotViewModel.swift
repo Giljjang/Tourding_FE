@@ -9,6 +9,7 @@ import Foundation
 
 final class DetailSpotViewModel: ObservableObject {
     @Published var isLoading: Bool = false
+    @Published var detailData: ContentDetailModel? = nil
     
     private let tourRepository: TourRepositoryProtocol
     private let routeRepository: RouteRepositoryProtocol
@@ -30,6 +31,8 @@ final class DetailSpotViewModel: ObservableObject {
             let response = try await tourRepository.getTourAreaDetail(requestBody: requestBody)
             
             print("Detail: \(response)")
+            
+            detailData = response
             
         } catch {
             print("GET ERROR: /tour/area-detail \(error)")

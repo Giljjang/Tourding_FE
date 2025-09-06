@@ -30,13 +30,7 @@ struct DetailSpotView: View {
         GeometryReader { geometry in
             ZStack(alignment: .bottom) {
                 
-                // 배경 컨텐츠
-                LinearGradient(
-                    colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                detailImage
                 
                 DetailBottomSheet(
                     content: SheetDetailView(),
@@ -52,7 +46,9 @@ struct DetailSpotView: View {
                 backButton
                 
                 if isSpotAdd {
-                    ridingStartButtom
+                    spotAddButton
+                        .padding(.bottom, 30)
+                        .background(.white)
                 }
                 
                 //커스텀 모달
@@ -134,7 +130,7 @@ struct DetailSpotView: View {
         .ignoresSafeArea(edges: .top)
     }
     
-    private var ridingStartButtom: some View {
+    private var spotAddButton: some View {
         Button(action:{
             modalManager.showModal(
                 title: "코스에 이 스팟을 추가할까요?",
@@ -169,4 +165,47 @@ struct DetailSpotView: View {
         .padding(.bottom, 18)
         .shadow(color: .white.opacity(0.8), radius: 8, x: 0, y: -14)
     } // : ridingStartButtom
+    
+    private var detailImage: some View {
+        VStack(alignment: .leading, spacing: 0){
+            VStack(alignment: .leading, spacing: 0) {
+                if let first = detailViewModel.detailData?.firstimage,
+                   !first.isEmpty {
+                    AsyncImage(url: URL(string: first)) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        defaultImage
+                    }
+                } else if let second = detailViewModel.detailData?.firstimage2,
+                          !second.isEmpty {
+                    AsyncImage(url: URL(string: second)) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        defaultImage
+                    }
+                } else {
+                    defaultImage
+                }
+            } // : VStack
+            .frame(height: 390)
+            .frame(maxWidth: 390)
+        
+            Spacer()
+            
+        } // : VStack
+    }
+    
+    private var defaultImage: some View {
+        VStack{
+            Image("defaultImage_empty")
+                .padding(.top, 43)
+        } // : VStack
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.gray2)
+    }
+
 }

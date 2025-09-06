@@ -106,3 +106,23 @@ struct FoodOpenInfo: Codable {
     let opendatefood: String?
     let opentimefood: String?
 }
+
+extension ContentDetailModel {
+    var resolvedTitle: String {
+        if let t = title, !t.isEmpty {
+            return t
+        }
+        
+        if let overview = overview {
+            // overview 문장을 단어 단위로 쪼갬
+            let words = overview.split(separator: " ")
+            if let firstWord = words.first(where: { $0.hasSuffix("은") || $0.hasSuffix("는") }) {
+                // "와룡공원은" → "와룡공원"
+                let cleaned = firstWord.dropLast()
+                return String(cleaned)
+            }
+        }
+        
+        return ""
+    }
+}
