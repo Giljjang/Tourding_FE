@@ -12,6 +12,7 @@ import SwiftUI
 struct CustomSpotView: View {
     let spots: [SpotData]
     let errorMessage: String?
+    let navigationDetail: (String, String) -> Void
     
     var body: some View {
             spotListView
@@ -22,6 +23,9 @@ struct CustomSpotView: View {
         HStack(alignment: .top, spacing: 12) {
             ForEach(spots) { spot in
                 SpotCardView(spot: spot)
+                    .onTapGesture {
+                        navigationDetail(spot.contentid, spot.contenttypeid)
+                    } // : onTapGesture
             }
         }
         .frame(maxHeight: 290)
@@ -182,7 +186,9 @@ struct SpotCardView: View {
     ]
     
     ScrollView {
-        CustomSpotView(spots: sampleSpots, errorMessage: nil)
+        CustomSpotView(spots: sampleSpots, errorMessage: nil,  navigationDetail: { lon, lat in
+            print("경도: \(lon), 위도: \(lat)")
+        })
             .padding()
     }
     .background(Color.gray1)

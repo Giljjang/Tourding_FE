@@ -58,8 +58,14 @@ struct SpotSearchView: View {
                         ScrollView(.horizontal, showsIndicators: false) {
                             CustomSpotView(
                                 spots: spotviewModel.spots,
-                                errorMessage: nil
-                            )
+                                errorMessage: nil, navigationDetail: { contentid, contenttypeid in
+                                    let data = ReqDetailModel(contentid: contentid, contenttypeid: contenttypeid)
+                                    
+                                    print("스팟탐색: contentid: \(contentid), contenttypeid: \(contenttypeid)")
+                                    navigationManager.push(.DetailSpotView(isSpotAdd: false, detailId: data))
+                                    
+                                }
+                            ) // : CustomSpotView
                             .padding(.horizontal, 16)
                         }
                     }
