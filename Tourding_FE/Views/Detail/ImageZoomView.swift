@@ -3,7 +3,8 @@ import SwiftUI
 struct ImageZoomView: View {
     @EnvironmentObject var modalManager: ModalManager
     
-    let imageUrls: String
+    let imageUrl: String
+    let title: String?
     
     private var topSafeArea: CGFloat {
         UIApplication.shared.connectedScenes
@@ -19,20 +20,37 @@ struct ImageZoomView: View {
             Color.black
                 .ignoresSafeArea()
                 .onTapGesture {
-                    modalManager.hideImageZoom()
+//                    modalManager.hideImageZoom()
                 }
             
-            AsyncImage(url: URL(string: imageUrls ?? "")) { image in
+            AsyncImage(url: URL(string: imageUrl ?? "")) { image in
                 image
                     .resizable()
                     .scaledToFit()
                     .clipped()
+//                    .frame(maxHeight: 512)
             } placeholder: {
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     .scaleEffect(1.5)
             } // :AsyncImag
             
+            if let title = title {
+                VStack(alignment: .leading, spacing:0) {
+                    HStack(alignment: .center, spacing: 0) {
+                        Spacer()
+                        
+                        Text(title)
+                            .foregroundColor(.white)
+                            .font(.pretendardMedium(size: 18))
+                        
+                        Spacer()
+                    } // : HStack
+                    .padding(.top, SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea-7))
+                    
+                    Spacer()
+                } // :VStack
+            }
             
             // 닫기 버튼
             Button(action: {
@@ -42,7 +60,6 @@ struct ImageZoomView: View {
                     .padding(.vertical, 8)
                     .padding(.leading, 6)
                     .padding(.trailing, 10)
-                //                    .background(Color.white.opacity(0.2))
                     .cornerRadius(30)
             }
             .position(x: 36, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))

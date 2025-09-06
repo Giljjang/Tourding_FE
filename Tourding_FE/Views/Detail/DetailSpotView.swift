@@ -71,7 +71,9 @@ struct DetailSpotView: View {
                 
                 // 이미지 확대 모달
                 if modalManager.isImageZoomPresented{
-                    ImageZoomView(imageUrls: detailViewModel.detailData?.firstimage ?? "")
+                    ImageZoomView(
+                        imageUrl: detailViewModel.detailData?.firstimage ?? "",
+                        title: detailViewModel.detailData?.title)
                 }
                 
                 if detailViewModel.isLoading {
