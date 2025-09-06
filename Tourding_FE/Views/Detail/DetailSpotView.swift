@@ -29,6 +29,7 @@ struct DetailSpotView: View {
     let topSafeArea = UIApplication.shared.connectedScenes
         .compactMap { $0 as? UIWindowScene }
         .first?.windows.first?.safeAreaInsets.top ?? 0
+    let screenWidth = UIScreen.main.bounds.width
     
     var body: some View {
         GeometryReader { geometry in
@@ -237,7 +238,7 @@ struct DetailSpotView: View {
                 }
             } // : VStack
             .frame(height: 390)
-            .frame(maxWidth: 390)
+            .frame(maxWidth: screenWidth)
         
             Spacer()
             
