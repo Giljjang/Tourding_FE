@@ -19,6 +19,8 @@ struct ContentDetailModel: Codable {
     let firstimage2: String?
     let address: String?
     let overview: String?
+    let lon: String?
+    let lat: String?
     let parking: String?
     let useseason: String?
     let openInfo: OpenInfo?

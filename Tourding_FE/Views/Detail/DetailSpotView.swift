@@ -96,6 +96,7 @@ struct DetailSpotView: View {
         .onAppear{
             Task{
                 await detailViewModel.getTourAreaDetailAPI(requestBody: detailId)
+                await detailViewModel.getRouteLocationAPI()
             }
         } // :onAppear
     }
@@ -142,6 +143,26 @@ struct DetailSpotView: View {
     
     private var spotAddButton: some View {
         Button(action:{
+            let detail = detailViewModel.detailData
+            let spot = SpotData(
+                title: detail?.title ?? "",
+                addr1: "", typeCode: "", contentid: "", contenttypeid: "", firstimage: "", firstimage2: "",
+                mapx: detail?.lon ?? "", mapy: detail?.lat ?? "")
+            
+            if detailViewModel.containsCoordinate(originalData: detailViewModel.routeLocation, selectedData: spot){
+                modalManager.showModal(
+                    title: "출발지와 도착지가 동일해요",
+                    subText: "확인 후 다른 위치로 설정해 주세요",
+                    activeText: "확인하기",
+                    showView: .detail,
+                    onCancel: {
+                        print("취소됨")
+                    },
+                    onActive: {
+                        print("시작됨")
+                    }
+                )
+            } else {
             modalManager.showModal(
                 title: "코스에 이 스팟을 추가할까요?",
                 subText: detailViewModel.detailData?.title ?? "",
@@ -152,8 +173,15 @@ struct DetailSpotView: View {
                 },
                 onActive: {
                     print("추가됨")
-                }
+                    Task{
+                        await detailViewModel.postRouteAPI(originalData: detailViewModel.routeLocation, updatedData: spot)
+                        await detailViewModel.getRouteLocationAPI()
+                        
+                        navigationManager.pop(count: 2)
+                    }
+                } // : onActive
             )
+            }//if-else
         }){
             
             HStack(spacing: 0){
@@ -167,6 +195,7 @@ struct DetailSpotView: View {
                 
                 Spacer()
             }
+            .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background(Color.gray5)
             .cornerRadius(10)
@@ -174,7 +203,7 @@ struct DetailSpotView: View {
         }
         .padding(.bottom, 18)
         .shadow(color: .white.opacity(0.8), radius: 8, x: 0, y: -14)
-    } // : ridingStartButtom
+    } // : spotAddButton
     
     private var detailImage: some View {
         VStack(alignment: .leading, spacing: 0){

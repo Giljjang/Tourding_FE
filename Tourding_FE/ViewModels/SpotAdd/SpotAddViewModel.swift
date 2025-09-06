@@ -123,7 +123,7 @@ final class SpotAddViewModel: ObservableObject {
             let response = try await routeRepository.getRoutesLocationName(userId: userId)
             routeLocation = response
             
-            print("routeLocation: \(routeLocation)")
+//            print("routeLocation: \(routeLocation)")
             
         } catch {
             print("GET ERROR: /routes/location-name \(error)")
@@ -131,7 +131,6 @@ final class SpotAddViewModel: ObservableObject {
         isLoading = false
     }
     
-    //Todo:
     @MainActor
     func postRouteAPI(originalData: [LocationNameModel], updatedData: SpotData) async {
         isLoading = true
@@ -173,8 +172,7 @@ final class SpotAddViewModel: ObservableObject {
             typeCode: typeCode
         )
 
-        
-        print("requestBody: \(requestBody)")
+//        print("requestBody: \(requestBody)")
         
         do {
             let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
