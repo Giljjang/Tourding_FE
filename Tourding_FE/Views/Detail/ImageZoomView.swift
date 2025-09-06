@@ -20,7 +20,7 @@ struct ImageZoomView: View {
             Color.black
                 .ignoresSafeArea()
                 .onTapGesture {
-//                    modalManager.hideImageZoom()
+                    //                    modalManager.hideImageZoom()
                 }
             
             AsyncImage(url: URL(string: imageUrl ?? "")) { image in
@@ -28,41 +28,41 @@ struct ImageZoomView: View {
                     .resizable()
                     .scaledToFit()
                     .clipped()
-//                    .frame(maxHeight: 512)
+                //                    .frame(maxHeight: 512)
             } placeholder: {
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     .scaleEffect(1.5)
             } // :AsyncImag
             
-            if let title = title {
-                VStack(alignment: .leading, spacing:0) {
-                    HStack(alignment: .center, spacing: 0) {
-                        Spacer()
-                        
+            VStack(alignment: .center, spacing:0) {
+                HStack(alignment: .top, spacing: 0) {
+                    Spacer()
+                    
+                    if let title = title {
                         Text(title)
                             .foregroundColor(.white)
                             .font(.pretendardMedium(size: 18))
-                        
-                        Spacer()
-                    } // : HStack
-                    .padding(.top, SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea-7))
+                    }
                     
                     Spacer()
-                } // :VStack
-            }
-            
-            // 닫기 버튼
-            Button(action: {
-                modalManager.hideImageZoom()
-            }) {
-                Image("icon_chevron-left (1)")
-                    .padding(.vertical, 8)
-                    .padding(.leading, 6)
-                    .padding(.trailing, 10)
-                    .cornerRadius(30)
-            }
-            .position(x: 36, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
+                } // : HStack
+                .frame(height: 56)
+                .padding(.top, SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea)-23)
+                .overlay(alignment: .bottomLeading){
+                    // 닫기 버튼
+                    Button(action: {
+                        modalManager.hideImageZoom()
+                    }) {
+                        Image("icon_chevron-left (1)")
+                            .frame(height: 56)
+                            .frame(width: 56)
+                            .cornerRadius(30)
+                    }
+                }
+                
+                Spacer()
+            } // :VStack
         }
     }
 }
