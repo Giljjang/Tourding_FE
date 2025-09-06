@@ -8,21 +8,25 @@
 import SwiftUI
 
 struct SheetDetailView: View {
+    @ObservedObject private var detailViewModel: DetailSpotViewModel
+    
+    init(detailViewModel: DetailSpotViewModel) {
+        self.detailViewModel = detailViewModel
+    }
+    
     var body: some View {
-        VStack(spacing: 20) {
-            // 헤더
-            VStack(alignment: .leading, spacing: 8) {
-                Text("바텀 시트")
-                    .font(.title)
-                    .fontWeight(.bold)
-            }
+        VStack(spacing: 0) {
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("바텀 시트")
+                        .font(.title)
+                        .fontWeight(.bold)
+                }
+                
+            } // : ScrollView
             
             Spacer()
-        }
-        .padding(.top, 20)
+        } // : VStack
+        .padding(.top, 16)
     }
-}
-
-#Preview {
-    SheetDetailView()
 }

@@ -51,9 +51,6 @@ struct DetailBottomSheet<Content: View>: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .bottom) {
-                // 배경 오버레이 (드래그 영역)
-                Color.black.opacity(0.001)
-                    .ignoresSafeArea()
                 
                 // 바텀 시트
                 VStack(spacing: 0) {

@@ -26,6 +26,10 @@ struct DetailSpotView: View {
         self.detailId = detailId
     }
     
+    let topSafeArea = UIApplication.shared.connectedScenes
+        .compactMap { $0 as? UIWindowScene }
+        .first?.windows.first?.safeAreaInsets.top ?? 0
+    
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .bottom) {
@@ -33,14 +37,13 @@ struct DetailSpotView: View {
                 detailImage
                 
                 DetailBottomSheet(
-                    content: SheetDetailView(),
+                    content: SheetDetailView(detailViewModel: detailViewModel),
                     screenHeight: geometry.size.height,
                     currentPosition: $currentPosition
                 )
                 
                 if currentPosition == .large {
                     largeTopBar(geometry: geometry)
-
                 }
                 
                 backButton
@@ -64,6 +67,11 @@ struct DetailSpotView: View {
                             x: geometry.size.width / 2,
                             y: geometry.size.height / 2
                         )
+                }
+                
+                // 이미지 확대 모달
+                if modalManager.isImageZoomPresented{
+                    ImageZoomView(imageUrls: detailViewModel.detailData?.firstimage ?? "")
                 }
                 
                 if detailViewModel.isLoading {
@@ -102,7 +110,7 @@ struct DetailSpotView: View {
                 .background(Color.white)
                 .cornerRadius(30)
         }
-        .position(x: 36, y: 73)
+        .position(x: 36, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : backButton
     
     private func largeTopBar(geometry: GeometryProxy) -> some View {
@@ -134,14 +142,14 @@ struct DetailSpotView: View {
         Button(action:{
             modalManager.showModal(
                 title: "코스에 이 스팟을 추가할까요?",
-                subText: "",
+                subText: detailViewModel.detailData?.title ?? "",
                 activeText: "추가하기",
                 showView: .detail,
                 onCancel: {
                     print("취소됨")
                 },
                 onActive: {
-                    print("시작됨")
+                    print("추가됨")
                 }
             )
         }){
@@ -178,6 +186,9 @@ struct DetailSpotView: View {
                     } placeholder: {
                         defaultImage
                     }
+                    .onTapGesture {
+                        modalManager.showImageZoom()
+                    }
                 } else if let second = detailViewModel.detailData?.firstimage2,
                           !second.isEmpty {
                     AsyncImage(url: URL(string: second)) { image in
@@ -186,6 +197,9 @@ struct DetailSpotView: View {
                             .scaledToFill()
                     } placeholder: {
                         defaultImage
+                    }
+                    .onTapGesture {
+                        modalManager.showImageZoom()
                     }
                 } else {
                     defaultImage
