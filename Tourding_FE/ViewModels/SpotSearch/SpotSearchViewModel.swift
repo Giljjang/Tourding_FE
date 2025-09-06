@@ -26,13 +26,16 @@ final class SpotSearchViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            spots = try await tourRepository.searchLocationSpots(
+            var results = try await tourRepository.searchLocationSpots(
                 pageNum: 0,
                 mapX: String(lng),
                 mapY: String(lat),
                 radius: "20000",
                 typeCode: ""
             )
+            
+            //추천 코스 제외
+            spots = results.filter { $0.typeCode != "C01" }
         } catch {
             errorMessage = "스팟을 불러오는데 실패했습니다."
             print("API 오류: \(error)")

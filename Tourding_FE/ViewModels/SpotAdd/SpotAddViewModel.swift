@@ -11,7 +11,7 @@ import Foundation
 final class SpotAddViewModel: ObservableObject {
     @Published var userId: Int = 2
     
-    @Published var clickFliter: String = ""
+    @Published var clickFliter: String = "전체"
     let tagFilter: [String] = ["전체","자연", "인문(문화/예술/역사)", "레포츠", "쇼핑", "음식", "숙박"]
     
     @Published var routeLocation: [LocationNameModel] = []
