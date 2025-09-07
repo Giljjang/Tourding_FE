@@ -60,32 +60,24 @@ final class DetailSpotViewModel: ObservableObject {
         }
     }
     
-    func mapContenttypeidToName() -> String {
-        switch detailData?.contenttypeid {
-        case "12": return "관광지"
-        case "14": return "문화시설"
-        case "15": return "행사/공연/축제"
-        case "25": return "여행코스"
-        case "28": return "레포츠"
-        case "32": return "숙박"
-        case "38": return "쇼핑"
-        case "39": return "음식점"
-        default:
-            return ""
-        }
+    // contenttypeid 별 매칭
+    func mapTypeCodeToEnum() -> ContentType? {
+        guard let id = detailData?.contenttypeid else { return nil }
+        return ContentType(rawValue: id)
     }
     
     func formatOverview(_ text: String?) -> String {
         guard let text = text else { return "" }
-        // <br>, <br/>, <br /> 모두 \n으로 치환
-        let replaced = text.replacingOccurrences(
+        
+        // <br>, <br/>, <br /> 모두 제거
+        let cleaned = text.replacingOccurrences(
             of: "<br ?/?>",
-            with: "\n",
+            with: "",
             options: .regularExpression
         )
         
-        print("replaced: \(replaced)")
-        return replaced
+        print("cleaned: \(cleaned)")
+        return cleaned
     }
 
     func extractURL(from htmlString: String?) -> String? {
@@ -186,6 +178,30 @@ final class DetailSpotViewModel: ObservableObject {
             isLoading = false
         } catch {
             print("POST ERROR: /routes \(error)")
+        }
+    }
+}
+
+enum ContentType: String {
+    case touristSpot = "12"
+    case culturalFacility = "14"
+    case festival = "15"
+    case travelCourse = "25"
+    case leisure = "28"
+    case lodging = "32"
+    case shopping = "38"
+    case restaurant = "39"
+    
+    var displayName: String {
+        switch self {
+        case .touristSpot: return "관광지"
+        case .culturalFacility: return "문화시설"
+        case .festival: return "행사/공연/축제"
+        case .travelCourse: return "여행코스"
+        case .leisure: return "레포츠"
+        case .lodging: return "숙박"
+        case .shopping: return "쇼핑"
+        case .restaurant: return "음식점"
         }
     }
 }

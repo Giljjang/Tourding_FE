@@ -38,6 +38,27 @@ struct SheetDetailView: View {
                         commonDetailInfo
                         
                         //typeCode별
+                        if let type = detailViewModel.mapTypeCodeToEnum() {
+                            switch type {
+                            case .touristSpot:
+                                tourDetailInfo
+                            case .culturalFacility:
+                                cultureInfo
+                            case .festival:
+                                festivalInfo
+                            case .travelCourse:
+                                travelCourseInfo
+                            case .leisure:
+                                leisureInfo
+                            case .lodging:
+                                lodgingInfo
+                            case .shopping:
+                                shoppingInfo
+                            case .restaurant:
+                                foodInfo
+                            }
+                        }
+                        
                         
                     } // : VStack
                     .padding(.vertical, 22)
@@ -201,8 +222,153 @@ struct SheetDetailView: View {
     private var tourDetailInfo: some View {
         VStack(alignment: .leading, spacing: 10) {
             
-            //개장일/쉬는날/이용시간
+            //쉬는날/이용시간 restdate/usetime
+            if let restdate = detailViewModel.detailData?.openInfo?.restdate,
+               restdate != "" {
+                
+                if let usetime = detailViewModel.detailData?.openInfo?.usetime,
+                   usetime != "" {
+                    let text = "\(restdate)\n\(usetime)"
+                    
+                    DetailInfoLine(image: "icon_Operating hours", text: detailViewModel.formatOverview(text), type: nil)
+                } else {
+                    DetailInfoLine(image: "icon_Operating hours", text: detailViewModel.formatOverview(restdate), type: nil)
+                }
+            }
             
+            //주차시설 parking
+            if let parking = detailViewModel.detailData?.parking,
+               parking != "" {
+                DetailInfoLine(image: "icon_parking", text: detailViewModel.formatOverview(parking), type: nil)
+            }
+            
+            //이용시기 useseason
+            if let useseason = detailViewModel.detailData?.useseason,
+               useseason != "" {
+                DetailInfoLine(image: "icon_time-of-use", text: detailViewModel.formatOverview(useseason), type: nil)
+            }
+            
+        }
+        .padding(.bottom, 10)
+    }
+    
+    // 문화시설
+    private var cultureInfo: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            //문의 및 안내
+            
+            // 주차시설/주차요금
+            
+            // 쉬는 날
+            
+            // 이용요금
+            
+            // 규모
+            
+            // 관람소요시간
+        }
+        .padding(.bottom, 10)
+    }
+    
+    // 행사공연축제
+    private var festivalInfo: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            //예매처
+            
+            // 할인정보
+            
+            // 행사종료일/ 행사시작일
+            
+            // 행사장소
+            
+            // 공연시간
+            
+            // 행사 프로그램
+            
+            // 관람소요 시간
+            
+            // 이용 요금
+        }
+        .padding(.bottom, 10)
+    }
+    
+    // 여행코스
+    private var travelCourseInfo: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // 코스 총 거리
+            
+            // 문의 및 안내
+            
+            // 코스 일정
+            
+            // 코스총소요시간
+            
+            // 코스테마
+        }
+        .padding(.bottom, 10)
+    }
+    
+    // 레포츠
+    private var leisureInfo: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            //개강 기간/ 쉬는날/ 이용시간
+            
+            //주차요금/주차시설
+            
+            // 예약안내
+            
+            //규모
+            
+            //입장료
+            
+        }
+        .padding(.bottom, 10)
+    }
+    
+    // 숙박
+    private var lodgingInfo: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            //입실 시간/ 퇴실 시간
+            
+            // 주차 시설
+            
+            // 예약안내 홈페이지
+            
+            // 바비큐장 여부
+            
+            // 자전거 대여 여부
+            
+            //캠프파이어 여부
+        }
+        .padding(.bottom, 10)
+    }
+    
+    // 쇼핑
+    private var shoppingInfo: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            //문의 및 안내
+            
+            // 영업시간/ 쉬는 날
+            
+            // 주차시설
+            
+            // 화장실 설명
+            
+            // 매장 안내
+        }
+        .padding(.bottom, 10)
+    }
+    
+    // 음식점
+    private var foodInfo: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // 영업 시간
+            
+            // 포장 가능
+            
+            // 주차시설
+            
+            // 취급 메뉴
         }
         .padding(.bottom, 10)
     }
