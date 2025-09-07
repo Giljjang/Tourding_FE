@@ -20,7 +20,9 @@ struct SheetDetailView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     
                     HStack(alignment: .top, spacing: 0) {
-                        tag
+                        if detailViewModel.mapTypeCodeToImageName() != "" {
+                            tag
+                        }
                         
                         Spacer()
                     } // : HStack
@@ -40,48 +42,12 @@ struct SheetDetailView: View {
                     .padding(.bottom, 22)
                     
                     // 스팟 안내 - 더보기
-                    if let overview = detailViewModel.detailData?.overview {
-                        
-                        divider
-                            .padding(.bottom, 18)
-                        
-                        Text("스팟 안내")
-                            .foregroundColor(.gray5)
-                            .font(.pretendardMedium(size: 20))
-                            .padding(.bottom, 8)
-                        
-                        ExpandableTextView(
-                            text: detailViewModel.cleanOverviewText(overview),
-                            lineLimit: 5,
-                            font: .pretendardRegular(size: 15),
-                            color: .gray5
-                        )
-                    }
+                    overviewIfletView
                     
-                    //숙소일 경우 환불규정 -더보기
-                    if let refundregulation = detailViewModel.detailData?.refundregulation,
-                       "숙박" == detailViewModel.mapTypeCodeToName(),
-                       refundregulation != ""
-                    {
-                        
-                        divider
-                            .padding(.bottom, 18)
-                        
-                        Text("환불 규정")
-                            .foregroundColor(.gray5)
-                            .font(.pretendardMedium(size: 20))
-                            .padding(.bottom, 8)
-                        
-                        ExpandableTextView(
-                            text: refundregulation,
-                            lineLimit: 5,
-                            font: .pretendardRegular(size: 15),
-                            color: .gray5
-                        )
-                    }
+                    //숙소일 경우 환불규정 - 더보기
+                    refundregulationView
                     
-                    Spacer()
-                        .frame(height: 300)
+                    bottomSpacer
                     
                 } // : VStack
             } // : ScrollView
@@ -106,7 +72,6 @@ struct SheetDetailView: View {
                 .foregroundColor(.gray4)
                 .font(.pretendardMedium(size: 14))
                 .padding(.trailing, 12)
-            
         } // : HStack
         .background(Color.gray1)
         .cornerRadius(10)
@@ -126,5 +91,64 @@ struct SheetDetailView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 1)
             .background(Color.gray1)
+    }
+    
+    private var refundregulationView: some View {
+        Group {
+            if let refundregulation = detailViewModel.detailData?.refundregulation,
+               detailViewModel.mapTypeCodeToName() == "숙박",
+               !refundregulation.isEmpty
+            {
+                VStack(alignment: .leading, spacing: 0) {
+                    divider
+                        .padding(.bottom, 18)
+                    
+                    Text("환불 규정")
+                        .foregroundColor(.gray5)
+                        .font(.pretendardMedium(size: 20))
+                        .padding(.bottom, 8)
+                    
+                    ExpandableTextView(
+                        text: refundregulation,
+                        lineLimit: 5,
+                        font: .pretendardRegular(size: 15),
+                        color: .gray5
+                    )
+                } // : VStack
+            } // : if let refundregulation
+        } // : Group
+    }
+    
+    private var overviewIfletView : some View {
+        Group {
+            if let overview = detailViewModel.detailData?.overview {
+                VStack(alignment: .leading, spacing: 0) {
+                    divider
+                        .padding(.bottom, 18)
+                    
+                    Text("스팟 안내")
+                        .foregroundColor(.gray5)
+                        .font(.pretendardMedium(size: 20))
+                        .padding(.bottom, 8)
+                    
+                    ExpandableTextView(
+                        text: detailViewModel.formatOverview(overview),
+                        lineLimit: 5,
+                        font: .pretendardRegular(size: 15),
+                        color: .gray5
+                    )
+                }// : VStack
+            }
+        } // : Group
+    }
+    
+    private var bottomSpacer: some View {
+        if detailViewModel.currentPosition == .large {
+            Spacer()
+                .frame(height: 300)
+        } else {
+            Spacer()
+                .frame(height: 500)
+        }
     }
 }

@@ -75,7 +75,7 @@ struct SpotAddView: View {
         .background(Color.gray1)
         .onAppear{
             Task{
-                await spotAddViewModel.fetchNearbySpots(lat: lat, lng: lon, typeCode: "")
+                await spotAddViewModel.fetchNearbySpots(lat: lat, lng: lon, typeCode: spotAddViewModel.clickFliter == "전체" ? "" : spotAddViewModel.matchTypeCodeName(for: spotAddViewModel.clickFliter))
                 await spotAddViewModel.getRouteLocationAPI()
             }
         }//: onAppear

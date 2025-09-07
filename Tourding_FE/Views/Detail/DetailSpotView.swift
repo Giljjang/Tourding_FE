@@ -13,8 +13,6 @@ struct DetailSpotView: View {
     
     @StateObject private var detailViewModel: DetailSpotViewModel
     
-    @State private var currentPosition: DetailBottomSheetPosition = .standard
-    
     let isSpotAdd: Bool
     let detailId: ReqDetailModel
     
@@ -40,10 +38,10 @@ struct DetailSpotView: View {
                 DetailBottomSheet(
                     content: SheetDetailView(detailViewModel: detailViewModel),
                     screenHeight: geometry.size.height,
-                    currentPosition: $currentPosition
+                    viewModel: detailViewModel
                 )
                 
-                if currentPosition == .large {
+                if detailViewModel.currentPosition == .large {
                     largeTopBar(geometry: geometry)
                 }
                 
@@ -125,7 +123,7 @@ struct DetailSpotView: View {
             }
             .frame(
                 height: geometry.size.height
-                      - currentPosition.height(screenHeight: geometry.size.height)
+                - detailViewModel.currentPosition.height(screenHeight: geometry.size.height)
                       + geometry.safeAreaInsets.top
             )
             .background(Color.white)

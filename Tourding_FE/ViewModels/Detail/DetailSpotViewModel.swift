@@ -12,6 +12,7 @@ final class DetailSpotViewModel: ObservableObject {
     
     @Published var isLoading: Bool = false
     @Published var detailData: ContentDetailModel? = nil
+    @Published var currentPosition: DetailBottomSheetPosition = .standard
     
     @Published var routeLocation: [LocationNameModel] = []
     
@@ -42,7 +43,7 @@ final class DetailSpotViewModel: ObservableObject {
         case "A05": return "food"
         case "B02": return "sleep"
         default:
-            return "icon_menu" // 매칭 안되면 기본 이미지
+            return "" // 매칭 안되면 기본 이미지
         }
     }
     func mapTypeCodeToName() -> String {
@@ -58,10 +59,17 @@ final class DetailSpotViewModel: ObservableObject {
         }
     }
     
-    func cleanOverviewText(_ text: String?) -> String {
+    func formatOverview(_ text: String?) -> String {
         guard let text = text else { return "" }
-        return text.replacingOccurrences(of: "<br>", with: "\n")
+        // <br>, <br/>, <br /> 모두 \n으로 치환
+        let replaced = text.replacingOccurrences(
+            of: "<br ?/?>",
+            with: "\n",
+            options: .regularExpression
+        )
+        return replaced
     }
+
 
     
     //MARK: - API 호출

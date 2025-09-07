@@ -29,7 +29,7 @@ struct DetailBottomSheet<Content: View>: View {
     let content: Content
     let screenHeight: CGFloat
     
-    @Binding var currentPosition: DetailBottomSheetPosition
+    @ObservedObject var viewModel: DetailSpotViewModel
     @State private var offset: CGFloat = 0
     @State private var isDragging = false
     @State private var dragStartOffset: CGFloat = 0
@@ -41,10 +41,10 @@ struct DetailBottomSheet<Content: View>: View {
     private let dragButtonWidth: CGFloat = 60
     
     // MARK: - Initializer
-    init(content: Content, screenHeight: CGFloat, currentPosition: Binding<DetailBottomSheetPosition>) {
+    init(content: Content, screenHeight: CGFloat, viewModel: DetailSpotViewModel) {
         self.content = content
         self.screenHeight = screenHeight
-        self._currentPosition = currentPosition
+        self.viewModel = viewModel
     }
     
     // MARK: - Body
@@ -61,7 +61,7 @@ struct DetailBottomSheet<Content: View>: View {
                         .background(Color(.systemBackground))
                 }
                 .frame(height: screenHeight)
-                .cornerRadius(currentPosition != .large ? 16 : 0)
+                .cornerRadius(viewModel.currentPosition != .large ? 16 : 0)
                 .offset(y: offset)
                 .gesture(dragGesture(geometry: geometry))
             }
@@ -69,9 +69,9 @@ struct DetailBottomSheet<Content: View>: View {
         .ignoresSafeArea(.all, edges: .bottom)
         .onAppear {
             // 초기 위치 설정
-            offset = screenHeight - currentPosition.height(screenHeight: screenHeight)
+            offset = screenHeight - viewModel.currentPosition.height(screenHeight: screenHeight)
         }
-        .onChange(of: currentPosition) { newPosition in
+        .onChange(of: viewModel.currentPosition) { newPosition in
             // 외부에서 position이 변경될 때 애니메이션
             animateToPosition(newPosition)
         }
@@ -99,7 +99,7 @@ struct DetailBottomSheet<Content: View>: View {
                 let targetPosition = determineTargetPosition(
                     translation: translation,
                     velocity: velocity,
-                    currentPosition: currentPosition
+                    currentPosition: viewModel.currentPosition
                 )
                 
                 animateToPosition(targetPosition)
@@ -142,7 +142,7 @@ struct DetailBottomSheet<Content: View>: View {
         
         // 애니메이션 완료 후 currentPosition 업데이트
         DispatchQueue.main.asyncAfter(deadline: .now() + animationDuration) {
-            currentPosition = position
+            viewModel.currentPosition = position
         }
     }
 }
