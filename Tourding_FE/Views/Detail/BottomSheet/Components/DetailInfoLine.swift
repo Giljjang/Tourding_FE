@@ -25,7 +25,7 @@ struct DetailInfoLine: View {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .top) {
                         Text(text)
-                            .foregroundColor(.gray)
+                            .foregroundColor(.gray5)
                             .font(.pretendardRegular(size: 15))
                             .lineLimit(isExpanded ? nil : 1)
                             .multilineTextAlignment(.leading)

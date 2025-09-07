@@ -69,11 +69,11 @@ final class DetailSpotViewModel: ObservableObject {
     func formatOverview(_ text: String?) -> String {
         guard let text = text else { return "" }
         
-        // <br>, <br/>, <br /> 모두 제거
+        // <br>, <br/>, <br />, <BR>, <BR/>, <BR /> 모두 제거
         let cleaned = text.replacingOccurrences(
             of: "<br ?/?>",
             with: "",
-            options: .regularExpression
+            options: [.regularExpression, .caseInsensitive]
         )
         
         print("cleaned: \(cleaned)")
