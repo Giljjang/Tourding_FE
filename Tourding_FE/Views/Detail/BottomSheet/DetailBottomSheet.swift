@@ -54,6 +54,8 @@ struct DetailBottomSheet<Content: View>: View {
                 
                 // 바텀 시트
                 VStack(spacing: 0) {
+                    // 드래그 핸들
+                    dragHandle
                     
                     // 컨텐츠
                     content
@@ -61,7 +63,11 @@ struct DetailBottomSheet<Content: View>: View {
                         .background(Color(.systemBackground))
                 }
                 .frame(height: screenHeight)
-                .cornerRadius(viewModel.currentPosition != .large ? 16 : 0)
+                .background(
+                    RoundedRectangle(cornerRadius: viewModel.currentPosition != .large ? 16 : 0)
+                        .fill(Color.white)
+                )
+//                .cornerRadius(viewModel.currentPosition != .large ? 16 : 0)
                 .offset(y: offset)
                 .gesture(dragGesture(geometry: geometry))
             }
@@ -75,6 +81,19 @@ struct DetailBottomSheet<Content: View>: View {
             // 외부에서 position이 변경될 때 애니메이션
             animateToPosition(newPosition)
         }
+    }
+    
+    // MARK: - Drag Handle
+    private var dragHandle: some View {
+        VStack(spacing: 0) {
+            // 드래그 버튼
+            RoundedRectangle(cornerRadius: 6)
+                .fill(viewModel.currentPosition != .large ? Color.gray2 : .white)
+                .frame(width: 40, height: 4)
+            
+        }
+        .padding(.top, 13)
+        .padding(.bottom, 15)
     }
     
     // MARK: - Drag Gesture

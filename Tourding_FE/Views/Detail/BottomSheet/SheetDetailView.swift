@@ -16,30 +16,31 @@ struct SheetDetailView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 8) {
                     
-                    HStack(alignment: .top, spacing: 0) {
-                        if detailViewModel.mapTypeCodeToImageName() != "" {
-                            tag
-                        }
-                        
-                        Spacer()
-                    } // : HStack
-                    .padding(.bottom, 4)
+                    if detailViewModel.mapTypeCodeToImageName() != "" {
+                        tag
+                            .padding(.bottom, 4)
+                    }
                     
                     // 제목
                     titleText
                         .padding(.bottom, 14)
                     
                     divider
-                        .padding(.bottom, 22)
                     
                     // 아래 아이콘 섹션
-                    VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        
+                        // 공통 정보
+                        commonDetailInfo
+                        
+                        //typeCode별
                         
                     } // : VStack
-                    .padding(.bottom, 22)
+                    .padding(.vertical, 22)
                     
                     // 스팟 안내 - 더보기
                     overviewIfletView
@@ -56,7 +57,7 @@ struct SheetDetailView: View {
             
             Spacer()
         } // : VStack
-        .padding(.top, 16)
+        .padding(.top, 8)
     }
     
     //MARK: - View
@@ -114,6 +115,7 @@ struct SheetDetailView: View {
                         font: .pretendardRegular(size: 15),
                         color: .gray5
                     )
+                    .padding(.bottom, 18)
                 } // : VStack
             } // : if let refundregulation
         } // : Group
@@ -137,6 +139,7 @@ struct SheetDetailView: View {
                         font: .pretendardRegular(size: 15),
                         color: .gray5
                     )
+                    .padding(.bottom, 18)
                 }// : VStack
             }
         } // : Group
@@ -150,5 +153,54 @@ struct SheetDetailView: View {
             Spacer()
                 .frame(height: 500)
         }
+    }
+    
+    private func detailInfoLine(image: String, text: String, type: String? = nil)-> some View {
+        HStack(spacing: 8) {
+            Image(image)
+            
+            if let type = type,
+               type == "link"
+            {
+                Link("\(text)", destination: URL(string: text)!)
+                    .font(.pretendardRegular(size: 15))
+            } else {
+                Text(text)
+                    .foregroundColor(.gray5)
+                    .font(.pretendardRegular(size: 15))
+            }
+        } // : HStack
+    }
+    
+    private var commonDetailInfo: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // 주소 - 더보기 address
+            if let address = detailViewModel.detailData?.address,
+               address != "" {
+                detailInfoLine(image: "icon_Address", text: address)
+            }
+            
+            // 전화번호 tel
+            if let tel = detailViewModel.detailData?.tel,
+               tel != "" {
+                detailInfoLine(image: "icon_Phone number", text: tel)
+            }
+            
+            // 홈페이지 주소 homepage
+            if let homepage = detailViewModel.detailData?.homepage,
+               homepage != "",
+               let link = detailViewModel.extractURL(from:homepage)
+            {
+                detailInfoLine(image: "icon_Web site", text: link, type: "link")
+            }
+        }
+        .padding(.bottom, 10)
+    }
+    
+    //관광지
+    private var tourDetailInfo: some View {
+        VStack(alignment: .leading, spacing: 10) {
+        }
+        .padding(.bottom, 10)
     }
 }

@@ -46,6 +46,7 @@ final class DetailSpotViewModel: ObservableObject {
             return "" // 매칭 안되면 기본 이미지
         }
     }
+    
     func mapTypeCodeToName() -> String {
         switch detailData?.typeCode {
         case "A01": return "자연"
@@ -59,6 +60,21 @@ final class DetailSpotViewModel: ObservableObject {
         }
     }
     
+    func mapContenttypeidToName() -> String {
+        switch detailData?.contenttypeid {
+        case "12": return "관광지"
+        case "14": return "문화시설"
+        case "15": return "행사/공연/축제"
+        case "25": return "여행코스"
+        case "28": return "레포츠"
+        case "32": return "숙박"
+        case "38": return "쇼핑"
+        case "39": return "음식점"
+        default:
+            return ""
+        }
+    }
+    
     func formatOverview(_ text: String?) -> String {
         guard let text = text else { return "" }
         // <br>, <br/>, <br /> 모두 \n으로 치환
@@ -67,10 +83,24 @@ final class DetailSpotViewModel: ObservableObject {
             with: "\n",
             options: .regularExpression
         )
+        
+        print("replaced: \(replaced)")
         return replaced
     }
 
-
+    func extractURL(from htmlString: String?) -> String? {
+        guard let html = htmlString else { return nil }
+        
+        let pattern = "href=\"([^\"]+)\""
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else { return nil }
+        
+        if let match = regex.firstMatch(in: html, options: [], range: NSRange(html.startIndex..., in: html)),
+           let range = Range(match.range(at: 1), in: html) {
+            return String(html[range])
+        }
+        
+        return nil
+    }
     
     //MARK: - API 호출
     @MainActor
