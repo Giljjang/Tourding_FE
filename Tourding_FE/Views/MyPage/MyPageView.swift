@@ -13,6 +13,8 @@ struct MyPageView: View {
     @EnvironmentObject var modalManager: ModalManager
     @EnvironmentObject var navigationManager: NavigationManager
     @ObservedObject var recentSearchViewModel : RecentSearchViewModel
+    @EnvironmentObject var routeSharedManager: RouteSharedManager
+
     
     init(viewModel: MyPageViewModel, recentSearchViewModel: RecentSearchViewModel) {
         self.myPageViewModel = viewModel
@@ -53,6 +55,7 @@ struct MyPageView: View {
                         onActive: {
                             myPageViewModel.logout(globalLoginViewModel: loginViewModel)
                             navigationManager.currentTab = .HomewView
+                            routeSharedManager.clearRoute()
                             print("로그아웃됨")
                         }
                     )
@@ -81,6 +84,8 @@ struct MyPageView: View {
                             myPageViewModel.withdraw(globalLoginViewModel: loginViewModel)
                             recentSearchViewModel.clear()
                             navigationManager.currentTab = .HomewView
+                            loginViewModel.deleteUserFromServer()
+                            routeSharedManager.clearRoute()
                             print("회원탈퇴됨")
                         }
                     )
