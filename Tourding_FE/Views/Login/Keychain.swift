@@ -52,6 +52,48 @@ struct KeychainHelper {
         delete(key: "accessToken")
         delete(key: "refreshToken")
     }
+
+    
+    //MARK: - 이건 로컬 서버에서 받아온 uid 저장용
+    
+    static func saveUid(key: Int) {
+        let value = String(key) // Int → String 변환
+        if let data = value.data(using: .utf8) {
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrAccount as String: "uid",   // 항상 고정된 이름
+                kSecValueData as String: data
+            ]
+            SecItemDelete(query as CFDictionary)
+            SecItemAdd(query as CFDictionary, nil)
+        }
+    }
+
+    static func loadUid() -> Int? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: "uid", // 고정 이름
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        if status == errSecSuccess, let data = result as? Data,
+           let stringValue = String(data: data, encoding: .utf8),
+           let intValue = Int(stringValue) {
+            return intValue
+        }
+        return nil
+    }
+
+    static func deleteUid() {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: "uid"
+        ]
+        SecItemDelete(query as CFDictionary)
+    }
+
 }
 
 func saveKakaoToken(token: OAuthToken) {
