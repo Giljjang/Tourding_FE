@@ -9,7 +9,7 @@ import Foundation
 import NMapsMap
 
 final class RidingViewModel: ObservableObject {
-    @Published var userId: Int = 2
+    @Published var userId: Int?
     @Published var isLoading: Bool = false
     @Published var flag: Bool = false // 라이딩 전 <-> 라이딩 후 화면 변경
     
@@ -59,7 +59,7 @@ final class RidingViewModel: ObservableObject {
     ) {
         self.routeRepository = routeRepository
         self.kakaoRepository = kakaoRepository
-        
+        self.userId = KeychainHelper.loadUid()
     }
     
     // 드래그앤 드랍 후 마커 업데이트 메서드 추가
@@ -185,5 +185,4 @@ extension RidingViewModel {
             
         }
     }
-    
 }

@@ -14,7 +14,7 @@ extension RidingViewModel {
     func getRouteLocationAPI() async {
         isLoading = true
         do {
-            let response = try await routeRepository.getRoutesLocationName(userId: userId)
+            let response = try await routeRepository.getRoutesLocationName(userId: userId!)
             routeLocation = response
             print("response : \(routeLocation)")
             
@@ -49,7 +49,7 @@ extension RidingViewModel {
     func getRoutePathAPI() async {
         isLoading = true
         do {
-            let response = try await routeRepository.getRoutesPath(userId: userId)
+            let response = try await routeRepository.getRoutesPath(userId: userId!)
             routeMapPaths = response
             
             pathCoordinates = routeMapPaths.compactMap { item in
@@ -92,7 +92,7 @@ extension RidingViewModel {
         let typeCode = typeCodes.joined(separator: ",")
         
         let requestBody = RequestRouteModel(
-            userId: userId,
+            userId: userId!,
             start: "\(start.lon),\(start.lat)",
             goal: "\(end.lon),\(end.lat)",
             wayPoints: wayPoints,
@@ -133,7 +133,7 @@ extension RidingViewModel {
         let typeCode = typeCodes.joined(separator: ",")
         
         let requestBody = RequestRouteModel(
-            userId: userId,
+            userId: userId!,
             start: "\(start.lon),\(start.lat)",
             goal: "\(end.lon),\(end.lat)",
             wayPoints: wayPoints,
@@ -160,7 +160,7 @@ extension RidingViewModel {
     func getRouteGuideAPI() async {
         isLoading = true
         do {
-            let response = try await routeRepository.getRoutesGuide(userId: userId)
+            let response = try await routeRepository.getRoutesGuide(userId: userId!)
             guideList = response
             
             print("guideList: \(guideList)")

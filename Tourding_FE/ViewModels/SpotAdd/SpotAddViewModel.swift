@@ -9,7 +9,7 @@ import Foundation
 
 @MainActor
 final class SpotAddViewModel: ObservableObject {
-    @Published var userId: Int = 2
+    @Published var userId: Int?
     
     @Published var clickFliter: String = ""
     let tagFilter: [String] = ["전체","자연", "인문(문화/예술/역사)", "레포츠", "쇼핑", "음식", "숙박"]
@@ -27,6 +27,7 @@ final class SpotAddViewModel: ObservableObject {
         routeRepository: RouteRepositoryProtocol) {
             self.tourRepository = tourRepository
             self.routeRepository = routeRepository
+            self.userId = KeychainHelper.loadUid()
     }
     
     //MARK: - View 로직
@@ -119,7 +120,7 @@ final class SpotAddViewModel: ObservableObject {
     func getRouteLocationAPI() async {
         isLoading = true
         do {
-            let response = try await routeRepository.getRoutesLocationName(userId: userId)
+            let response = try await routeRepository.getRoutesLocationName(userId: userId!)
             routeLocation = response
             
             print("routeLocation: \(routeLocation)")
@@ -164,7 +165,7 @@ final class SpotAddViewModel: ObservableObject {
         let typeCode = typeCodes.joined(separator: ",")
 
         let requestBody = RequestRouteModel(
-            userId: userId,
+            userId: userId!,
             start: "\(start.lon),\(start.lat)",
             goal: "\(end.lon),\(end.lat)",
             wayPoints: wayPoints,

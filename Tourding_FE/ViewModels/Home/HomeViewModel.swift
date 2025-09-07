@@ -9,7 +9,7 @@ import Foundation
 
 final class HomeViewModel: ObservableObject {
     //MARK: - 서버 데이터 저장
-    @Published var userId: Int = 2
+    @Published var userId: Int?
     @Published var routeLocation: [LocationNameModel] = []
     
     // MARK: - Home 화면 전용 상태들
@@ -20,47 +20,52 @@ final class HomeViewModel: ObservableObject {
     
     init(routeRepository: RouteRepositoryProtocol) {
         self.routeRepository = routeRepository
+        self.userId = KeychainHelper.loadUid()
+        
     }
     
     // MARK: - Home 화면 전용 비즈니스 로직
     
     func isFirstAndLastCoordinateEqual(start: LocationData, end: LocationData) -> Bool {
-
+        
         return start.latitude == end.latitude && start.longitude == end.longitude
     }
     
     //MARK: - API 호출
     @MainActor
     func postRouteAPI(start: LocationData, end: LocationData) async {
+        guard let uid = userId else {
+            print("⏭️ postRouteAPI skipped: userId is nil")
+            return
+        }
         isLoading = true
-        let requestBody: RequestRouteModel = RequestRouteModel(
-            userId: userId,
+        let requestBody = RequestRouteModel(
+            userId: uid,
             start: "\(start.longitude),\(start.latitude)",
             goal: "\(end.longitude),\(end.latitude)",
             wayPoints: "",
             locateName: "\(start.name),\(end.name)",
             typeCode: ""
         )
-        
         do {
-            let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
-
-            isLoading = false
-//            print("POST SUCCESS: /routes \(response)")
+            try await routeRepository.postRoutes(requestBody: requestBody)
         } catch {
-            print("POST ERROR: /routes \(error)")
+            print("POST ERROR:", error)
         }
+        isLoading = false
     }
     
     @MainActor
     func getRouteLocationAPI() async {
+        guard let uid = userId else {
+            print("⏭️ getRouteLocationAPI skipped: userId is nil")
+            return
+        }
         do {
-            let response = try await routeRepository.getRoutesLocationName(userId: userId)
+            let response = try await routeRepository.getRoutesLocationName(userId: uid)
             routeLocation = response
-//            print("response : \(routeLocation)")
         } catch {
-            print("GET ERROR: /routes/location-name \(error)")
+            print("GET ERROR:", error)
         }
     }
-    
 }
