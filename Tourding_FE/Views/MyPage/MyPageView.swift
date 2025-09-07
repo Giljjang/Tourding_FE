@@ -12,10 +12,11 @@ struct MyPageView: View {
     @ObservedObject var myPageViewModel: MyPageViewModel // 마이페이지 ViewModel
     @EnvironmentObject var modalManager: ModalManager
     @EnvironmentObject var navigationManager: NavigationManager
-    @EnvironmentObject var recentSearchViewModel : RecentSearchViewModel
+    @ObservedObject var recentSearchViewModel : RecentSearchViewModel
     
-    init(viewModel: MyPageViewModel) {
+    init(viewModel: MyPageViewModel, recentSearchViewModel: RecentSearchViewModel) {
         self.myPageViewModel = viewModel
+        self.recentSearchViewModel = recentSearchViewModel
     }
     
     var body: some View {
@@ -133,9 +134,10 @@ struct MyPageView: View {
 
 #Preview {
     
-   let myPageViewModel = MyPageViewModel() // 마이페이지 ViewModel
+    let myPageViewModel = MyPageViewModel() // 마이페이지 ViewModel
+    let recentSearchViewModel = RecentSearchViewModel()
 
-    MyPageView(viewModel: myPageViewModel)
+    MyPageView(viewModel: myPageViewModel, recentSearchViewModel: recentSearchViewModel)
         .environmentObject(NavigationManager())
         .environmentObject(LoginViewModel())
 }

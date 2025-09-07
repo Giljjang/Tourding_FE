@@ -32,7 +32,7 @@ struct TabContentView: View {
                     dsviewModel: viewModel.dsViewModel
                 )
             case .MyPageView :
-                MyPageView(viewModel: viewModel.myPageViewModel)
+                MyPageView(viewModel: viewModel.myPageViewModel, recentSearchViewModel: viewModel.recentSearchViewModel)
             default:
                 HomeView(viewModel: viewModel.homeViewModel)
             }
@@ -70,12 +70,14 @@ struct TabContentView: View {
     let myPageViewModel = MyPageViewModel()
     let spotSearchViewModel = SpotSearchViewModel(tourRepository: TourRepository)
     let dsViewModel = DestinationSearchViewModel()
+    let RecentSearchViewModel = RecentSearchViewModel()
     
     let viewModels = TabViewModelsContainer(
         homeViewModel: homeViewModel,
         myPageViewModel: myPageViewModel,
         spotSearchViewModel: spotSearchViewModel,
-        dsViewModel: dsViewModel
+        dsViewModel: dsViewModel,
+        recentSearchViewModel: RecentSearchViewModel
     )
     
     TabContentView(viewModel: viewModels)
