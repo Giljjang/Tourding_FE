@@ -104,6 +104,9 @@ final class SpotAddViewModel: ObservableObject {
                 typeCode: typeCode
             )
             
+            print("fetchNearbySpots typeCode : \(typeCode)")
+//            print("fetchNearbySpots : \(results)")
+            
             //추천 코스 제외
             spots = results.filter { $0.typeCode != "C01" }
         

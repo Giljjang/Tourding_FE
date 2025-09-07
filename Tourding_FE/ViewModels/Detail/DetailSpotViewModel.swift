@@ -33,6 +33,37 @@ final class DetailSpotViewModel: ObservableObject {
         }
     }
     
+    func mapTypeCodeToImageName() -> String {
+        switch detailData?.typeCode {
+        case "A01": return "nature"
+        case "A02": return "humon"
+        case "A03": return "leport"
+        case "A04": return "shoping"
+        case "A05": return "food"
+        case "B02": return "sleep"
+        default:
+            return "icon_menu" // 매칭 안되면 기본 이미지
+        }
+    }
+    func mapTypeCodeToName() -> String {
+        switch detailData?.typeCode {
+        case "A01": return "자연"
+        case "A02": return "인문(문화/예술/역사)"
+        case "A03": return "레포츠"
+        case "A04": return "쇼핑"
+        case "A05": return "음식"
+        case "B02": return "숙박"
+        default:
+            return ""
+        }
+    }
+    
+    func cleanOverviewText(_ text: String?) -> String {
+        guard let text = text else { return "" }
+        return text.replacingOccurrences(of: "<br>", with: "\n")
+    }
+
+    
     //MARK: - API 호출
     @MainActor
     func getTourAreaDetailAPI(requestBody: ReqDetailModel) async {
@@ -42,7 +73,7 @@ final class DetailSpotViewModel: ObservableObject {
             print("ReqDetailModel: \(requestBody)")
             let response = try await tourRepository.getTourAreaDetail(requestBody: requestBody)
             
-//            print("Detail: \(response)")
+            print("Detail: \(response)")
             
             detailData = response
             
