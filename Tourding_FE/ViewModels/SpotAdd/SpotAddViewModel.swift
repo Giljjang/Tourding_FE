@@ -9,7 +9,7 @@ import Foundation
 
 @MainActor
 final class SpotAddViewModel: ObservableObject {
-    @Published var userId: Int = 2
+    @Published var userId: Int?
     
     @Published var clickFliter: String {
         didSet {
@@ -34,6 +34,7 @@ final class SpotAddViewModel: ObservableObject {
             
             // UserDefaults에서 저장된 필터 상태 복원
             self.clickFliter = UserDefaults.standard.string(forKey: "SpotAddClickFilter") ?? "전체"
+            self.userId = KeychainHelper.loadUid()
     }
     
     
@@ -131,7 +132,7 @@ final class SpotAddViewModel: ObservableObject {
     func getRouteLocationAPI() async {
         isLoading = true
         do {
-            let response = try await routeRepository.getRoutesLocationName(userId: userId)
+            let response = try await routeRepository.getRoutesLocationName(userId: userId!)
             routeLocation = response
             
 //            print("routeLocation: \(routeLocation)")
@@ -175,7 +176,7 @@ final class SpotAddViewModel: ObservableObject {
         let typeCode = typeCodes.joined(separator: ",")
 
         let requestBody = RequestRouteModel(
-            userId: userId,
+            userId: userId!,
             start: "\(start.lon),\(start.lat)",
             goal: "\(end.lon),\(end.lat)",
             wayPoints: wayPoints,

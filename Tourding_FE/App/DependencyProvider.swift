@@ -16,12 +16,14 @@ struct DependencyProvider {
         let myPageViewModel = MyPageViewModel()
         let spotSearchViewModel = SpotSearchViewModel(tourRepository: Tourerepository)
         let dsViewModel = DestinationSearchViewModel()
+        let recentSearchViewModel = RecentSearchViewModel()
         
         return TabViewModelsContainer(
             homeViewModel: homeViewModel,
             myPageViewModel: myPageViewModel,
             spotSearchViewModel: spotSearchViewModel,
-            dsViewModel: dsViewModel
+            dsViewModel: dsViewModel,
+            recentSearchViewModel: recentSearchViewModel
         )
     }
     
