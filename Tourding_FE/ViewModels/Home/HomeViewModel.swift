@@ -9,7 +9,7 @@ import Foundation
 
 final class HomeViewModel: ObservableObject {
     //MARK: - 서버 데이터 저장
-    @Published var userId: Int = 2
+    @Published var userId: Int?
     @Published var routeLocation: [LocationNameModel] = []
     
     // MARK: - Home 화면 전용 상태들
@@ -20,6 +20,8 @@ final class HomeViewModel: ObservableObject {
     
     init(routeRepository: RouteRepositoryProtocol) {
         self.routeRepository = routeRepository
+        self.userId = KeychainHelper.loadUid()
+
     }
     
     // MARK: - Home 화면 전용 비즈니스 로직
@@ -34,7 +36,7 @@ final class HomeViewModel: ObservableObject {
     func postRouteAPI(start: LocationData, end: LocationData) async {
         isLoading = true
         let requestBody: RequestRouteModel = RequestRouteModel(
-            userId: userId,
+            userId: userId!,
             start: "\(start.longitude),\(start.latitude)",
             goal: "\(end.longitude),\(end.latitude)",
             wayPoints: "",
@@ -55,12 +57,9 @@ final class HomeViewModel: ObservableObject {
     @MainActor
     func getRouteLocationAPI() async {
         do {
-            let response = try await routeRepository.getRoutesLocationName(userId: userId)
-            routeLocation = response
-//            print("response : \(routeLocation)")
+            routeLocation = try await routeRepository.getRoutesLocationName(userId: userId!)
         } catch {
-            print("GET ERROR: /routes/location-name \(error)")
+            print("GET ERROR:", error)
         }
     }
-    
 }
