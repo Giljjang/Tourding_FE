@@ -177,13 +177,13 @@ struct SheetDetailView: View {
             // 주소 - 더보기 address
             if let address = detailViewModel.detailData?.address,
                address != "" {
-                detailInfoLine(image: "icon_Address", text: address)
+                DetailInfoLine(image: "icon_Address", text: address, type: nil)
             }
             
             // 전화번호 tel
             if let tel = detailViewModel.detailData?.tel,
                tel != "" {
-                detailInfoLine(image: "icon_Phone number", text: tel)
+                DetailInfoLine(image: "icon_Phone number", text: tel, type: nil)
             }
             
             // 홈페이지 주소 homepage
@@ -191,7 +191,7 @@ struct SheetDetailView: View {
                homepage != "",
                let link = detailViewModel.extractURL(from:homepage)
             {
-                detailInfoLine(image: "icon_Web site", text: link, type: "link")
+                DetailInfoLine(image: "icon_Web site", text: link, type: "link")
             }
         }
         .padding(.bottom, 10)
@@ -200,6 +200,9 @@ struct SheetDetailView: View {
     //관광지
     private var tourDetailInfo: some View {
         VStack(alignment: .leading, spacing: 10) {
+            
+            //개장일/쉬는날/이용시간
+            
         }
         .padding(.bottom, 10)
     }
