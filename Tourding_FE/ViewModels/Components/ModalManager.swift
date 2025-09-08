@@ -27,6 +27,9 @@ final class ModalManager: ObservableObject {
     var onCancel: (() -> Void)?
     var onActive: (() -> Void)?
     
+    // 이미지 확대 모달
+    @Published var isImageZoomPresented: Bool = false
+    
     // 토스트 메시지
     @Published var isToastMessage: Bool = false
     
@@ -51,5 +54,15 @@ final class ModalManager: ObservableObject {
         self.isPresented = false
         self.onCancel = nil
         self.onActive = nil
+    }
+    
+    // 이미지 확대 모달 표시
+    func showImageZoom() {
+        self.isImageZoomPresented = true
+    }
+    
+    // 이미지 확대 모달 숨기기
+    func hideImageZoom() {
+        self.isImageZoomPresented = false
     }
 }

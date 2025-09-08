@@ -13,8 +13,6 @@ struct DetailSpotView: View {
     
     @StateObject private var detailViewModel: DetailSpotViewModel
     
-    @State private var currentPosition: DetailBottomSheetPosition = .standard
-    
     let isSpotAdd: Bool
     let detailId: ReqDetailModel
     
@@ -26,33 +24,33 @@ struct DetailSpotView: View {
         self.detailId = detailId
     }
     
+    let topSafeArea = UIApplication.shared.connectedScenes
+        .compactMap { $0 as? UIWindowScene }
+        .first?.windows.first?.safeAreaInsets.top ?? 0
+    let screenWidth = UIScreen.main.bounds.width
+    
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .bottom) {
                 
-                // 배경 컨텐츠
-                LinearGradient(
-                    colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                detailImage
                 
                 DetailBottomSheet(
-                    content: SheetDetailView(),
+                    content: SheetDetailView(detailViewModel: detailViewModel),
                     screenHeight: geometry.size.height,
-                    currentPosition: $currentPosition
+                    viewModel: detailViewModel
                 )
                 
-                if currentPosition == .large {
+                if detailViewModel.currentPosition == .large {
                     largeTopBar(geometry: geometry)
-
                 }
                 
                 backButton
                 
                 if isSpotAdd {
-                    ridingStartButtom
+                    spotAddButton
+                        .padding(.bottom, 30)
+                        .background(.white)
                 }
                 
                 //커스텀 모달
@@ -68,6 +66,13 @@ struct DetailSpotView: View {
                             x: geometry.size.width / 2,
                             y: geometry.size.height / 2
                         )
+                }
+                
+                // 이미지 확대 모달
+                if modalManager.isImageZoomPresented{
+                    ImageZoomView(
+                        imageUrl: detailViewModel.detailData?.firstimage ?? "",
+                        title: detailViewModel.detailData?.title)
                 }
                 
                 if detailViewModel.isLoading {
@@ -90,6 +95,7 @@ struct DetailSpotView: View {
         .onAppear{
             Task{
                 await detailViewModel.getTourAreaDetailAPI(requestBody: detailId)
+                await detailViewModel.getRouteLocationAPI()
             }
         } // :onAppear
     }
@@ -106,7 +112,7 @@ struct DetailSpotView: View {
                 .background(Color.white)
                 .cornerRadius(30)
         }
-        .position(x: 36, y: 73)
+        .position(x: 36, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : backButton
     
     private func largeTopBar(geometry: GeometryProxy) -> some View {
@@ -117,7 +123,7 @@ struct DetailSpotView: View {
             }
             .frame(
                 height: geometry.size.height
-                      - currentPosition.height(screenHeight: geometry.size.height)
+                - detailViewModel.currentPosition.height(screenHeight: geometry.size.height)
                       + geometry.safeAreaInsets.top
             )
             .background(Color.white)
@@ -134,20 +140,47 @@ struct DetailSpotView: View {
         .ignoresSafeArea(edges: .top)
     }
     
-    private var ridingStartButtom: some View {
+    private var spotAddButton: some View {
         Button(action:{
+            let detail = detailViewModel.detailData
+            let spot = SpotData(
+                title: detail?.title ?? "",
+                addr1: "", typeCode: "", contentid: "", contenttypeid: "", firstimage: "", firstimage2: "",
+                mapx: detail?.lon ?? "", mapy: detail?.lat ?? "")
+            
+            if detailViewModel.containsCoordinate(originalData: detailViewModel.routeLocation, selectedData: spot){
+                modalManager.showModal(
+                    title: "출발지와 도착지가 동일해요",
+                    subText: "확인 후 다른 위치로 설정해 주세요",
+                    activeText: "확인하기",
+                    showView: .detail,
+                    onCancel: {
+                        print("취소됨")
+                    },
+                    onActive: {
+                        print("시작됨")
+                    }
+                )
+            } else {
             modalManager.showModal(
                 title: "코스에 이 스팟을 추가할까요?",
-                subText: "",
+                subText: detailViewModel.detailData?.title ?? "",
                 activeText: "추가하기",
                 showView: .detail,
                 onCancel: {
                     print("취소됨")
                 },
                 onActive: {
-                    print("시작됨")
-                }
+                    print("추가됨")
+                    Task{
+                        await detailViewModel.postRouteAPI(originalData: detailViewModel.routeLocation, updatedData: spot)
+                        await detailViewModel.getRouteLocationAPI()
+                        
+                        navigationManager.pop(count: 2)
+                    }
+                } // : onActive
             )
+            }//if-else
         }){
             
             HStack(spacing: 0){
@@ -161,6 +194,7 @@ struct DetailSpotView: View {
                 
                 Spacer()
             }
+            .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background(Color.gray5)
             .cornerRadius(10)
@@ -168,5 +202,54 @@ struct DetailSpotView: View {
         }
         .padding(.bottom, 18)
         .shadow(color: .white.opacity(0.8), radius: 8, x: 0, y: -14)
-    } // : ridingStartButtom
+    } // : spotAddButton
+    
+    private var detailImage: some View {
+        VStack(alignment: .leading, spacing: 0){
+            VStack(alignment: .leading, spacing: 0) {
+                if let first = detailViewModel.detailData?.firstimage,
+                   !first.isEmpty {
+                    AsyncImage(url: URL(string: first)) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        defaultImage
+                    }
+                    .onTapGesture {
+                        modalManager.showImageZoom()
+                    }
+                } else if let second = detailViewModel.detailData?.firstimage2,
+                          !second.isEmpty {
+                    AsyncImage(url: URL(string: second)) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        defaultImage
+                    }
+                    .onTapGesture {
+                        modalManager.showImageZoom()
+                    }
+                } else {
+                    defaultImage
+                }
+            } // : VStack
+            .frame(height: 390)
+            .frame(maxWidth: screenWidth)
+        
+            Spacer()
+            
+        } // : VStack
+    }
+    
+    private var defaultImage: some View {
+        VStack{
+            Image("defaultImage_empty")
+                .padding(.top, 43)
+        } // : VStack
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.gray2)
+    }
+
 }

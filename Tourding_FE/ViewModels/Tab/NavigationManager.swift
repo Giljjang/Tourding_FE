@@ -17,7 +17,7 @@ enum ViewType : Hashable {
     case RidingView
     case SpotAddView(lat: String, lon: String)
     case ServiceView
-    case DestinationSearchView(isFromHome: Bool)
+    case DestinationSearchView(isFromHome: Bool, isAddSpot: Bool)
     case DetailSpotView(isSpotAdd: Bool, detailId: ReqDetailModel)
 }
 
@@ -41,3 +41,17 @@ final class NavigationManager: ObservableObject {
         path.removeAll()
     }
 }
+
+extension NavigationManager {
+    // 지정한 개수만큼 pop. 기본값은 1
+    func pop(count: Int = 1) {
+        guard !path.isEmpty else {
+            print("⚠️ Cannot pop: Navigation path is empty")
+            return
+        }
+        
+        let removeCount = min(count, path.count)
+        path.removeLast(removeCount)
+    }
+}
+

@@ -27,11 +27,15 @@ struct RidingView: View {
         self._ridingViewModel = StateObject(wrappedValue: ridingViewModel)
     }
     
+    let topSafeArea = UIApplication.shared.connectedScenes
+        .compactMap { $0 as? UIWindowScene }
+        .first?.windows.first?.safeAreaInsets.top ?? 0
+    
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .bottom) {
                 // 배경 컨텐츠
-                NMapView(ridingViewModel: ridingViewModel)
+                NMapView(ridingViewModel: ridingViewModel, userLocationManager: locationManager)
                     .ignoresSafeArea(edges: .top)
                 
                 if currentPosition == .large {
@@ -197,7 +201,7 @@ struct RidingView: View {
                 .background(Color.white)
                 .cornerRadius(30)
         }
-        .position(x: 36, y: 73)
+        .position(x: 36, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : backButton
     
     private var ridingStartButtom: some View {
@@ -268,7 +272,7 @@ struct RidingView: View {
             .background(ridingViewModel.showToilet ? Color.gray5 : Color.white)
             .cornerRadius(12)
         }
-        .position(x: 110, y: 73)
+        .position(x: 110, y:SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : toiletButton
     
     private var csButton: some View {
@@ -291,7 +295,7 @@ struct RidingView: View {
             .background(ridingViewModel.showConvenienceStore ? Color.gray5 : Color.white)
             .cornerRadius(12)
         }
-        .position(x: 208, y: 73)
+        .position(x: 208, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : csButton
     
     private func checkAndRequestLocationPermission() {
@@ -322,10 +326,11 @@ struct RidingView: View {
             locationManager.requestLocationPermission()
             
         case .authorizedWhenInUse, .authorizedAlways:
-            // 권한이 허용된 경우 현재 위치 가져오기
-            locationManager.getCurrentLocation()
             
             if ridingViewModel.flag {
+                // 권한이 허용된 경우 현재 위치 가져오기
+                locationManager.getCurrentLocation()
+                
                 // 위치 업데이트 콜백 설정
                 locationManager.onLocationUpdate = { newLocation in
                     ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)

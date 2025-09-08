@@ -82,8 +82,8 @@ struct Tourding_FEApp: App {
                                         spotAddViewModel: spotAddViewModel,
                                         lat: lat,
                                         lon: lon)
-                                case .DestinationSearchView(let isFromHome):
-                                    DestinationSearchView(isFromHome: isFromHome, filterViewModel: filterViewModel, RecentSearchViewModel: RecentSearchViewModel)
+                                case .DestinationSearchView(let isFromHome, let isAddSpot):
+                                    DestinationSearchView(isFromHome: isFromHome, filterViewModel: filterViewModel, RecentSearchViewModel: RecentSearchViewModel, isAddSpot: isAddSpot)
                                 case .DetailSpotView(let isSpotAdd, let detailId):
                                     DetailSpotView(
                                         detailViewModel: detailViewModel,
@@ -102,7 +102,7 @@ struct Tourding_FEApp: App {
                 .environmentObject(modalManager)
                 .environmentObject(loginViewModel)
                 .environmentObject(routeManager)
-//                .environmentObject(recentSearchViewModel)
+                .environmentObject(RecentSearchViewModel)
                 .onOpenURL { url in
                     if AuthApi.isKakaoTalkLoginUrl(url) {
                         _ = AuthController.handleOpenUrl(url: url)

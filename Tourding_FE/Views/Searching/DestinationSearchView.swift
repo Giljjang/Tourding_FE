@@ -31,11 +31,15 @@ struct DestinationSearchView: View {
     
     
     let isFromHome: Bool
+    let isAddSpot: Bool
     
-    init(isFromHome: Bool, filterViewModel: FilterBarViewModel, RecentSearchViewModel: RecentSearchViewModel) {
+    init(isFromHome: Bool, filterViewModel: FilterBarViewModel, RecentSearchViewModel: RecentSearchViewModel,
+         isAddSpot: Bool
+    ) {
         self.isFromHome = isFromHome
         self.filterViewModel = filterViewModel
         self.recentSearchViewModel = RecentSearchViewModel
+        self.isAddSpot = isAddSpot
     }
     
     var body: some View {
@@ -290,7 +294,9 @@ struct DestinationSearchView: View {
                     onSelect: { spot in
                         // 로컬 스팟 선택 시 동작
                         print("로컬 스팟 선택: \(spot)")
-                        // 필요한 경우 여기서 상세 화면으로 이동하거나 다른 동작 수행
+                        // 필요한 경우 여기서 상세 화면으로 이동
+                        let data = ReqDetailModel(contentid: spot.contentid, contenttypeid: spot.contenttypeid)
+                        navigationManager.push(.DetailSpotView(isSpotAdd: isAddSpot, detailId: data))
                     },
                     onLoadMore: { index in
                         if index == filterViewModel.localResults.count - 1, filterViewModel.hasMoreResults {

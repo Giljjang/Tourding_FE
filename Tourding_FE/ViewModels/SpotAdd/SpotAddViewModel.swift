@@ -11,7 +11,11 @@ import Foundation
 final class SpotAddViewModel: ObservableObject {
     @Published var userId: Int?
     
-    @Published var clickFliter: String = ""
+    @Published var clickFliter: String {
+        didSet {
+            UserDefaults.standard.set(clickFliter, forKey: "SpotAddClickFilter")
+        }
+    }
     let tagFilter: [String] = ["전체","자연", "인문(문화/예술/역사)", "레포츠", "쇼핑", "음식", "숙박"]
     
     @Published var routeLocation: [LocationNameModel] = []
@@ -27,8 +31,12 @@ final class SpotAddViewModel: ObservableObject {
         routeRepository: RouteRepositoryProtocol) {
             self.tourRepository = tourRepository
             self.routeRepository = routeRepository
+            
+            // UserDefaults에서 저장된 필터 상태 복원
+            self.clickFliter = UserDefaults.standard.string(forKey: "SpotAddClickFilter") ?? "전체"
             self.userId = KeychainHelper.loadUid()
     }
+    
     
     //MARK: - View 로직
     func matchImageName(for title: String)-> String {
@@ -97,7 +105,7 @@ final class SpotAddViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            spots = try await tourRepository.searchLocationSpots(
+            var results = try await tourRepository.searchLocationSpots(
                 pageNum: 0,
                 mapX: lng,
                 mapY: lat,
@@ -105,7 +113,11 @@ final class SpotAddViewModel: ObservableObject {
                 typeCode: typeCode
             )
             
-//            print("spots : \(spots)")
+            print("fetchNearbySpots typeCode : \(typeCode)")
+//            print("fetchNearbySpots : \(results)")
+            
+            //추천 코스 제외
+            spots = results.filter { $0.typeCode != "C01" }
         
         } catch {
             errorMessage = "스팟을 불러오는데 실패했습니다."
@@ -123,7 +135,7 @@ final class SpotAddViewModel: ObservableObject {
             let response = try await routeRepository.getRoutesLocationName(userId: userId!)
             routeLocation = response
             
-            print("routeLocation: \(routeLocation)")
+//            print("routeLocation: \(routeLocation)")
             
         } catch {
             print("GET ERROR: /routes/location-name \(error)")
@@ -131,7 +143,6 @@ final class SpotAddViewModel: ObservableObject {
         isLoading = false
     }
     
-    //Todo:
     @MainActor
     func postRouteAPI(originalData: [LocationNameModel], updatedData: SpotData) async {
         isLoading = true
@@ -173,8 +184,7 @@ final class SpotAddViewModel: ObservableObject {
             typeCode: typeCode
         )
 
-        
-        print("requestBody: \(requestBody)")
+//        print("requestBody: \(requestBody)")
         
         do {
             let response: () = try await routeRepository.postRoutes(requestBody: requestBody)

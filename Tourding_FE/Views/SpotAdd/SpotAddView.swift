@@ -75,7 +75,7 @@ struct SpotAddView: View {
         .background(Color.gray1)
         .onAppear{
             Task{
-                await spotAddViewModel.fetchNearbySpots(lat: lat, lng: lon, typeCode: "")
+                await spotAddViewModel.fetchNearbySpots(lat: lat, lng: lon, typeCode: spotAddViewModel.clickFliter == "전체" ? "" : spotAddViewModel.matchTypeCodeName(for: spotAddViewModel.clickFliter))
                 await spotAddViewModel.getRouteLocationAPI()
             }
         }//: onAppear
@@ -102,6 +102,7 @@ struct SpotAddView: View {
             
             Button(action:{
                 //Todo: 검색 페이지로 이동
+                navigationManager.push(.DestinationSearchView(isFromHome: false, isAddSpot: true))
             }){
                 Image("spotAdd_search")
                     .padding(.trailing, 16)
@@ -124,10 +125,13 @@ struct SpotAddView: View {
                     .font(.pretendardMedium(size: 16))
             } // : VStack
             .padding(.top, 46)
-            .padding(.trailing, 27)
+//            .padding(.trailing, 27)
+            
+            Spacer()
             
             Image("illust_Recommended spot")
                 .padding(.top, 14)
+                .padding(.trailing, 28)
         } // : HStack
         .padding(.leading, 16)
         .padding(.bottom, 16)

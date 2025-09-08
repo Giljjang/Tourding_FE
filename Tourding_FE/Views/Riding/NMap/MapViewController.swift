@@ -18,6 +18,8 @@ final class MapViewController: UIViewController {
     private var mapView: NMFNaverMapView!
     let locationManager = LocationManager()
     private let locationButton = UIButton(type: .custom)
+    var ridingViewModel: RidingViewModel?
+    var userLocationManager: UserLocationManager?
     
     // MARK: - Data Properties
     var pathCoordinates: [NMGLatLng] = []
@@ -82,6 +84,18 @@ final class MapViewController: UIViewController {
         locationManager.startLocationUpdates()
     }
     
+    // UserLocationManager 설정 메서드 추가
+    func setupUserLocationManager(_ userLocationManager: UserLocationManager) {
+        self.userLocationManager = userLocationManager
+        
+        // UserLocationManager의 위치 업데이트 콜백 설정
+        userLocationManager.onLocationUpdate = { [weak self] nmgLocation in
+            // NMGLatLng를 CLLocation으로 변환
+            let clLocation = CLLocation(latitude: nmgLocation.lat, longitude: nmgLocation.lng)
+            self?.updateUserLocationForRiding(clLocation)
+        }
+    }
+    
     // MARK: - Public Methods
     var nmfMapView: NMFMapView? {
         return self.mapView?.mapView
@@ -124,6 +138,11 @@ final class MapViewController: UIViewController {
     
     // MARK: - Location Methods
     private func setupInitialCameraPosition(location: CLLocation) {
+        // ridingViewModel.flag가 true일 때만 사용자 위치로 카메라 이동
+        guard let ridingViewModel = ridingViewModel, ridingViewModel.flag else {
+            return
+        }
+        
         let lat = location.coordinate.latitude
         let lng = location.coordinate.longitude
         
@@ -144,6 +163,36 @@ final class MapViewController: UIViewController {
         
         // 사용자 위치 마커를 항상 userMarker으로 설정
         locationOverlay.icon = MarkerIcons.userMarker
+        
+        // ridingViewModel.flag가 true일 때만 카메라 이동
+        guard let ridingViewModel = ridingViewModel, ridingViewModel.flag else {
+            return
+        }
+        
+        // moveToCurrentLocation과 동일한 카메라 설정
+        let cameraUpdate = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng))
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.4) // 카메라 중심점을 위쪽으로 조정
+        cameraUpdate.animation = .easeIn
+        
+        mapView.mapView.moveCamera(cameraUpdate)
+    }
+    
+    // 라이딩 중 UserLocationManager에서 호출되는 메서드
+    private func updateUserLocationForRiding(_ location: CLLocation) {
+        let lat = location.coordinate.latitude
+        let lng = location.coordinate.longitude
+        
+        let locationOverlay = mapView.mapView.locationOverlay
+        locationOverlay.hidden = false
+        locationOverlay.location = NMGLatLng(lat: lat, lng: lng)
+        
+        // 사용자 위치 마커를 항상 userMarker으로 설정
+        locationOverlay.icon = MarkerIcons.userMarker
+        
+        // ridingViewModel.flag가 true일 때만 카메라 이동
+        guard let ridingViewModel = ridingViewModel, ridingViewModel.flag else {
+            return
+        }
         
         // moveToCurrentLocation과 동일한 카메라 설정
         let cameraUpdate = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng))
