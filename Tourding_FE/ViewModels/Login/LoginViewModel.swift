@@ -57,6 +57,8 @@ class LoginViewModel: ObservableObject {
                 print("✅ 사용자 정보 요청 성공")
                 print("닉네임: \(String(describing: self.userNickname))")
                 print("이메일: \(String(describing: self.userEmail))")
+                print("✅ 서버 유저 등록되어있는 아이디는: \(String(describing: self.currentUser?.id))")
+
             }
         }
     }
@@ -75,7 +77,6 @@ class LoginViewModel: ObservableObject {
                       email: created.email
                   )
                   print("✅ 서버 유저 등록 성공: \(String(describing: self.currentUser))")
-                  print("✅ 서버 유저 등록한 아이디는: \(String(describing: self.currentUser?.id))")
               } catch {
                   print("❌ 서버 유저 등록 실패: \(error)")
               }
@@ -85,7 +86,7 @@ class LoginViewModel: ObservableObject {
     /// 서버에서 현재 사용자 삭제
       func deleteUserFromServer() {
           Task {
-              guard let id = currentUser?.id else {
+              guard let id = KeychainHelper.loadUid() else {
                   print("❌ 삭제 실패: currentUser.id 없음")
                   return
               }
