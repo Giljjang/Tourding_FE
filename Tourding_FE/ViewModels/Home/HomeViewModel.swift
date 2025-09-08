@@ -20,8 +20,6 @@ final class HomeViewModel: ObservableObject {
     
     init(routeRepository: RouteRepositoryProtocol) {
         self.routeRepository = routeRepository
-        self.userId = KeychainHelper.loadUid()
-        
     }
     
     // MARK: - Home 화면 전용 비즈니스 로직
@@ -34,7 +32,7 @@ final class HomeViewModel: ObservableObject {
     //MARK: - API 호출
     @MainActor
     func postRouteAPI(start: LocationData, end: LocationData) async {
-        guard let uid = userId else {
+        guard let uid = KeychainHelper.loadUid()  else {
             print("⏭️ postRouteAPI skipped: userId is nil")
             return
         }
@@ -57,10 +55,13 @@ final class HomeViewModel: ObservableObject {
     
     @MainActor
     func getRouteLocationAPI() async {
-        guard let uid = userId else {
+        
+        
+        guard let uid = KeychainHelper.loadUid() else {
             print("⏭️ getRouteLocationAPI skipped: userId is nil")
             return
         }
+        print("여기는 getRouteLocationAPI \(uid)\(uid)\(uid)\(uid)\(uid)")
         do {
             let response = try await routeRepository.getRoutesLocationName(userId: uid)
             routeLocation = response
