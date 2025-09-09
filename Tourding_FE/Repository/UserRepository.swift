@@ -52,6 +52,25 @@ final class UserRepository: UserRepositoryProtocol {
             throw NetworkError.serverError(httpResponse.statusCode)
         }
     }
+    func revokeUser(userId: Int, authorizationCode: String) async throws {
+        guard let url = URL(string: "\(BASE_URL)/user/revoke?userId=\(userId)&authorizationCode=\(authorizationCode)") else {
+            throw NetworkError.invalidURL
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("*/*", forHTTPHeaderField: "accept")
+
+        let (_, response) = try await URLSession.shared.data(for: urlRequest)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NetworkError.invalidResponse
+        }
+        // 200 OK 기대
+        guard httpResponse.statusCode == 200 else {
+            throw NetworkError.serverError(httpResponse.statusCode)
+        }
+    }
 }
 
 // MARK: - 네트워크 에러

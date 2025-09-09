@@ -93,6 +93,31 @@ struct KeychainHelper {
         ]
         SecItemDelete(query as CFDictionary)
     }
+    
+    // MARK: - 애플 로그인 정보 저장용
+    
+    static func saveAppleUserInfo(userId: String, name: String, email: String) {
+        save(key: "appleUserId", value: userId)
+        save(key: "appleUserName", value: name)
+        save(key: "appleUserEmail", value: email)
+        save(key: "loginProvider", value: "apple")
+        print("✅ 애플 유저 정보 저장 완료")
+    }
+    
+    static func loadAppleUserInfo() -> (userId: String?, name: String?, email: String?) {
+        let userId = load(key: "appleUserId")
+        let name = load(key: "appleUserName")
+        let email = load(key: "appleUserEmail")
+        return (userId, name, email)
+    }
+    
+    static func clearAppleUserInfo() {
+        delete(key: "appleUserId")
+        delete(key: "appleUserName")
+        delete(key: "appleUserEmail")
+        delete(key: "loginProvider")
+        print("🗑 애플 유저 정보 삭제 완료")
+    }
 
 }
 

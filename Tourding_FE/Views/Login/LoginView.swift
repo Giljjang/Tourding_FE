@@ -62,7 +62,7 @@ struct LoginView: View {
                 }
                 //애플 로그인 구현하기...
                 Button(action: {
-                    viewModel.loginWithKakao()
+                    viewModel.loginWithApple()
                 }) {
                     HStack() {
                         Image("apple")  // 카카오 로고 이미지를 프로젝트에 추가했을 때!
