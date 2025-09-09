@@ -131,9 +131,12 @@ class LoginViewModel: NSObject, ObservableObject {
             let email = appleIDCredential.email
             let authorizationCode = appleIDCredential.authorizationCode
             
-            // 이름 처리 (fullName이 nil일 수 있음)
+            // 이름 처리 - 키체인에 저장된 정보 우선 사용
             var displayName = ""
-            if let givenName = fullName?.givenName, let familyName = fullName?.familyName {
+            if let savedName = KeychainHelper.load(key: "appleUserName") {
+                displayName = savedName
+                print("📱 키체인에서 이름 로드: \(displayName)")
+            } else if let givenName = fullName?.givenName, let familyName = fullName?.familyName {
                 displayName = "\(familyName)\(givenName)"
             } else if let givenName = fullName?.givenName {
                 displayName = givenName
@@ -141,8 +144,14 @@ class LoginViewModel: NSObject, ObservableObject {
                 displayName = "Apple User"
             }
             
-            // 이메일 처리 (첫 로그인에서만 제공됨)
-            let userEmail = email ?? ""
+            // 이메일 처리 - 키체인에 저장된 정보 우선 사용
+            var userEmail = ""
+            if let savedEmail = KeychainHelper.load(key: "appleUserEmail") {
+                userEmail = savedEmail
+                print("📱 키체인에서 이메일 로드: \(userEmail)")
+            } else {
+                userEmail = email ?? ""
+            }
             
             print("✅ 애플 로그인 성공!")
             print("User ID: \(userIdentifier)")
@@ -274,7 +283,11 @@ class LoginViewModel: NSObject, ObservableObject {
     
     /// 로그아웃 처리
     func logout() {
+        print("🔍 현재 로그인 provider: '\(loginProvider)'")
+        print("🔍 키체인에서 로드한 provider: '\(KeychainHelper.load(key: "loginProvider") ?? "nil")'")
+        
         if loginProvider == "kakao" {
+            print("📱 카카오 로그아웃 시작")
             // 카카오 로그아웃
             UserApi.shared.logout { error in
                 if let error = error {
@@ -285,8 +298,35 @@ class LoginViewModel: NSObject, ObservableObject {
             }
             clearKakaoTokens()
         } else if loginProvider == "apple" {
-            // 애플 로그아웃 (로컬 데이터만 정리)
-            KeychainHelper.clearAppleUserInfo()
+            print("🍎 애플 로그아웃 시작")
+            // 애플 로그아웃 (이름과 이메일은 보존, 서버 관련 정보만 삭제)
+            KeychainHelper.delete(key: "appleUserId")
+            KeychainHelper.delete(key: "appleAuthorizationCode")
+            // loginProvider도 삭제하여 로그인 상태 해제
+            KeychainHelper.delete(key: "loginProvider")
+        } else {
+            print("❌ 알 수 없는 provider: '\(loginProvider)'")
+            // provider가 설정되지 않은 경우 키체인에서 다시 확인
+            if let savedProvider = KeychainHelper.load(key: "loginProvider") {
+                print("🔄 키체인에서 provider 재설정: '\(savedProvider)'")
+                self.loginProvider = savedProvider
+                if savedProvider == "kakao" {
+                    print("📱 카카오 로그아웃 시작 (재설정)")
+                    UserApi.shared.logout { error in
+                        if let error = error {
+                            print("❌ 카카오 로그아웃 실패: \(error)")
+                        } else {
+                            print("✅ 카카오 로그아웃 성공")
+                        }
+                    }
+                    clearKakaoTokens()
+                } else if savedProvider == "apple" {
+                    print("🍎 애플 로그아웃 시작 (재설정)")
+                    KeychainHelper.delete(key: "appleUserId")
+                    KeychainHelper.delete(key: "appleAuthorizationCode")
+                    KeychainHelper.delete(key: "loginProvider")
+                }
+            }
         }
         
         // 공통 로그아웃 처리
@@ -381,10 +421,13 @@ class LoginViewModel: NSObject, ObservableObject {
                 try await userRepository.revokeUser(userId: userId, authorizationCode: authorizationCode)
                 print("✅ 서버에서 애플 계정 취소 성공")
                 
-                // 2. 로컬 데이터 정리
-                KeychainHelper.clearAppleUserInfo()
+                // 2. 로컬 데이터 정리 (이름과 이메일은 보존)
+                // 애플 로그인 특성상 기기에서 계속 기억하므로, 이름과 이메일은 유지
+                KeychainHelper.delete(key: "appleUserId")
                 KeychainHelper.delete(key: "appleAuthorizationCode")
                 KeychainHelper.deleteUid()
+                // loginProvider도 삭제하여 로그인 상태 해제
+                KeychainHelper.delete(key: "loginProvider")
                 
                 await MainActor.run {
                     isLoggedIn = false

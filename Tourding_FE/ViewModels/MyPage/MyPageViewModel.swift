@@ -26,6 +26,13 @@ final class MyPageViewModel: ObservableObject {
             }
         }
     }
+    
+    func AppleLogout(globalLoginViewModel: LoginViewModel) {
+        DispatchQueue.main.async {
+            globalLoginViewModel.isLoggedIn = false  // 로그인 상태 초기화 (로그아웃)
+            self.logoutCompleted = true
+        }
+    }
 
     func withdraw(globalLoginViewModel: LoginViewModel) {
         UserApi.shared.unlink { error in

@@ -24,7 +24,7 @@ struct OnboardingPageView: View {
 
             Text(page.title)
                 .font(index == 0 ? .pretendardMedium(size: 18) : .pretendardSemiBold(size: 26))
-                .foregroundColor(.gray)
+                .foregroundColor(.gray6)
                 .multilineTextAlignment(.center)
                 .padding(.bottom, index == 0 ? 12 : 23)
 

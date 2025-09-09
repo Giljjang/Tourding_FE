@@ -79,11 +79,11 @@ struct LoginView: View {
                     .background(Color.black)
                     .cornerRadius(10)
                     .padding(.horizontal, 16)  // 양쪽 여백
-                    .padding(.bottom, 106)
+                    .padding(.bottom/*, 106*/)
                 }
             }
         } //Zstack
-        .ignoresSafeArea(edges: .bottom)  // SafeArea 무시하고 아래에 붙임
+//        .ignoresSafeArea(edges: .bottom)  // SafeArea 무시하고 아래에 붙임
     }
 }
 

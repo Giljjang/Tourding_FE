@@ -8,4 +8,4 @@
 import Foundation
 
 private let BASE_URL_RAW = Bundle.main.infoDictionary?["BASE_URL"] as? String ?? ""
-let BASE_URL = BASE_URL_RAW.isEmpty ? "" : "http://\(BASE_URL_RAW)"
+let BASE_URL = BASE_URL_RAW.isEmpty ? "" : "https://\(BASE_URL_RAW)"
