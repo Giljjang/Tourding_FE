@@ -158,9 +158,9 @@ struct RidingView: View {
             }
             
             // ToDo: 라이딩 중 테스트 완료 후 제거!!
-            if newValue {
-                ridingViewModel.testMarkerRemoval()
-            }
+//            if newValue {
+//                ridingViewModel.testMarkerRemoval()
+//            }
         } // : onChange
     }
     
