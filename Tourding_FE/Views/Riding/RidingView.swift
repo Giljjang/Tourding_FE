@@ -132,6 +132,7 @@ struct RidingView: View {
             // 위치 권한 확인 및 요청
             checkAndRequestLocationPermission()
             
+            
             Task{
                 await ridingViewModel.getRouteLocationAPI()
                 await ridingViewModel.getRoutePathAPI()
@@ -154,6 +155,11 @@ struct RidingView: View {
             // flag가 변경될 때마다 currentPosition을 .medium으로 설정
             withAnimation(.easeInOut(duration: 0.3)) {
                 currentPosition = .medium
+            }
+            
+            // ToDo: 라이딩 중 테스트 완료 후 제거!!
+            if newValue {
+                ridingViewModel.testMarkerRemoval()
             }
         } // : onChange
     }
