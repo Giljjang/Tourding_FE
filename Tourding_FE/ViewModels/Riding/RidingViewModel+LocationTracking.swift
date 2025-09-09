@@ -55,6 +55,9 @@ extension RidingViewModel {
             print("🎯 가까운 마커 발견! 인덱스: \(closestIndex), 거리: \(minDistance)m")
             print("🎯 제거할 마커 개수: \(removedCount)개")
             
+            // guideList의 좌표를 지날 때 showToilet과 showConvenienceStore 상태에 따라 토글 함수 호출
+            checkAndToggleFacilities(userLocation: userLocation)
+            
             // 마커 좌표와 아이콘에서 제거 (0부터 closestIndex까지)
             markerCoordinates.removeFirst(removedCount)
             markerIcons.removeFirst(removedCount)
@@ -79,6 +82,39 @@ extension RidingViewModel {
             print("✅ 남은 경로 좌표: \(pathCoordinates.count)개")
         } else {
             print("❌ 가까운 마커 없음 (임계값: \(markerPassThreshold)m)")
+        }
+    }
+    
+    // guideList의 좌표를 지날 때 showToilet과 showConvenienceStore 상태에 따라 마커 업데이트 함수 호출
+    private func checkAndToggleFacilities(userLocation: NMGLatLng) {
+        // guideList의 각 좌표와 사용자 위치 간의 거리 확인
+        for guide in guideList {
+            if let lat = Double(guide.lat), let lon = Double(guide.lon) {
+                let guideLocation = NMGLatLng(lat: lat, lng: lon)
+                let distance = calculateDistance(from: userLocation, to: guideLocation)
+                
+                // guideList의 좌표를 지났는지 확인 (임계값: 100m)
+                if distance <= markerPassThreshold {
+                    print("🏃‍♂️ guideList 좌표 지남: \(guide.lat), \(guide.lon), 거리: \(distance)m")
+                    
+                    // showToilet이 true이면 updateToiletMarkers 함수 호출 (토글 없이)
+                    if showToilet {
+                        print("🚽 showToilet이 true이므로 updateToiletMarkers 함수 호출")
+                        let locationString = "\(guide.lat),\(guide.lon)"
+                        updateToiletMarkers(location: locationString)
+                    }
+                    
+                    // showConvenienceStore가 true이면 updateConvenienceStoreMarkers 함수 호출 (토글 없이)
+                    if showConvenienceStore {
+                        print("🏪 showConvenienceStore가 true이므로 updateConvenienceStoreMarkers 함수 호출")
+                        let locationString = "\(guide.lat),\(guide.lon)"
+                        updateConvenienceStoreMarkers(location: locationString)
+                    }
+                    
+                    // 한 번만 처리하고 break (가장 가까운 좌표만 처리)
+                    break
+                }
+            }
         }
     }
     
