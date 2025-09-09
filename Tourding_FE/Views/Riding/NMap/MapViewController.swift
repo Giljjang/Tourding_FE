@@ -37,7 +37,7 @@ final class MapViewController: UIViewController {
     var onMapTap: ((NMGLatLng) -> Void)?
     
     // MARK: - Managers
-    private var markerManager: MarkerManager!
+    var markerManager: MarkerManager!
     private var pathManager: PathManager!
     
     // MARK: - Lifecycle
@@ -189,17 +189,8 @@ final class MapViewController: UIViewController {
         // 사용자 위치 마커를 항상 userMarker으로 설정
         locationOverlay.icon = MarkerIcons.userMarker
         
-        // ridingViewModel.flag가 true일 때만 카메라 이동
-        guard let ridingViewModel = ridingViewModel, ridingViewModel.flag else {
-            return
-        }
-        
-        // moveToCurrentLocation과 동일한 카메라 설정
-        let cameraUpdate = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng))
-        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.4) // 카메라 중심점을 위쪽으로 조정
-        cameraUpdate.animation = .easeIn
-        
-        mapView.mapView.moveCamera(cameraUpdate)
+        // 카메라 이동은 RidingViewModel에서 제어하므로 여기서는 제거
+        // ridingViewModel.updateUserLocationAndCheckMarkers에서 카메라 업데이트를 처리
     }
     
     // 나침반 방향 업데이트 메서드 추가

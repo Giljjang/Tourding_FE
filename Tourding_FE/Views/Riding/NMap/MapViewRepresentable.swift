@@ -96,12 +96,14 @@ struct MapViewRepresentable: UIViewRepresentable {
         mapViewController.onLocationUpdate = onLocationUpdate
         mapViewController.onMapTap = onMapTap
         
-        // RidingViewModel에 LocationManager와 NMFMapView 설정 (viewDidLoad 완료 후)
+        // RidingViewModel에 LocationManager, NMFMapView, MarkerManager 설정 (viewDidLoad 완료 후)
         if let ridingViewModel = ridingViewModel {
             ridingViewModel.locationManager = mapViewController.locationManager
             if let nmfMapView = mapViewController.nmfMapView {
                 ridingViewModel.mapView = nmfMapView
             }
+            // MarkerManager 연결
+            ridingViewModel.markerManager = mapViewController.markerManager
         }
         
         // ridingViewModel 업데이트

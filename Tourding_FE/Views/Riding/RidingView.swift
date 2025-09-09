@@ -132,6 +132,7 @@ struct RidingView: View {
             // 위치 권한 확인 및 요청
             checkAndRequestLocationPermission()
             
+            
             Task{
                 await ridingViewModel.getRouteLocationAPI()
                 await ridingViewModel.getRoutePathAPI()
@@ -155,6 +156,11 @@ struct RidingView: View {
             withAnimation(.easeInOut(duration: 0.3)) {
                 currentPosition = .medium
             }
+            
+            // ToDo: 라이딩 중 테스트 완료 후 제거!!
+//            if newValue {
+//                ridingViewModel.testMarkerRemoval()
+//            }
         } // : onChange
     }
     
@@ -222,10 +228,6 @@ struct RidingView: View {
                     locationManager.startLocationUpdates()
                     
                     Task{
-                        // 기존 마커 제거
-                        ridingViewModel.markerCoordinates.removeAll()
-                        ridingViewModel.markerIcons.removeAll()
-                        
                         await ridingViewModel.getRouteGuideAPI()
                     }
                 }
@@ -333,6 +335,8 @@ struct RidingView: View {
                 
                 // 위치 업데이트 콜백 설정
                 locationManager.onLocationUpdate = { newLocation in
+                    // NMGLatLng를 CLLocation으로 변환
+                    let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
                     ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
                 }
             }
