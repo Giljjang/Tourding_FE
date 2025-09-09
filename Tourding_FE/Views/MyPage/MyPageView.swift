@@ -85,7 +85,7 @@ struct MyPageView: View {
                             recentSearchViewModel.clear()
                             navigationManager.currentTab = .HomewView
                             routeSharedManager.clearRoute()
-                            loginViewModel.deleteUserFromServer()
+                            loginViewModel.revokeAccount()
                             print("회원탈퇴됨")
                         }
                     )

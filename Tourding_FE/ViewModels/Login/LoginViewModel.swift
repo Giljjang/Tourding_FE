@@ -46,12 +46,14 @@ class LoginViewModel: NSObject, ObservableObject {
                     // 애플 ID 상태 확인
                     let appleIDProvider = ASAuthorizationAppleIDProvider()
                     appleIDProvider.getCredentialState(forUserID: userId) { [weak self] credentialState, error in
-                        DispatchQueue.main.async {
+                        Task { @MainActor in
                             switch credentialState {
                             case .authorized:
                                 self?.isLoggedIn = true
                                 self?.userNickname = appleUserInfo.name ?? "Apple User"
                                 self?.userEmail = appleUserInfo.email ?? ""
+                                // 서버에서 사용자 정보도 가져오기
+                                self?.loadUserFromServer()
                             case .revoked, .notFound:
                                 // 로그인 정보 삭제
                                 KeychainHelper.clearAppleUserInfo()
@@ -61,9 +63,27 @@ class LoginViewModel: NSObject, ObservableObject {
                             }
                         }
                     }
+                } else {
+                    self.isLoggedIn = false
                 }
             }
         }
+    }
+    
+    private func loadUserFromServer() {
+        guard let uid = KeychainHelper.loadUid() else {
+            print("❌ 서버에서 사용자 정보 로드 실패: UID 없음")
+            return
+        }
+        
+        // 서버에서 사용자 정보를 가져오는 로직
+        // 현재는 키체인에 저장된 정보를 사용
+        self.currentUser = CreateUserResponse(
+            id: uid,
+            name: userNickname,
+            email: userEmail
+        )
+        print("✅ 서버에서 사용자 정보 로드 성공: \(String(describing: self.currentUser))")
     }
     
     func loginWithKakao() {
@@ -98,8 +118,9 @@ class LoginViewModel: NSObject, ObservableObject {
             KeychainHelper.save(key: "loginProvider", value: "kakao")
             self.loginProvider = "kakao"
             self.isLoggedIn = true
-            self.fetchUserInfo()
-            self.addUserToServer()
+            
+            // 사용자 정보를 먼저 가져온 후 서버에 등록
+            self.fetchUserInfoAndRegister()
         }
     }
     
@@ -161,6 +182,27 @@ class LoginViewModel: NSObject, ObservableObject {
                 print("닉네임: \(String(describing: user.kakaoAccount?.profile?.nickname))")
                 print("이메일: \(String(describing: user.kakaoAccount?.email))")
                 print("✅ 서버 유저 등록되어있는 아이디는: \(String(describing: self.currentUser?.id))")
+            }
+        }
+    }
+    
+    /// 카카오 사용자 정보를 가져온 후 서버에 등록
+    func fetchUserInfoAndRegister() {
+        UserApi.shared.me { user, error in
+            if let error = error {
+                print("❌ 사용자 정보 요청 실패: \(error)")
+            } else if let user = user {
+                Task { @MainActor in
+                    self.userNickname = user.kakaoAccount?.profile?.nickname ?? ""
+                    self.userEmail = user.kakaoAccount?.email ?? ""
+                    
+                    print("✅ 사용자 정보 요청 성공")
+                    print("닉네임: \(String(describing: user.kakaoAccount?.profile?.nickname))")
+                    print("이메일: \(String(describing: user.kakaoAccount?.email))")
+                    
+                    // 사용자 정보 설정 후 서버에 등록
+                    self.addUserToServer()
+                }
             }
         }
     }
@@ -257,30 +299,106 @@ class LoginViewModel: NSObject, ObservableObject {
         print("✅ 로그아웃 완료")
     }
     
-    /// 애플 회원탈퇴 처리
-    func revokeAppleAccount() {
-        // 1. 서버에서 사용자 삭제
-        deleteUserFromServer()
+    /// 통합 회원탈퇴 처리 (provider에 따라 다르게 처리)
+    func revokeAccount() {
+        print("🔍 현재 로그인 provider: '\(loginProvider)'")
+        print("🔍 키체인에서 로드한 provider: '\(KeychainHelper.load(key: "loginProvider") ?? "nil")'")
         
-        // 2. 애플 계정 취소 요청
-        if let appleUserId = KeychainHelper.load(key: "appleUserId") {
-            let request = ASAuthorizationAppleIDProvider().createRequest()
-            request.requestedScopes = [.fullName, .email]
-            
-            // authorizationCode는 애플에서 제공하는 것이므로, 
-            // 실제로는 로그인 시 받은 authorizationCode를 저장해두어야 합니다.
-            // 여기서는 서버에서 처리하도록 하겠습니다.
-            
-            // 3. 로컬 데이터 정리
-            KeychainHelper.clearAppleUserInfo()
-            KeychainHelper.deleteUid()
-            isLoggedIn = false
-            userNickname = "홍길동"
-            userEmail = "Tourding@example.com"
-            loginProvider = ""
-            currentUser = nil
-            
-            print("✅ 애플 회원탈퇴 완료")
+        if loginProvider == "kakao" {
+            print("📱 카카오 회원탈퇴 시작")
+            revokeKakaoAccount()
+        } else if loginProvider == "apple" {
+            print("🍎 애플 회원탈퇴 시작")
+            revokeAppleAccount()
+        } else {
+            print("❌ 알 수 없는 provider: '\(loginProvider)'")
+            // provider가 설정되지 않은 경우 키체인에서 다시 확인
+            if let savedProvider = KeychainHelper.load(key: "loginProvider") {
+                print("🔄 키체인에서 provider 재설정: '\(savedProvider)'")
+                self.loginProvider = savedProvider
+                if savedProvider == "kakao" {
+                    revokeKakaoAccount()
+                } else if savedProvider == "apple" {
+                    revokeAppleAccount()
+                }
+            }
+        }
+    }
+    
+    /// 카카오 회원탈퇴 처리
+    private func revokeKakaoAccount() {
+        Task {
+            do {
+                // 1. 서버에서 사용자 삭제
+                guard let uid = KeychainHelper.loadUid() else {
+                    print("❌ 카카오 회원탈퇴 실패: UID 없음")
+                    return
+                }
+                
+                try await userRepository.deleteUser(id: uid)
+                print("✅ 서버에서 카카오 사용자 삭제 성공")
+                
+                // 2. 카카오 계정 연결 해제
+                UserApi.shared.unlink { error in
+                    if let error = error {
+                        print("❌ 카카오 계정 연결 해제 실패: \(error)")
+                    } else {
+                        print("✅ 카카오 계정 연결 해제 성공")
+                    }
+                }
+                
+                // 3. 로컬 데이터 정리
+                clearKakaoTokens()
+                KeychainHelper.deleteUid()
+                
+                await MainActor.run {
+                    isLoggedIn = false
+                    userNickname = "홍길동"
+                    userEmail = "Tourding@example.com"
+                    loginProvider = ""
+                    currentUser = nil
+                }
+                
+                print("✅ 카카오 회원탈퇴 완료")
+                
+            } catch {
+                print("❌ 카카오 회원탈퇴 실패: \(error)")
+            }
+        }
+    }
+    
+    /// 애플 회원탈퇴 처리
+    private func revokeAppleAccount() {
+        Task {
+            do {
+                // 1. 서버에서 애플 계정 취소 요청
+                guard let userId = KeychainHelper.loadUid(),
+                      let authorizationCode = KeychainHelper.load(key: "appleAuthorizationCode") else {
+                    print("❌ 애플 회원탈퇴 실패: 사용자 ID 또는 Authorization Code 없음")
+                    return
+                }
+                
+                try await userRepository.revokeUser(userId: userId, authorizationCode: authorizationCode)
+                print("✅ 서버에서 애플 계정 취소 성공")
+                
+                // 2. 로컬 데이터 정리
+                KeychainHelper.clearAppleUserInfo()
+                KeychainHelper.delete(key: "appleAuthorizationCode")
+                KeychainHelper.deleteUid()
+                
+                await MainActor.run {
+                    isLoggedIn = false
+                    userNickname = "홍길동"
+                    userEmail = "Tourding@example.com"
+                    loginProvider = ""
+                    currentUser = nil
+                }
+                
+                print("✅ 애플 회원탈퇴 완료")
+                
+            } catch {
+                print("❌ 애플 회원탈퇴 실패: \(error)")
+            }
         }
     }
 }
@@ -306,3 +424,4 @@ extension LoginViewModel: ASAuthorizationControllerPresentationContextProviding 
         return window
     }
 }
+
