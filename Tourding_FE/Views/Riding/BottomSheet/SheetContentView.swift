@@ -125,6 +125,10 @@ struct SheetContentView: View {
             
             Button(action:{
                 if let lastLocation = ridingViewModel.routeLocation.last {
+                    
+                    // 스팟 추가 토글 필터를 전체로 초기화
+                    UserDefaults.standard.set("전체", forKey: "SpotAddClickFilter")
+                    
                     navigationManager.push(.SpotAddView(
                         lat: lastLocation.lat,
                         lon: lastLocation.lon
