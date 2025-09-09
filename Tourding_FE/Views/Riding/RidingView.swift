@@ -222,10 +222,6 @@ struct RidingView: View {
                     locationManager.startLocationUpdates()
                     
                     Task{
-                        // 기존 마커 제거
-                        ridingViewModel.markerCoordinates.removeAll()
-                        ridingViewModel.markerIcons.removeAll()
-                        
                         await ridingViewModel.getRouteGuideAPI()
                     }
                 }
@@ -333,6 +329,8 @@ struct RidingView: View {
                 
                 // 위치 업데이트 콜백 설정
                 locationManager.onLocationUpdate = { newLocation in
+                    // NMGLatLng를 CLLocation으로 변환
+                    let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
                     ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
                 }
             }

@@ -19,7 +19,7 @@ final class RidingViewModel: ObservableObject {
     
     @Published var nthLineHeight: Double = 0 // spotRow 왼쪽 라인 길이
     
-    // 라이딩 시작 후
+    // 라이딩 시작 중
     @Published var showToilet: Bool = false
     @Published var showConvenienceStore: Bool = false
     @Published var guideList: [GuideModel] = []
@@ -30,6 +30,7 @@ final class RidingViewModel: ObservableObject {
     // MARK: - 지도 관련 프로퍼티
     var locationManager: LocationManager?
     var mapView: NMFMapView?
+    var markerManager: MarkerManager?
     
     
     // MARK: - 지도 관련 프로퍼티

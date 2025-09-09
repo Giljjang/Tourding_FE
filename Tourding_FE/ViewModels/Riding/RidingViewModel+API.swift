@@ -165,17 +165,16 @@ extension RidingViewModel {
             
             print("guideList: \(guideList)")
             
-            markerCoordinates.append(
-                contentsOf: guideList.compactMap { item in
-                    if let lat = Double(item.lat), let lon = Double(item.lon) {
-                        return NMGLatLng(lat: lat, lng: lon)
-                    } else {
-                        return nil
-                    }
+            // 기존 마커들을 제거하고 가이드 마커들로 교체
+            markerCoordinates = guideList.compactMap { item in
+                if let lat = Double(item.lat), let lon = Double(item.lon) {
+                    return NMGLatLng(lat: lat, lng: lon)
+                } else {
+                    return nil
                 }
-            )
+            }
             
-            markerIcons.append(contentsOf: guideList.map { item in
+            markerIcons = guideList.map { item in
                 switch item.guideType {
                 case .start:
                     return MarkerIcons.startMarker
@@ -192,7 +191,7 @@ extension RidingViewModel {
                 case .none:
                     return MarkerIcons.straightMarker
                 }
-            })
+            }
             
         } catch {
             print("GET ERROR: /routes/guide \(error)")
