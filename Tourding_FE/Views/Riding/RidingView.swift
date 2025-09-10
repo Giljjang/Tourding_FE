@@ -141,12 +141,15 @@ struct RidingView: View {
                 await MainActor.run {
                     if let firstLocation = ridingViewModel.routeLocation.first,
                        let lat = Double(firstLocation.lat),
-                       let lon = Double(firstLocation.lon) {
+                       let lon = Double(firstLocation.lon),
+                       let mapView = ridingViewModel.mapView {
                         
                         let coordinate = NMGLatLng(lat: lat, lng: lon)
-                        ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: ridingViewModel.mapView!)
+                        ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
                         print("초기 카메라 위치를 경로 첫 번째 좌표로 설정: \(lat), \(lon)")
                         
+                    } else {
+                        print("❌ 초기 카메라 위치 설정 실패: mapView 또는 경로 데이터가 없습니다")
                     }
                 }
             } // : Task
@@ -175,12 +178,15 @@ struct RidingView: View {
                 
                 if let firstLocation = ridingViewModel.routeLocation.first,
                    let lat = Double(firstLocation.lat),
-                   let lon = Double(firstLocation.lon) {
+                   let lon = Double(firstLocation.lon),
+                   let mapView = ridingViewModel.mapView {
                     
                     let coordinate = NMGLatLng(lat: lat, lng: lon)
-                    ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: ridingViewModel.mapView!)
+                    ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
                     print("초기 카메라 위치를 경로 첫 번째 좌표로 설정: \(lat), \(lon)")
                     
+                } else {
+                    print("❌ 초기 카메라 위치 설정 실패: mapView 또는 경로 데이터가 없습니다")
                 }
                 
                 Task{

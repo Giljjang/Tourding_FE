@@ -66,9 +66,13 @@ enum NetworkService {
         
         if let parameters = parameters {
             let queryItems = parameters.map { URLQueryItem(name: $0.key, value: $0.value) }
-            var components = URLComponents(string: urlString)!
-            components.queryItems = queryItems
-            urlString = components.url?.absoluteString ?? urlString
+            if let components = URLComponents(string: urlString) {
+                var mutableComponents = components
+                mutableComponents.queryItems = queryItems
+                urlString = mutableComponents.url?.absoluteString ?? urlString
+            } else {
+                print("❌ URLComponents 생성 실패: \(urlString)")
+            }
         }
         
         guard let url = URL(string: urlString) else {
@@ -239,7 +243,8 @@ extension NetworkService {
             request.httpBody = try JSONEncoder().encode(body)
             
             // 디버깅: body 출력
-            if let jsonString = String(data: request.httpBody!, encoding: .utf8) {
+            if let httpBody = request.httpBody,
+               let jsonString = String(data: httpBody, encoding: .utf8) {
 //                print("🔹 Request Body:\n\(jsonString)")
             }
         }
