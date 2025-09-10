@@ -22,6 +22,26 @@ final class PathManager {
         setupPathOverlays()
     }
     
+    deinit {
+        print("🛣️ PathManager deinit 시작")
+        cleanupResources()
+    }
+    
+    // MARK: - Cleanup
+    private func cleanupResources() {
+        // 오버레이들을 지도에서 제거
+        pathOverlay.mapView = nil
+        innerPathOverlay.mapView = nil
+        
+        // 좌표 배열 정리
+        pathCoordinates.removeAll()
+        
+        // 지도 뷰 참조 해제 (weak 참조이므로 nil 할당 가능)
+        mapView = nil
+        
+        print("✅ PathManager 리소스 정리 완료")
+    }
+    
     // MARK: - Setup
     private func setupPathOverlays() {
         // 안쪽 경로선 설정

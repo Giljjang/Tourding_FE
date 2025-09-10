@@ -471,11 +471,26 @@ extension LoginViewModel: ASAuthorizationControllerDelegate {
 // MARK: - ASAuthorizationControllerPresentationContextProviding
 extension LoginViewModel: ASAuthorizationControllerPresentationContextProviding {
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first else {
-            fatalError("No window found")
+        // 안전한 윈도우 찾기
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first {
+            return window
         }
-        return window
+        
+        // 윈도우를 찾을 수 없는 경우 대체 윈도우 생성
+        print("⚠️ 기본 윈도우를 찾을 수 없어 새 윈도우를 생성합니다.")
+        
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            let newWindow = UIWindow(windowScene: windowScene)
+            newWindow.makeKeyAndVisible()
+            return newWindow
+        }
+        
+        // 최후의 수단: 임시 윈도우 생성
+        print("⚠️ 윈도우 씬을 찾을 수 없어 임시 윈도우를 생성합니다.")
+        let tempWindow = UIWindow(frame: UIScreen.main.bounds)
+        tempWindow.makeKeyAndVisible()
+        return tempWindow
     }
 }
 

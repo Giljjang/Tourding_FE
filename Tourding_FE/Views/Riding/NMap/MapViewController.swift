@@ -47,6 +47,39 @@ final class MapViewController: UIViewController {
         setupLocationManager()
     }
     
+    deinit {
+        print("🗺️ MapViewController deinit 시작")
+        cleanupResources()
+    }
+    
+    // MARK: - Cleanup
+    private func cleanupResources() {
+        // 위치 업데이트 중지
+        locationManager.stopLocationUpdates()
+        
+        // 콜백 해제
+        onLocationUpdate = nil
+        onMapTap = nil
+        
+        // 마커 매니저 정리
+        markerManager?.clearAllMarkers()
+        markerManager = nil
+        
+        // 경로 매니저 정리
+        pathManager?.clearPath()
+        pathManager = nil
+        
+        // 지도 뷰 정리
+        mapView?.removeFromSuperview()
+        mapView = nil
+        
+        // 사용자 위치 매니저 정리
+        userLocationManager = nil
+        ridingViewModel = nil
+        
+        print("✅ MapViewController 리소스 정리 완료")
+    }
+    
     // MARK: - Setup Methods
     private func setupMap() {
         mapView = NMFNaverMapView(frame: view.frame)
