@@ -192,7 +192,7 @@ extension RidingViewModel {
             let response = try await routeRepository.getRoutesGuide(userId: userId)
             guideList = response
             
-            print("guideList: \(guideList)")
+//            print("guideList: \(guideList)")
             
             // 기존 마커들을 제거하고 가이드 마커들로 교체
             markerCoordinates = guideList.compactMap { item in
