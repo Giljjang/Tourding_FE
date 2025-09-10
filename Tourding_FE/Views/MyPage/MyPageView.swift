@@ -30,7 +30,7 @@ struct MyPageView: View {
                     .padding(.bottom, 16)
                 
                 CustomButtonView.withNavigation(
-                    title: "이용약관",
+                    title: "개인정보처리방침",
                     destination: .ServiceView,
                     navigationManager: navigationManager
                 )
