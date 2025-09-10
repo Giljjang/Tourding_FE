@@ -62,7 +62,7 @@ struct LoginView: View {
                 }
                 //애플 로그인 구현하기...
                 Button(action: {
-                    viewModel.loginWithKakao()
+                    viewModel.loginWithApple()
                 }) {
                     HStack() {
                         Image("apple")  // 카카오 로고 이미지를 프로젝트에 추가했을 때!
@@ -79,11 +79,11 @@ struct LoginView: View {
                     .background(Color.black)
                     .cornerRadius(10)
                     .padding(.horizontal, 16)  // 양쪽 여백
-                    .padding(.bottom, 106)
+                    .padding(.bottom/*, 106*/)
                 }
             }
         } //Zstack
-        .ignoresSafeArea(edges: .bottom)  // SafeArea 무시하고 아래에 붙임
+//        .ignoresSafeArea(edges: .bottom)  // SafeArea 무시하고 아래에 붙임
     }
 }
 

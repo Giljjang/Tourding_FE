@@ -11,4 +11,5 @@ import Foundation
 protocol UserRepositoryProtocol {
     func createUser(_ request: CreateUserRequest) async throws -> CreateUserResponse
     func deleteUser(id: Int) async throws
+    func revokeUser(userId: Int, authorizationCode: String) async throws
 }
