@@ -50,7 +50,7 @@ final class RidingViewModel: ObservableObject {
     
     // MARK: - 사용자 위치 추적 관련
     @Published var currentUserLocation: NMGLatLng?
-    let markerPassThreshold: Double = 100.0 // 마커를 지나간 것으로 판단하는 거리 (미터) - 50m에서 100m로 증가
+    let markerPassThreshold: Double = 100.0 // 마커를 지나간 것으로 판단하는 거리 (미터)
     
     let routeRepository: RouteRepositoryProtocol
     let kakaoRepository: KakaoRepositoryProtocol
@@ -105,7 +105,7 @@ extension RidingViewModel {
         if showConvenienceStore {
             updateConvenienceStoreMarkers(location: locaion)
         } else {
-            // 편의점 마커 제거
+            // 편의점 마커  제거
             csMarkerCoordinates.removeAll()
             csMarkerIcons.removeAll()
             print("편의점 마커 제거됨")

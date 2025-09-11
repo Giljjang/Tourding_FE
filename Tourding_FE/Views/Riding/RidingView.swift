@@ -52,6 +52,10 @@ struct RidingView: View {
                     
                     csButton
                     
+                    #if DEBUG
+                    testButtons
+                    #endif
+                    
                 } // : if
                 
                 // 바텀 시트
@@ -335,6 +339,53 @@ struct RidingView: View {
         .position(x: 208, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : csButton
     
+    #if DEBUG
+    private var testButtons: some View {
+        VStack(spacing: 8) {
+            // 상태 확인 버튼
+            Button(action: {
+                ridingViewModel.printGuideListStatus()
+            }) {
+                Text("상태확인")
+                    .font(.pretendardMedium(size: 12))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.blue)
+                    .cornerRadius(8)
+            }
+            
+            // 카메라 테스트 버튼
+            Button(action: {
+                ridingViewModel.testCameraTracking()
+            }) {
+                Text("카메라테스트")
+                    .font(.pretendardMedium(size: 12))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.green)
+                    .cornerRadius(8)
+            }
+            
+            // 위치 시뮬레이션 버튼
+            Button(action: {
+                // 다음 좌표로 이동 시뮬레이션
+                ridingViewModel.simulateLocationUpdate(lat: 36.0202331, lng: 129.3560241)
+            }) {
+                Text("위치시뮬레이션")
+                    .font(.pretendardMedium(size: 12))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.orange)
+                    .cornerRadius(8)
+            }
+        }
+        .position(x: 300, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
+    }
+    #endif
+    
     private func checkAndRequestLocationPermission() {
         let authStatus = locationManager.checkLocationAuthorizationStatus()
         
@@ -363,15 +414,13 @@ struct RidingView: View {
             locationManager.requestLocationPermission()
             
         case .authorizedWhenInUse, .authorizedAlways:
+            // 권한이 허용된 경우 현재 위치 가져오기
+            locationManager.getCurrentLocation()
             
-            if ridingViewModel.flag {
-                // 권한이 허용된 경우 현재 위치 가져오기
-                locationManager.getCurrentLocation()
-                
-                // 위치 업데이트 콜백 설정
-                locationManager.onLocationUpdate = { newLocation in
-                    // NMGLatLng를 CLLocation으로 변환
-                    let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
+            // 위치 업데이트 콜백 설정 (라이딩 중일 때만 추적)
+            locationManager.onLocationUpdate = { newLocation in
+                // 라이딩 중일 때만 위치 추적 및 카메라 업데이트
+                if ridingViewModel.flag {
                     ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
                 }
             }
