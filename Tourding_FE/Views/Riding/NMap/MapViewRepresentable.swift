@@ -125,10 +125,28 @@ struct MapViewRepresentable: UIViewRepresentable {
     // MARK: - Coordinator
     class Coordinator: NSObject {
         var mapViewController: MapViewController?
+        private var parentViewController: UIViewController?
+        
+        deinit {
+            print("🗺️ MapViewRepresentable Coordinator deinit 시작")
+            cleanupResources()
+        }
+        
+        private func cleanupResources() {
+            // MapViewController 정리
+            if let mapViewController = mapViewController {
+                removeChild(mapViewController)
+            }
+            mapViewController = nil
+            parentViewController = nil
+            
+            print("✅ MapViewRepresentable Coordinator 리소스 정리 완료")
+        }
         
         func addChild(_ child: UIViewController, to parent: UIViewController) {
             parent.addChild(child)
             child.didMove(toParent: parent)
+            self.parentViewController = parent
         }
         
         func removeChild(_ child: UIViewController) {

@@ -25,7 +25,7 @@ struct SheetGuideView: View {
             header
             
             ScrollView(showsIndicators: false) {
-                ForEach(Array(ridingViewModel.guideList.enumerated()), id:\.1.id){ index, item in
+                ForEach(Array(ridingViewModel.guideList.enumerated()), id:\.1.sequenceNum){ index, item in
                     guideRowView(text: item.instructions,
                                  guideType: item.guideType ?? .straight,
                                  time: item.duration)

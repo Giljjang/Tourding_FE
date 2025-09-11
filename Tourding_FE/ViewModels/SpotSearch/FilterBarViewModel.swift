@@ -49,15 +49,17 @@ class FilterBarViewModel: NSObject, ObservableObject {
 
         // (선택) 이전 태스크 취소
         currentTask?.cancel()
-        currentTask = Task {
+        currentTask = Task { [weak self] in
+            guard let self = self else { return }
             await self.performLocalSearch(loadMore: false, typeCode: typeCode, areaCode: areaCode)
         }
     }
 
     func loadMoreLocal(typeCode: String? = nil, areaCode: Int? = nil) {
         guard hasMoreResults, !isLoading, !currentSearchQuery.isEmpty else { return }
-        Task {
-            await performLocalSearch(loadMore: true, typeCode: typeCode, areaCode: areaCode)
+        Task { [weak self] in
+            guard let self = self else { return }
+            await self.performLocalSearch(loadMore: true, typeCode: typeCode, areaCode: areaCode)
         }
     }
 
@@ -108,7 +110,7 @@ class FilterBarViewModel: NSObject, ObservableObject {
             let items = try await tourRepo.searchByKeyword(
                 keyword: currentSearchQuery,
                 pageNum: currentPage,
-                typeCode: (typeCode?.isEmpty == false) ? typeCode! : "0",
+                typeCode: (typeCode?.isEmpty == false) ? (typeCode ?? "0") : "0",
                 areaCode: areaCode ?? 0
             )
 

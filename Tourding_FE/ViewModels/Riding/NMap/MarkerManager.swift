@@ -21,6 +21,22 @@ final class MarkerManager {
         self.mapView = mapView
     }
     
+    deinit {
+        print("📍 MarkerManager deinit 시작")
+        cleanupResources()
+    }
+    
+    // MARK: - Cleanup
+    private func cleanupResources() {
+        // 모든 마커들을 지도에서 제거
+        clearAllMarkers()
+        
+        // 지도 뷰 참조 해제
+        mapView = nil
+        
+        print("✅ MarkerManager 리소스 정리 완료")
+    }
+    
     // MARK: - Public Methods
     func addMarkers(coordinates: [NMGLatLng], icons: [NMFOverlayImage]) {
         clearMarkers()

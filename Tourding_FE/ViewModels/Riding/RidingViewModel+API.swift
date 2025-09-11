@@ -12,9 +12,14 @@ extension RidingViewModel {
     //MARK: - 라이딩 시작하기 전 API 호출
     @MainActor
     func getRouteLocationAPI() async {
+        guard let userId = userId else {
+            print("❌ userId가 nil입니다")
+            return
+        }
+        
         isLoading = true
         do {
-            let response = try await routeRepository.getRoutesLocationName(userId: userId!)
+            let response = try await routeRepository.getRoutesLocationName(userId: userId)
             routeLocation = response
             print("response : \(routeLocation)")
             
@@ -47,9 +52,14 @@ extension RidingViewModel {
     //초기 출발지, 도착지만 입력시 POST
     @MainActor
     func getRoutePathAPI() async {
+        guard let userId = userId else {
+            print("❌ userId가 nil입니다")
+            return
+        }
+        
         isLoading = true
         do {
-            let response = try await routeRepository.getRoutesPath(userId: userId!)
+            let response = try await routeRepository.getRoutesPath(userId: userId)
             routeMapPaths = response
             
             pathCoordinates = routeMapPaths.compactMap { item in
@@ -70,11 +80,18 @@ extension RidingViewModel {
     // 드래그앤 드랍 수정시
     @MainActor
     func postRouteDeleteAPI(originalData: [LocationNameModel], selectedData: LocationNameModel) async {
-        isLoading = true
-        guard let start = originalData.first,
-              let end = originalData.last else {
+        guard let userId = userId else {
+            print("❌ userId가 nil입니다")
             return
         }
+        
+        guard let start = originalData.first,
+              let end = originalData.last else {
+            print("❌ 경로 데이터가 부족합니다")
+            return
+        }
+        
+        isLoading = true
         
         // wayPoints (0, last 제외 + 선택된 데이터 삭제)
         let middlePoints = originalData.dropFirst().dropLast().filter { $0.sequenceNum != selectedData.sequenceNum }
@@ -92,7 +109,7 @@ extension RidingViewModel {
         let typeCode = typeCodes.joined(separator: ",")
         
         let requestBody = RequestRouteModel(
-            userId: userId!,
+            userId: userId,
             start: "\(start.lon),\(start.lat)",
             goal: "\(end.lon),\(end.lat)",
             wayPoints: wayPoints,
@@ -113,11 +130,18 @@ extension RidingViewModel {
     
     @MainActor
     func postRouteDragNDropAPI(locationData: [LocationNameModel]) async {
-        isLoading = true
-        guard let start = locationData.first,
-              let end = locationData.last else {
+        guard let userId = userId else {
+            print("❌ userId가 nil입니다")
             return
         }
+        
+        guard let start = locationData.first,
+              let end = locationData.last else {
+            print("❌ 경로 데이터가 부족합니다")
+            return
+        }
+        
+        isLoading = true
         
         // wayPoints (0, last 제외)
         let middlePoints = locationData.dropFirst().dropLast()
@@ -133,7 +157,7 @@ extension RidingViewModel {
         let typeCode = typeCodes.joined(separator: ",")
         
         let requestBody = RequestRouteModel(
-            userId: userId!,
+            userId: userId,
             start: "\(start.lon),\(start.lat)",
             goal: "\(end.lon),\(end.lat)",
             wayPoints: wayPoints,
@@ -158,12 +182,17 @@ extension RidingViewModel {
     //MARK: - 라이딩 중 API 호출
     @MainActor
     func getRouteGuideAPI() async {
+        guard let userId = userId else {
+            print("❌ userId가 nil입니다")
+            return
+        }
+        
         isLoading = true
         do {
-            let response = try await routeRepository.getRoutesGuide(userId: userId!)
+            let response = try await routeRepository.getRoutesGuide(userId: userId)
             guideList = response
             
-            print("guideList: \(guideList)")
+//            print("guideList: \(guideList)")
             
             // 기존 마커들을 제거하고 가이드 마커들로 교체
             markerCoordinates = guideList.compactMap { item in

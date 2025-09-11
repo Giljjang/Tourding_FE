@@ -8,7 +8,6 @@
 import Foundation
 
 struct GuideModel: Codable, Hashable {
-    let id: UUID = UUID()
     let sequenceNum: Int
     let distance: Int
     let duration: Int

@@ -83,6 +83,9 @@ final class DestinationSearchViewModel: NSObject, ObservableObject {
         errorMessage = nil
         
         do {
+            // 취소 검사
+            try Task.checkCancellation()
+            
             let response = try await KakaoLocalService.searchPlaces(
                 query: query,
                 currentLocation: currentLocation,
@@ -91,6 +94,9 @@ final class DestinationSearchViewModel: NSObject, ObservableObject {
                 size: 15,
                 sort: "accuracy"               // ✅ 항상 정확도순으로 받기
             )
+            
+            // 취소 검사
+            try Task.checkCancellation()
             
             // 1) 페이지 합치기
             let merged = loadMore ? (self.searchResults + response.documents)
@@ -107,6 +113,8 @@ final class DestinationSearchViewModel: NSObject, ObservableObject {
             hasMoreResults = !response.meta.isEnd
             currentPage += 1
             
+        } catch is CancellationError {
+            print("🚫 DestinationSearchViewModel 검색 취소됨")
         } catch {
             errorMessage = handleError(error)
             print("Search error: \(error)")
@@ -162,8 +170,9 @@ extension DestinationSearchViewModel: CLLocationManagerDelegate {
         
         // 이미 검색어가 있다면 위치 기반으로 재검색
         if !currentSearchQuery.isEmpty {
-            Task {
-                await performSearch(query: currentSearchQuery)
+            Task { [weak self] in
+                guard let self = self else { return }
+                await self.performSearch(query: self.currentSearchQuery)
             }
         }
     }

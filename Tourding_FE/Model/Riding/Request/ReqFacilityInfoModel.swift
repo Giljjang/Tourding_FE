@@ -10,5 +10,5 @@ import Foundation
 struct ReqFacilityInfoModel: Codable {
     let lon: String
     let lat: String
-    let radius: String = "20000"
+    var radius: String = "20000"
 }
