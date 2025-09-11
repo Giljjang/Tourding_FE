@@ -26,7 +26,7 @@ final class SpotSearchViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            var results = try await tourRepository.searchLocationSpots(
+            let results = try await tourRepository.searchLocationSpots(
                 pageNum: 0,
                 mapX: String(lng),
                 mapY: String(lat),

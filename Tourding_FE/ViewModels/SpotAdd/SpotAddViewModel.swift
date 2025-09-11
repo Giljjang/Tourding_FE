@@ -84,12 +84,17 @@ final class SpotAddViewModel: ObservableObject {
     func simplifiedAddressRegex(_ fullAddress: String) -> String {
         // 숫자와 번지 제거
         let pattern = #"(\d+.*$)"# // 숫자+문자열로 끝나는 부분
-        let regex = try! NSRegularExpression(pattern: pattern, options: [])
-
-        let range = NSRange(location: 0, length: fullAddress.utf16.count)
-        let result = regex.stringByReplacingMatches(in: fullAddress, options: [], range: range, withTemplate: "")
         
-        return result.trimmingCharacters(in: .whitespaces)
+        do {
+            let regex = try NSRegularExpression(pattern: pattern, options: [])
+            let range = NSRange(location: 0, length: fullAddress.utf16.count)
+            let result = regex.stringByReplacingMatches(in: fullAddress, options: [], range: range, withTemplate: "")
+            return result.trimmingCharacters(in: .whitespaces)
+        } catch {
+            print("❌ 정규식 패턴 오류: \(error)")
+            // 정규식 실패 시 원본 주소 반환
+            return fullAddress
+        }
     }
     
     func containsCoordinate(originalData: [LocationNameModel], selectedData: SpotData) -> Bool {
@@ -130,26 +135,42 @@ final class SpotAddViewModel: ObservableObject {
     
     @MainActor
     func getRouteLocationAPI() async {
+        guard let userId = userId else {
+            print("❌ userId가 nil입니다")
+            errorMessage = "사용자 정보를 찾을 수 없습니다."
+            return
+        }
+        
         isLoading = true
         do {
-            let response = try await routeRepository.getRoutesLocationName(userId: userId!)
+            let response = try await routeRepository.getRoutesLocationName(userId: userId)
             routeLocation = response
             
 //            print("routeLocation: \(routeLocation)")
             
         } catch {
             print("GET ERROR: /routes/location-name \(error)")
+            errorMessage = "경로 정보를 불러오는데 실패했습니다."
         }
         isLoading = false
     }
     
     @MainActor
     func postRouteAPI(originalData: [LocationNameModel], updatedData: SpotData) async {
-        isLoading = true
-        guard let start = originalData.first,
-              let end = originalData.last else {
+        guard let userId = userId else {
+            print("❌ userId가 nil입니다")
+            errorMessage = "사용자 정보를 찾을 수 없습니다."
             return
         }
+        
+        guard let start = originalData.first,
+              let end = originalData.last else {
+            print("❌ 경로 데이터가 부족합니다")
+            errorMessage = "경로 정보가 부족합니다."
+            return
+        }
+        
+        isLoading = true
 
         // wayPoints (0, last 제외 + updatedData 마지막에 추가)
         let middlePoints = originalData.dropFirst().dropLast()
@@ -176,7 +197,7 @@ final class SpotAddViewModel: ObservableObject {
         let typeCode = typeCodes.joined(separator: ",")
 
         let requestBody = RequestRouteModel(
-            userId: userId!,
+            userId: userId,
             start: "\(start.lon),\(start.lat)",
             goal: "\(end.lon),\(end.lat)",
             wayPoints: wayPoints,

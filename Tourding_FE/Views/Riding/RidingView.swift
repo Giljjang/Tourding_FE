@@ -133,21 +133,34 @@ struct RidingView: View {
             checkAndRequestLocationPermission()
             
             
-            Task{
-                await ridingViewModel.getRouteLocationAPI()
-                await ridingViewModel.getRoutePathAPI()
-                
-                // API 호출 완료 후 초기 카메라 위치 설정
-                await MainActor.run {
-                    if let firstLocation = ridingViewModel.routeLocation.first,
-                       let lat = Double(firstLocation.lat),
-                       let lon = Double(firstLocation.lon) {
+            Task { [weak ridingViewModel] in
+                do {
+                    try Task.checkCancellation()
+                    await ridingViewModel?.getRouteLocationAPI()
+                    
+                    try Task.checkCancellation()
+                    await ridingViewModel?.getRoutePathAPI()
+                    
+                    // API 호출 완료 후 초기 카메라 위치 설정
+                    try Task.checkCancellation()
+                    await MainActor.run {
+                        guard let ridingViewModel = ridingViewModel,
+                              let firstLocation = ridingViewModel.routeLocation.first,
+                              let lat = Double(firstLocation.lat),
+                              let lon = Double(firstLocation.lon),
+                              let mapView = ridingViewModel.mapView else {
+                            print("❌ 초기 카메라 위치 설정 실패: mapView 또는 경로 데이터가 없습니다")
+                            return
+                        }
                         
                         let coordinate = NMGLatLng(lat: lat, lng: lon)
-                        ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: ridingViewModel.mapView!)
+                        ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
                         print("초기 카메라 위치를 경로 첫 번째 좌표로 설정: \(lat), \(lon)")
-                        
                     }
+                } catch is CancellationError {
+                    print("🚫 RidingView 초기화 Task 취소됨")
+                } catch {
+                    print("❌ RidingView 초기화 에러: \(error)")
                 }
             } // : Task
         }// : onAppear
@@ -175,29 +188,44 @@ struct RidingView: View {
                 
                 if let firstLocation = ridingViewModel.routeLocation.first,
                    let lat = Double(firstLocation.lat),
-                   let lon = Double(firstLocation.lon) {
+                   let lon = Double(firstLocation.lon),
+                   let mapView = ridingViewModel.mapView {
                     
                     let coordinate = NMGLatLng(lat: lat, lng: lon)
-                    ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: ridingViewModel.mapView!)
+                    ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
                     print("초기 카메라 위치를 경로 첫 번째 좌표로 설정: \(lat), \(lon)")
                     
+                } else {
+                    print("❌ 초기 카메라 위치 설정 실패: mapView 또는 경로 데이터가 없습니다")
                 }
                 
-                Task{
-                    await ridingViewModel.getRouteLocationAPI()
-                    
-                    //화장실 마커 전부 제거
-                    ridingViewModel.toiletMarkerCoordinates.removeAll()
-                    ridingViewModel.toiletMarkerIcons.removeAll()
-                    
-                    //편의점 마커 전부 제거
-                    ridingViewModel.csMarkerCoordinates.removeAll()
-                    ridingViewModel.csMarkerIcons.removeAll()
-                    
-                    ridingViewModel.showConvenienceStore = false
-                    ridingViewModel.showToilet = false
+                Task { [weak ridingViewModel] in
+                    do {
+                        try Task.checkCancellation()
+                        await ridingViewModel?.getRouteLocationAPI()
+                        
+                        try Task.checkCancellation()
+                        await MainActor.run {
+                            guard let ridingViewModel = ridingViewModel else { return }
+                            
+                            //화장실 마커 전부 제거
+                            ridingViewModel.toiletMarkerCoordinates.removeAll()
+                            ridingViewModel.toiletMarkerIcons.removeAll()
+                            
+                            //편의점 마커 전부 제거
+                            ridingViewModel.csMarkerCoordinates.removeAll()
+                            ridingViewModel.csMarkerIcons.removeAll()
+                            
+                            ridingViewModel.showConvenienceStore = false
+                            ridingViewModel.showToilet = false
+                        }
+                        ridingViewModel?.flag = false
+                    } catch is CancellationError {
+                        print("🚫 라이딩 종료 Task 취소됨")
+                    } catch {
+                        print("❌ 라이딩 종료 에러: \(error)")
+                    }
                 }
-                ridingViewModel.flag = false
             } //: if-else
         }){
             Image("riding_back")
@@ -227,8 +255,15 @@ struct RidingView: View {
                     // 위치 추적 시작
                     locationManager.startLocationUpdates()
                     
-                    Task{
-                        await ridingViewModel.getRouteGuideAPI()
+                    Task { [weak ridingViewModel] in
+                        do {
+                            try Task.checkCancellation()
+                            await ridingViewModel?.getRouteGuideAPI()
+                        } catch is CancellationError {
+                            print("🚫 라이딩 가이드 API Task 취소됨")
+                        } catch {
+                            print("❌ 라이딩 가이드 API 에러: \(error)")
+                        }
                     }
                 }
             )

@@ -93,9 +93,18 @@ struct DetailSpotView: View {
         .ignoresSafeArea()
         .navigationBarBackButtonHidden()
         .onAppear{
-            Task{
-                await detailViewModel.getTourAreaDetailAPI(requestBody: detailId)
-                await detailViewModel.getRouteLocationAPI()
+            Task { [weak detailViewModel] in
+                do {
+                    try Task.checkCancellation()
+                    await detailViewModel?.getTourAreaDetailAPI(requestBody: detailId)
+                    
+                    try Task.checkCancellation()
+                    await detailViewModel?.getRouteLocationAPI()
+                } catch is CancellationError {
+                    print("🚫 DetailSpotView 초기화 Task 취소됨")
+                } catch {
+                    print("❌ DetailSpotView 초기화 에러: \(error)")
+                }
             }
         } // :onAppear
     }
@@ -172,11 +181,22 @@ struct DetailSpotView: View {
                 },
                 onActive: {
                     print("추가됨")
-                    Task{
-                        await detailViewModel.postRouteAPI(originalData: detailViewModel.routeLocation, updatedData: spot)
-                        await detailViewModel.getRouteLocationAPI()
-                        
-                        navigationManager.pop(count: 2)
+                    Task { [weak detailViewModel] in
+                        do {
+                            try Task.checkCancellation()
+                            await detailViewModel?.postRouteAPI(originalData: detailViewModel?.routeLocation ?? [], updatedData: spot)
+                            
+                            try Task.checkCancellation()
+                            await detailViewModel?.getRouteLocationAPI()
+                            
+                            await MainActor.run {
+                                navigationManager.pop(count: 2)
+                            }
+                        } catch is CancellationError {
+                            print("🚫 DetailSpotView 추가 Task 취소됨")
+                        } catch {
+                            print("❌ DetailSpotView 추가 에러: \(error)")
+                        }
                     }
                 } // : onActive
             )

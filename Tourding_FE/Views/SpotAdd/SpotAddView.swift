@@ -74,9 +74,18 @@ struct SpotAddView: View {
         .navigationBarBackButtonHidden()
         .background(Color.gray1)
         .onAppear{
-            Task{
-                await spotAddViewModel.fetchNearbySpots(lat: lat, lng: lon, typeCode: spotAddViewModel.clickFliter == "전체" ? "" : spotAddViewModel.matchTypeCodeName(for: spotAddViewModel.clickFliter))
-                await spotAddViewModel.getRouteLocationAPI()
+            Task { [weak spotAddViewModel] in
+                do {
+                    try Task.checkCancellation()
+                    await spotAddViewModel?.fetchNearbySpots(lat: lat, lng: lon, typeCode: spotAddViewModel?.clickFliter == "전체" ? "" : spotAddViewModel?.matchTypeCodeName(for: spotAddViewModel?.clickFliter ?? "전체") ?? "")
+                    
+                    try Task.checkCancellation()
+                    await spotAddViewModel?.getRouteLocationAPI()
+                } catch is CancellationError {
+                    print("🚫 SpotAdd 초기화 Task 취소됨")
+                } catch {
+                    print("❌ SpotAdd 초기화 에러: \(error)")
+                }
             }
         }//: onAppear
     }
@@ -141,11 +150,18 @@ struct SpotAddView: View {
     ) -> some View {
         Button(action:{
             spotAddViewModel.clickFliter = title
-            Task{
-                await spotAddViewModel.fetchNearbySpots(
-                    lat: lat,
-                    lng: lon,
-                    typeCode: spotAddViewModel.matchTypeCodeName(for: title))
+            Task { [weak spotAddViewModel] in
+                do {
+                    try Task.checkCancellation()
+                    await spotAddViewModel?.fetchNearbySpots(
+                        lat: lat,
+                        lng: lon,
+                        typeCode: spotAddViewModel?.matchTypeCodeName(for: title) ?? "")
+                } catch is CancellationError {
+                    print("🚫 SpotAdd 필터 Task 취소됨")
+                } catch {
+                    print("❌ SpotAdd 필터 에러: \(error)")
+                }
             }
         }){
             HStack(spacing: 0) {
@@ -238,11 +254,22 @@ struct SpotAddView: View {
                             },
                             onActive: {
                                 print("추가됨")
-                                Task{
-                                    await spotAddViewModel.postRouteAPI(originalData: spotAddViewModel.routeLocation, updatedData: spot)
-                                    await spotAddViewModel.getRouteLocationAPI()
-                                    navigationManager.pop()
-                                
+                                Task { [weak spotAddViewModel] in
+                                    do {
+                                        try Task.checkCancellation()
+                                        await spotAddViewModel?.postRouteAPI(originalData: spotAddViewModel?.routeLocation ?? [], updatedData: spot)
+                                        
+                                        try Task.checkCancellation()
+                                        await spotAddViewModel?.getRouteLocationAPI()
+                                        
+                                        await MainActor.run {
+                                            navigationManager.pop()
+                                        }
+                                    } catch is CancellationError {
+                                        print("🚫 SpotAdd 추가 Task 취소됨")
+                                    } catch {
+                                        print("❌ SpotAdd 추가 에러: \(error)")
+                                    }
                                 }
                             }
                         )

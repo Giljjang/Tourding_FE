@@ -217,21 +217,25 @@ class LoginViewModel: NSObject, ObservableObject {
     }
     
     func addUserToServer() {
-          Task {
+          Task { [weak self] in
               do {
-                  let req = CreateUserRequest(username: userNickname, email: userEmail)
+                  try Task.checkCancellation()
+                  let req = CreateUserRequest(username: self?.userNickname ?? "", email: self?.userEmail ?? "")
                   let created = try await userRepository.createUser(req)
                   // 앱 전역에서 쓰도록 uid Keychain 저장
                   KeychainHelper.saveUid(key: created.id)
 
+                  try Task.checkCancellation()
                   await MainActor.run {
-                      self.currentUser = CreateUserResponse(
+                      self?.currentUser = CreateUserResponse(
                           id: created.id,
                           name: created.name,
                           email: created.email
                       )
                   }
-                  print("✅ 서버 유저 등록 성공: \(String(describing: self.currentUser))")
+                  print("✅ 서버 유저 등록 성공: \(String(describing: self?.currentUser))")
+              } catch is CancellationError {
+                  print("🚫 사용자 등록 Task 취소됨")
               } catch {
                   print("❌ 서버 유저 등록 실패: \(error)")
               }
@@ -239,9 +243,10 @@ class LoginViewModel: NSObject, ObservableObject {
       }
     
     func addAppleUserToServer() {
-        Task {
+        Task { [weak self] in
             do {
-                let req = CreateUserRequest(username: userNickname, email: userEmail)
+                try Task.checkCancellation()
+                let req = CreateUserRequest(username: self?.userNickname ?? "", email: self?.userEmail ?? "")
                 let created = try await userRepository.createUser(req)
                 // 앱 전역에서 쓰도록 uid Keychain 저장
                 KeychainHelper.saveUid(key: created.id)
@@ -249,14 +254,17 @@ class LoginViewModel: NSObject, ObservableObject {
                 // 애플 로그인 provider 정보도 키체인에 저장
                 KeychainHelper.save(key: "loginProvider", value: "apple")
 
+                try Task.checkCancellation()
                 await MainActor.run {
-                    self.currentUser = CreateUserResponse(
+                    self?.currentUser = CreateUserResponse(
                         id: created.id,
                         name: created.name,
                         email: created.email
                     )
                 }
-                print("✅ 애플 서버 유저 등록 성공: \(String(describing: self.currentUser))")
+                print("✅ 애플 서버 유저 등록 성공: \(String(describing: self?.currentUser))")
+            } catch is CancellationError {
+                print("🚫 애플 사용자 등록 Task 취소됨")
             } catch {
                 print("❌ 애플 서버 유저 등록 실패: \(error)")
             }
@@ -265,16 +273,19 @@ class LoginViewModel: NSObject, ObservableObject {
     
     /// 서버에서 현재 사용자 삭제
       func deleteUserFromServer() {
-          Task {
+          Task { [weak self] in
               guard let id = KeychainHelper.loadUid() else {
                   print("❌ 삭제 실패: currentUser.id 없음")
                   return
               }
               do {
+                  try Task.checkCancellation()
                   try await userRepository.deleteUser(id: id)
                   KeychainHelper.deleteUid()
                   print("✅ 서버 유저 삭제 성공")
                   
+              } catch is CancellationError {
+                  print("🚫 사용자 삭제 Task 취소됨")
               } catch {
                   print("❌ 서버 유저 삭제 실패: \(error)")
               }
@@ -460,11 +471,26 @@ extension LoginViewModel: ASAuthorizationControllerDelegate {
 // MARK: - ASAuthorizationControllerPresentationContextProviding
 extension LoginViewModel: ASAuthorizationControllerPresentationContextProviding {
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first else {
-            fatalError("No window found")
+        // 안전한 윈도우 찾기
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first {
+            return window
         }
-        return window
+        
+        // 윈도우를 찾을 수 없는 경우 대체 윈도우 생성
+        print("⚠️ 기본 윈도우를 찾을 수 없어 새 윈도우를 생성합니다.")
+        
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            let newWindow = UIWindow(windowScene: windowScene)
+            newWindow.makeKeyAndVisible()
+            return newWindow
+        }
+        
+        // 최후의 수단: 임시 윈도우 생성
+        print("⚠️ 윈도우 씬을 찾을 수 없어 임시 윈도우를 생성합니다.")
+        let tempWindow = UIWindow(frame: UIScreen.main.bounds)
+        tempWindow.makeKeyAndVisible()
+        return tempWindow
     }
 }
 

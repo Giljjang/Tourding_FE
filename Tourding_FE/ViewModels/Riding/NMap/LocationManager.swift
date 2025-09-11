@@ -26,6 +26,26 @@ final class LocationManager: NSObject {
         setupLocationManager()
     }
     
+    deinit {
+        print("📍 LocationManager deinit 시작")
+        cleanupResources()
+    }
+    
+    // MARK: - Cleanup
+    private func cleanupResources() {
+        // 위치 업데이트 중지
+        stopLocationUpdates()
+        
+        // 델리게이트 해제
+        locationManager.delegate = nil
+        
+        // 콜백 해제
+        onLocationUpdate = nil
+        onHeadingUpdate = nil
+        
+        print("✅ LocationManager 리소스 정리 완료")
+    }
+    
     // MARK: - Setup
     private func setupLocationManager() {
         locationManager.delegate = self

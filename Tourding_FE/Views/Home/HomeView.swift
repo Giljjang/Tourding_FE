@@ -104,8 +104,15 @@ struct HomeView: View {
         } // :Zstack
         .animation(.easeInOut, value: modalManager.isToastMessage)
         .onAppear{
-            Task{
-                await viewModel.getRouteLocationAPI()
+            Task { [weak viewModel] in
+                do {
+                    try Task.checkCancellation()
+                    await viewModel?.getRouteLocationAPI()
+                } catch is CancellationError {
+                    print("🚫 HomeView 초기화 Task 취소됨")
+                } catch {
+                    print("❌ HomeView 초기화 에러: \(error)")
+                }
             }
         } // : onAppear
     }
@@ -221,9 +228,19 @@ struct HomeView: View {
                         }
                     )
                 } else {
-                    Task {
-                        await viewModel.postRouteAPI(start: start, end: end)
-                        navigationManager.push(.RidingView)
+                    Task { [weak viewModel] in
+                        do {
+                            try Task.checkCancellation()
+                            await viewModel?.postRouteAPI(start: start, end: end)
+                            
+                            await MainActor.run {
+                                navigationManager.push(.RidingView)
+                            }
+                        } catch is CancellationError {
+                            print("🚫 HomeView 라이딩 시작 Task 취소됨")
+                        } catch {
+                            print("❌ HomeView 라이딩 시작 에러: \(error)")
+                        }
                     }
                     routeSharedManager.clearRoute()
                 } // if-else

@@ -70,14 +70,21 @@ final class DetailSpotViewModel: ObservableObject {
         guard let text = text else { return "" }
         
         // <br>, <br/>, <br />, <BR>, <BR/>, <BR /> 모두 제거
-        let cleaned = text.replacingOccurrences(
-            of: "<br ?/?>",
-            with: "",
-            options: [.regularExpression, .caseInsensitive]
-        )
-        
-        print("cleaned: \(cleaned)")
-        return cleaned
+        do {
+            let cleaned = text.replacingOccurrences(
+                of: "<br\\s*/?>",
+                with: "",
+                options: [.regularExpression, .caseInsensitive]
+            )
+            print("cleaned: \(cleaned)")
+            return cleaned
+        } catch {
+            print("❌ 정규식 패턴 오류: \(error)")
+            // 정규식 실패 시 단순 문자열 치환으로 대체
+            return text.replacingOccurrences(of: "<br>", with: "")
+                      .replacingOccurrences(of: "<br/>", with: "")
+                      .replacingOccurrences(of: "<br />", with: "")
+        }
     }
 
     func extractURL(from htmlString: String?) -> String? {
@@ -173,7 +180,7 @@ final class DetailSpotViewModel: ObservableObject {
 //        print("requestBody: \(requestBody)")
         
         do {
-            let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
+            let _: () = try await routeRepository.postRoutes(requestBody: requestBody)
 
             isLoading = false
         } catch {
