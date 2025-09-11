@@ -31,6 +31,7 @@ final class RidingViewModel: ObservableObject {
     var locationManager: LocationManager?
     var mapView: NMFMapView?
     var markerManager: MarkerManager?
+    var pathManager: PathManager?
     
     
     // MARK: - 지도 관련 프로퍼티
@@ -90,6 +91,28 @@ final class RidingViewModel: ObservableObject {
         }
         
         print("드래그앤 드랍 후 마커 순서 업데이트 완료: \(markerIcons.count)개")
+    }
+    
+    // 지도 표시 새로고침 (앱 포그라운드 복귀 시 사용)
+    @MainActor
+    func refreshMapDisplay() {
+        print("🔄 지도 표시 새로고침 시작")
+        
+        // 마커 매니저가 있으면 마커 다시 그리기
+        if let markerManager = markerManager {
+            markerManager.clearMarkers()
+            markerManager.addMarkers(coordinates: markerCoordinates, icons: markerIcons)
+            print("✅ 마커 새로고침 완료: \(markerCoordinates.count)개")
+        }
+        
+        // 경로 매니저가 있으면 경로선 다시 그리기
+        if let pathManager = pathManager {
+            pathManager.clearPath()
+            pathManager.setCoordinates(pathCoordinates)
+            print("✅ 경로선 새로고침 완료: \(pathCoordinates.count)개")
+        }
+        
+        print("🔄 지도 표시 새로고침 완료")
     }
     
     

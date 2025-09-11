@@ -20,22 +20,27 @@ extension RidingViewModel {
         }
         
         // 이전 위치와 비교하여 위치가 실제로 변경되었는지 확인
-        let hasLocationChanged = currentUserLocation == nil || 
-                                calculateDistance(from: currentUserLocation!, to: newLocation) > 3.0 // 3미터 이상 변경시에만 (더 정확한 추적)
+        let hasLocationChanged: Bool
+        if let previousLocation = currentUserLocation {
+            let distance = calculateDistance(from: previousLocation, to: newLocation)
+            hasLocationChanged = distance > 3.0 // 3미터 이상 변경시에만
+            print("📍 위치 거리 계산: \(String(format: "%.2f", distance))m (임계값: 3.0m)")
+        } else {
+            hasLocationChanged = true // 첫 번째 위치 업데이트
+            print("📍 첫 번째 위치 업데이트")
+        }
         
         currentUserLocation = newLocation
         
         // 위치가 변경되었을 때만 마커 체크 및 카메라 업데이트
         if hasLocationChanged {
-            print("📍 위치 변경 감지: \(newLocation.lat), \(newLocation.lng)")
+            print("✅ 위치 변경 감지됨: \(newLocation.lat), \(newLocation.lng)")
             print("📍 현재 가이드 리스트 개수: \(guideList.count)")
             print("📍 현재 마커 개수: \(markerCoordinates.count)")
             checkAndRemovePassedMarkers()
-            
-            // 라이딩 중일 때만 카메라가 사용자를 따라가도록 수정
-            if flag {
-                updateCameraToUserLocation()
-            }
+            updateCameraToUserLocation()
+        } else {
+            print("⏸️ 사용자가 움직이지 않음 - 카메라 추적 중단")
         }
     }
     
@@ -179,6 +184,7 @@ extension RidingViewModel {
             mapView.moveCamera(cameraUpdate)
             
             print("📷 카메라가 사용자 위치로 업데이트됨: \(userLocation.lat), \(userLocation.lng)")
+            print("📷 사용자가 움직였으므로 카메라가 따라감")
         }
     }
     
@@ -242,6 +248,16 @@ extension RidingViewModel {
         let testLocation = NMGLatLng(lat: lat, lng: lng)
         print("🧪 수동 위치 시뮬레이션: \(lat), \(lng)")
         updateUserLocationAndCheckMarkers(testLocation)
+    }
+    
+    // 같은 위치로 이동 시뮬레이션 (움직이지 않는 테스트)
+    func simulateNoMovement() {
+        guard let currentLocation = currentUserLocation else {
+            print("❌ 현재 위치가 없어서 움직이지 않는 테스트 불가")
+            return
+        }
+        print("🧪 같은 위치로 이동 시뮬레이션 (움직이지 않음)")
+        updateUserLocationAndCheckMarkers(currentLocation)
     }
     
     // 카메라 추적 테스트용 함수

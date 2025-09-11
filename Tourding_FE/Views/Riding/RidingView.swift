@@ -52,9 +52,9 @@ struct RidingView: View {
                     
                     csButton
                     
-                    #if DEBUG
-                    testButtons
-                    #endif
+//                    #if DEBUG
+//                    testButtons
+//                    #endif
                     
                 } // : if
                 
@@ -179,6 +179,15 @@ struct RidingView: View {
 //                ridingViewModel.testMarkerRemoval()
 //            }
         } // : onChange
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            // 앱이 포그라운드로 돌아왔을 때
+            print("🔄 앱이 포그라운드로 돌아옴 - 지도 상태 확인")
+            checkAndRefreshMapData()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+            // 앱이 백그라운드로 갈 때
+            print("⏸️ 앱이 백그라운드로 이동")
+        }
     }
     
     //MARK: - View
@@ -427,6 +436,59 @@ struct RidingView: View {
             
         @unknown default:
             break
+        }
+    }
+    
+    // 앱이 포그라운드로 돌아왔을 때 지도 데이터 확인 및 새로고침
+    private func checkAndRefreshMapData() {
+        // 라이딩 중이 아닐 때만 데이터 새로고침 (라이딩 중에는 중단하지 않음)
+        guard !ridingViewModel.flag else {
+            print("🚫 라이딩 중이므로 데이터 새로고침 건너뜀")
+            return
+        }
+        
+        // 경로 데이터가 비어있거나 지도가 제대로 초기화되지 않은 경우
+        if ridingViewModel.routeLocation.isEmpty || ridingViewModel.pathCoordinates.isEmpty {
+            print("🔄 경로 데이터가 비어있음 - API 재호출 시작")
+            refreshRouteData()
+        } else {
+            print("✅ 경로 데이터가 정상적으로 로드됨")
+            // 지도 마커와 경로선 다시 그리기
+            ridingViewModel.refreshMapDisplay()
+        }
+    }
+    
+    // 경로 데이터 새로고침
+    private func refreshRouteData() {
+        Task { [weak ridingViewModel] in
+            do {
+                try Task.checkCancellation()
+                await ridingViewModel?.getRouteLocationAPI()
+                
+                try Task.checkCancellation()
+                await ridingViewModel?.getRoutePathAPI()
+                
+                // API 호출 완료 후 초기 카메라 위치 설정
+                try Task.checkCancellation()
+                await MainActor.run {
+                    guard let ridingViewModel = ridingViewModel,
+                          let firstLocation = ridingViewModel.routeLocation.first,
+                          let lat = Double(firstLocation.lat),
+                          let lon = Double(firstLocation.lon),
+                          let mapView = ridingViewModel.mapView else {
+                        print("❌ 새로고침 후 초기 카메라 위치 설정 실패")
+                        return
+                    }
+                    
+                    let coordinate = NMGLatLng(lat: lat, lng: lon)
+                    ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
+                    print("✅ 새로고침 후 초기 카메라 위치 설정 완료: \(lat), \(lon)")
+                }
+            } catch is CancellationError {
+                print("🚫 경로 데이터 새로고침 Task 취소됨")
+            } catch {
+                print("❌ 경로 데이터 새로고침 에러: \(error)")
+            }
         }
     }
 }

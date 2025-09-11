@@ -18,34 +18,54 @@ extension RidingViewModel {
         }
         
         isLoading = true
-        do {
-            let response = try await routeRepository.getRoutesLocationName(userId: userId)
-            routeLocation = response
-            print("response : \(routeLocation)")
-            
-            markerCoordinates = routeLocation.compactMap { item in
-                if let lat = Double(item.lat), let lon = Double(item.lon) {
-                    return NMGLatLng(lat: lat, lng: lon)
+        
+        // 재시도 메커니즘 (최대 3회)
+        var retryCount = 0
+        let maxRetries = 3
+        
+        while retryCount < maxRetries {
+            do {
+                let response = try await routeRepository.getRoutesLocationName(userId: userId)
+                routeLocation = response
+                print("✅ 경로 위치 API 호출 성공: \(routeLocation.count)개")
+                
+                markerCoordinates = routeLocation.compactMap { item in
+                    if let lat = Double(item.lat), let lon = Double(item.lon) {
+                        return NMGLatLng(lat: lat, lng: lon)
+                    } else {
+                        return nil
+                    }
+                }
+                
+                markerIcons = routeLocation.enumerated().map { (index, item) in
+                    switch item.type {
+                    case "Start":
+                        return MarkerIcons.startMarker
+                    case "Goal":
+                        return MarkerIcons.goalMarker
+                    case "WayPoint":
+                        return MarkerIcons.numberMarker(index) // index 사용
+                    default:
+                        return MarkerIcons.numberMarker(0)
+                    }
+                }
+                
+                // 성공하면 루프 종료
+                break
+                
+            } catch {
+                retryCount += 1
+                print("❌ 경로 위치 API 호출 실패 (시도 \(retryCount)/\(maxRetries)): \(error)")
+                
+                if retryCount < maxRetries {
+                    // 재시도 전 잠시 대기
+                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1초 대기
                 } else {
-                    return nil
+                    print("❌ 경로 위치 API 호출 최종 실패")
                 }
             }
-            
-            markerIcons = routeLocation.enumerated().map { (index, item) in
-                switch item.type {
-                case "Start":
-                    return MarkerIcons.startMarker
-                case "Goal":
-                    return MarkerIcons.goalMarker
-                case "WayPoint":
-                    return MarkerIcons.numberMarker(index) // index 사용
-                default:
-                    return MarkerIcons.numberMarker(0)
-                }
-            }
-        } catch {
-            print("GET ERROR: /routes/location-name \(error)")
         }
+        
         isLoading = false
     }
     
@@ -58,22 +78,42 @@ extension RidingViewModel {
         }
         
         isLoading = true
-        do {
-            let response = try await routeRepository.getRoutesPath(userId: userId)
-            routeMapPaths = response
-            
-            pathCoordinates = routeMapPaths.compactMap { item in
-                if let lat = Double(item.lat),
-                   let lon = Double(item.lon) {
-                    return NMGLatLng(lat: lat, lng: lon)
+        
+        // 재시도 메커니즘 (최대 3회)
+        var retryCount = 0
+        let maxRetries = 3
+        
+        while retryCount < maxRetries {
+            do {
+                let response = try await routeRepository.getRoutesPath(userId: userId)
+                routeMapPaths = response
+                print("✅ 경로 경로선 API 호출 성공: \(routeMapPaths.count)개")
+                
+                pathCoordinates = routeMapPaths.compactMap { item in
+                    if let lat = Double(item.lat),
+                       let lon = Double(item.lon) {
+                        return NMGLatLng(lat: lat, lng: lon)
+                    } else {
+                        return nil // 변환 실패 시 무시
+                    }
+                }
+                
+                // 성공하면 루프 종료
+                break
+                
+            } catch {
+                retryCount += 1
+                print("❌ 경로 경로선 API 호출 실패 (시도 \(retryCount)/\(maxRetries)): \(error)")
+                
+                if retryCount < maxRetries {
+                    // 재시도 전 잠시 대기
+                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1초 대기
                 } else {
-                    return nil // 변환 실패 시 무시
+                    print("❌ 경로 경로선 API 호출 최종 실패")
                 }
             }
-            
-        } catch {
-            print("GET ERROR: /routes/path \(error)")
         }
+        
         isLoading = false
     }
     

@@ -33,7 +33,7 @@ final class UserLocationManager: NSObject, ObservableObject {
     private func setupLocationManager() {
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager.distanceFilter = 5 // 5미터마다 업데이트 (더 정확한 추적)
+        locationManager.distanceFilter = 3 // 3미터마다 업데이트 (사용자 움직임에 더 민감하게)
     }
     
     // MARK: - Public Methods
