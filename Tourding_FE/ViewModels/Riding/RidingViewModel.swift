@@ -32,6 +32,7 @@ final class RidingViewModel: ObservableObject {
     var mapView: NMFMapView?
     var markerManager: MarkerManager?
     var pathManager: PathManager?
+    var mapViewController: MapViewController?
     
     
     // MARK: - 지도 관련 프로퍼티

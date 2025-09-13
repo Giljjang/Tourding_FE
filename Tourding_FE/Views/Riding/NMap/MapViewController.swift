@@ -107,16 +107,8 @@ final class MapViewController: UIViewController {
     private func setupLocationManager() {
         var isFirstLocationUpdate = true
         
-        // 위치 업데이트 콜백
-        locationManager.onLocationUpdate = { [weak self] location in
-            if isFirstLocationUpdate {
-                // 첫 번째 위치 업데이트 시 초기 카메라 위치 설정
-                self?.setupInitialCameraPosition(location: location)
-                isFirstLocationUpdate = false
-            }
-            self?.updateUserLocation(location)
-            self?.onLocationUpdate?(location)
-        }
+        // 위치 업데이트 콜백은 RidingView에서 설정하므로 여기서는 설정하지 않음
+        // 대신 onLocationUpdate 콜백이 호출될 때 MapViewController의 기능도 실행하도록 수정
         
         // 나침반 방향 업데이트 콜백 추가
         locationManager.onHeadingUpdate = { [weak self] heading in
@@ -202,7 +194,7 @@ final class MapViewController: UIViewController {
         mapView.mapView.moveCamera(cameraUpdate)
     }
     
-    private func updateUserLocation(_ location: CLLocation) {
+    func updateUserLocation(_ location: CLLocation) {
         guard let mapView = mapView else {
             print("❌ mapView가 nil입니다")
             return

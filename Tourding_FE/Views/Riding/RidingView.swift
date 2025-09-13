@@ -427,10 +427,26 @@ struct RidingView: View {
             locationManager.getCurrentLocation()
             
             // 위치 업데이트 콜백 설정 (라이딩 중일 때만 추적)
-            locationManager.onLocationUpdate = { newLocation in
+            locationManager.onLocationUpdate = { (newLocation: NMGLatLng) in
+                print("📍 RidingView: 위치 업데이트 콜백 호출됨")
+                print("📍 newLocation 타입: \(type(of: newLocation))")
+                print("📍 라이딩 상태 (flag): \(ridingViewModel.flag)")
+                
+                // MapViewController의 기능도 실행 (지도 업데이트)
+                if let mapViewController = ridingViewModel.mapViewController {
+                    // NMGLatLng를 CLLocation으로 변환
+                    let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
+                    mapViewController.updateUserLocation(clLocation)
+                }
+                
                 // 라이딩 중일 때만 위치 추적 및 카메라 업데이트
                 if ridingViewModel.flag {
+                    print("✅ 라이딩 중이므로 updateUserLocationAndCheckMarkers 호출")
+                    print("✅ NMGLatLng 직접 사용: \(newLocation.lat), \(newLocation.lng)")
                     ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+                    print("✅ updateUserLocationAndCheckMarkers 호출 완료")
+                } else {
+                    print("⏸️ 라이딩 중이 아니므로 위치 추적 중단")
                 }
             }
             

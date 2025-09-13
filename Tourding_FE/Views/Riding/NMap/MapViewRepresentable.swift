@@ -104,6 +104,8 @@ struct MapViewRepresentable: UIViewRepresentable {
             }
             // MarkerManager 연결
             ridingViewModel.markerManager = mapViewController.markerManager
+            // MapViewController 연결
+            ridingViewModel.mapViewController = mapViewController
         }
         
         // ridingViewModel 업데이트
