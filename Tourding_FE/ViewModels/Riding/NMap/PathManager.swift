@@ -68,7 +68,7 @@ final class PathManager {
         // 경로선들을 지도에 추가
         pathOverlay.mapView = mapView
         innerPathOverlay.mapView = mapView
-        print("✅ 경로선 지도에 추가 완료")
+//        print("✅ 경로선 지도에 추가 완료")
     }
     
     // MARK: - Public Methods
@@ -99,20 +99,20 @@ final class PathManager {
             return
         }
         
-        print("✅ 경로선 그리기 시작: \(pathCoordinates.count)개 좌표")
+//        print("✅ 경로선 그리기 시작: \(pathCoordinates.count)개 좌표")
         
         // 경로선을 지도에서 제거 후 다시 추가
         pathOverlay.mapView = nil
         innerPathOverlay.mapView = nil
         
         let path = NMGLineString(points: pathCoordinates)
-        print("✅ 경로 생성 완료: \(path.points.count)개 포인트")
+//        print("✅ 경로 생성 완료: \(path.points.count)개 포인트")
         
         // 타입 캐스팅을 사용하여 안전하게 할당
         if let typedPath = path as? NMGLineString<AnyObject> {
             pathOverlay.path = typedPath
             innerPathOverlay.path = typedPath
-            print("✅ 경로선 타입 캐스팅 성공")
+//            print("✅ 경로선 타입 캐스팅 성공")
             
             // 경로선 설정 후 패턴과 윤곽선 다시 적용
             applyPathStyling()
@@ -126,7 +126,7 @@ final class PathManager {
         // 경로선을 다시 지도에 추가
         pathOverlay.mapView = mapView
         innerPathOverlay.mapView = mapView
-        print("✅ 경로선 지도에 추가 완료")
+//        print("✅ 경로선 지도에 추가 완료")
     }
     
     private func applyPathStyling() {
@@ -147,11 +147,11 @@ final class PathManager {
         if let patternImage = UIImage(named: "pattern") {
             innerPathOverlay.patternIcon = NMFOverlayImage(image: patternImage)
             innerPathOverlay.patternInterval = 16 // 패턴 간격
-            print("✅ 패턴 재설정 완료 (pattern)")
+//            print("✅ 패턴 재설정 완료 (pattern)")
         } else {
             print("❌ 패턴 이미지 로드 실패: pattern")
         }
         
-        print("✅ 경로선 스타일 재설정 완료")
+//        print("✅ 경로선 스타일 재설정 완료")
     }
 }

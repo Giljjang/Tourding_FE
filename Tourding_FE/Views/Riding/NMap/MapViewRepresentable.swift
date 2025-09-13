@@ -48,7 +48,6 @@ struct MapViewRepresentable: UIViewRepresentable {
         mapViewController.csMarkerCoordinates = csMarkerCoordinates
         mapViewController.csMarkerIcons = csMarkerIcons
         
-        mapViewController.onLocationUpdate = onLocationUpdate
         mapViewController.onMapTap = onMapTap
         
         // ridingViewModel 전달

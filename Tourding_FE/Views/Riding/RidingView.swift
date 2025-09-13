@@ -133,6 +133,9 @@ struct RidingView: View {
         .ignoresSafeArea()
         .navigationBarBackButtonHidden()
         .onAppear{
+            // UserLocationManager 인스턴스를 RidingViewModel에 전달
+            ridingViewModel.userLocationManager = locationManager
+            
             // 위치 권한 확인 및 요청
             checkAndRequestLocationPermission()
             
@@ -262,11 +265,60 @@ struct RidingView: View {
                     print("취소됨")
                 },
                 onActive: {
-                    print("시작됨")
+                    print("🚀 === 라이딩 시작 ===")
                     ridingViewModel.flag = true
                     
-                    // 위치 추적 시작
-                    locationManager.startLocationUpdates()
+                    // userLocationManager 사용
+                    if let userLocationManager = ridingViewModel.userLocationManager {
+                        print("🔄 UserLocationManager 콜백 설정")
+                        print("🔄 userLocationManager 인스턴스: \(userLocationManager)")
+                        print("🔄 콜백 설정 전 onLocationUpdate: \(userLocationManager.onLocationUpdate != nil)")
+                        
+                        // 기존 콜백을 백업하고 새로운 콜백 추가
+                        let existingCallback = userLocationManager.onLocationUpdate
+                        print("🔄 기존 콜백 존재 여부: \(existingCallback != nil)")
+                        if existingCallback != nil {
+                            print("🔄 기존 콜백이 있습니다 - 덮어씌우기 전에 백업")
+                            print("🔄 기존 콜백 타입: \(type(of: existingCallback))")
+                        }
+                        
+                        // 기존 콜백을 백업하고 새로운 콜백으로 교체
+                        let backupCallback = existingCallback
+                        
+                        // 새로운 콜백 생성
+                        let newCallback: (NMGLatLng) -> Void = { (newLocation: NMGLatLng) in
+                            print("📍 === UserLocationManager 콜백 실행! ===")
+                            print("📍 위치: \(newLocation.lat), \(newLocation.lng)")
+                            
+                            // 기존 콜백도 실행 (다른 곳에서 설정된 콜백이 있다면)
+                            if let backupCallback = backupCallback {
+                                print("🔄 기존 콜백 실행 중...")
+                                backupCallback(newLocation)
+                                print("🔄 기존 콜백 실행 완료")
+                            }
+                            
+                            if let mapViewController = ridingViewModel.mapViewController {
+                                let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
+                                mapViewController.updateUserLocation(clLocation)
+                            }
+                            
+                            ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+                        }
+                        
+                        // 콜백 설정
+                        userLocationManager.onLocationUpdate = newCallback
+                        
+                        print("🔄 콜백 설정 완료")
+                        
+                        print("🔄 콜백 설정 후 onLocationUpdate: \(userLocationManager.onLocationUpdate != nil)")
+                        print("🔄 설정된 콜백 타입: \(type(of: userLocationManager.onLocationUpdate))")
+                        print("🔄 newCallback 타입: \(type(of: newCallback))")
+                        print("🔄 startLocationUpdates 호출")
+                        userLocationManager.startLocationUpdates()
+                    } else {
+                        print("❌ userLocationManager가 nil")
+                        print("❌ ridingViewModel.userLocationManager: \(ridingViewModel.userLocationManager)")
+                    }
                     
                     Task { [weak ridingViewModel] in
                         do {
@@ -426,29 +478,7 @@ struct RidingView: View {
             // 권한이 허용된 경우 현재 위치 가져오기
             locationManager.getCurrentLocation()
             
-            // 위치 업데이트 콜백 설정 (라이딩 중일 때만 추적)
-            locationManager.onLocationUpdate = { (newLocation: NMGLatLng) in
-                print("📍 RidingView: 위치 업데이트 콜백 호출됨")
-                print("📍 newLocation 타입: \(type(of: newLocation))")
-                print("📍 라이딩 상태 (flag): \(ridingViewModel.flag)")
-                
-                // MapViewController의 기능도 실행 (지도 업데이트)
-                if let mapViewController = ridingViewModel.mapViewController {
-                    // NMGLatLng를 CLLocation으로 변환
-                    let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
-                    mapViewController.updateUserLocation(clLocation)
-                }
-                
-                // 라이딩 중일 때만 위치 추적 및 카메라 업데이트
-                if ridingViewModel.flag {
-                    print("✅ 라이딩 중이므로 updateUserLocationAndCheckMarkers 호출")
-                    print("✅ NMGLatLng 직접 사용: \(newLocation.lat), \(newLocation.lng)")
-                    ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
-                    print("✅ updateUserLocationAndCheckMarkers 호출 완료")
-                } else {
-                    print("⏸️ 라이딩 중이 아니므로 위치 추적 중단")
-                }
-            }
+            // 위치 업데이트 콜백은 라이딩 시작할 때 설정됨
             
         @unknown default:
             break
@@ -468,7 +498,7 @@ struct RidingView: View {
             print("🔄 경로 데이터가 비어있음 - API 재호출 시작")
             refreshRouteData()
         } else {
-            print("✅ 경로 데이터가 정상적으로 로드됨")
+//            print("✅ 경로 데이터가 정상적으로 로드됨")
             // 지도 마커와 경로선 다시 그리기
             ridingViewModel.refreshMapDisplay()
         }

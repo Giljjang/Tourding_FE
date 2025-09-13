@@ -122,12 +122,8 @@ final class MapViewController: UIViewController {
     func setupUserLocationManager(_ userLocationManager: UserLocationManager) {
         self.userLocationManager = userLocationManager
         
-        // UserLocationManager의 위치 업데이트 콜백 설정
-        userLocationManager.onLocationUpdate = { [weak self] nmgLocation in
-            // NMGLatLng를 CLLocation으로 변환
-            let clLocation = CLLocation(latitude: nmgLocation.lat, longitude: nmgLocation.lng)
-            self?.updateUserLocationForRiding(clLocation)
-        }
+        // 콜백은 RidingView에서 설정하므로 여기서는 설정하지 않음
+        print("🗺️ MapViewController: UserLocationManager 설정 완료 (콜백은 RidingView에서 설정)")
     }
     
     // MARK: - Public Methods

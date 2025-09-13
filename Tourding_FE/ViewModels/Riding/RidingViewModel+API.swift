@@ -27,7 +27,7 @@ extension RidingViewModel {
             do {
                 let response = try await routeRepository.getRoutesLocationName(userId: userId)
                 routeLocation = response
-                print("✅ 경로 위치 API 호출 성공: \(routeLocation.count)개")
+//                print("✅ 경로 위치 API 호출 성공: \(routeLocation.count)개")
                 
                 markerCoordinates = routeLocation.compactMap { item in
                     if let lat = Double(item.lat), let lon = Double(item.lon) {
@@ -87,7 +87,7 @@ extension RidingViewModel {
             do {
                 let response = try await routeRepository.getRoutesPath(userId: userId)
                 routeMapPaths = response
-                print("✅ 경로 경로선 API 호출 성공: \(routeMapPaths.count)개")
+//                print("✅ 경로 경로선 API 호출 성공: \(routeMapPaths.count)개")
                 
                 pathCoordinates = routeMapPaths.compactMap { item in
                     if let lat = Double(item.lat),
