@@ -30,9 +30,11 @@ class LoginViewModel: NSObject, ObservableObject {
         // 저장된 로그인 provider 확인
         if let provider = KeychainHelper.load(key: "loginProvider") {
             self.loginProvider = provider
+            print("🍀🍀🍀🍀🍀🍀🍀🍀🍀🍀🍀🍀🍀🍀🍀🍀🍀\(self.loginProvider)")
             
             if provider == "kakao" {
                 // 카카오 로그인 상태 확인
+                print("카카오 로그인 상태 확인이야")
                 loadKakaoToken { [weak self] isLoggedIn in
                     if isLoggedIn {
                         self?.isLoggedIn = true
@@ -41,6 +43,7 @@ class LoginViewModel: NSObject, ObservableObject {
                 }
             } else if provider == "apple" {
                 // 애플 로그인 상태 확인
+                print("애플 로그인 상태 확인이야")
                 let appleUserInfo = KeychainHelper.loadAppleUserInfo()
                 if let userId = appleUserInfo.userId {
                     // 애플 ID 상태 확인

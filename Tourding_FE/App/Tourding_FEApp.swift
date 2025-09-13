@@ -26,7 +26,7 @@ struct Tourding_FEApp: App {
         KakaoSDK.initSDK(appKey: kakaoNativeAppKey)
         print("🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨\(kakaoNativeAppKey)")
         print("🔎 BASE_URL at runtime =>", BASE_URL)
-
+        
     }
     
     var body: some Scene {
@@ -38,30 +38,22 @@ struct Tourding_FEApp: App {
         let filterViewModel = DependencyProvider.makesFilterBarViewModel()
         let detailViewModel = DependencyProvider.makeDetailViewModel()
         let RecentSearchViewModel = DependencyProvider.makeRecentSearchViewModel()
-
+        
         WindowGroup {
             if showSplash {
                 SplashView()
                     .onAppear {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                            loadKakaoToken { success in
-                                withAnimation {
-                                    loginViewModel.fetchUserInfo()
-                                    loginViewModel.isLoggedIn = success
-                                    showSplash = false
-                                }
-                                if !loginViewModel.isLoggedIn {
-                                    //                                    navigationManager.push(.LoginView)
-                                }
+                            withAnimation {
+                                showSplash = false
                             }
                         }
-                    } // : onAppear
+                    }
                     .onOpenURL { url in
                         if AuthApi.isKakaoTalkLoginUrl(url) {
                             _ = AuthController.handleOpenUrl(url: url)
                         }
                     }
-                
             } else {
                 // ✅ NavigationStack을 한 번만 사용하고 조건문을 내부에서 처리
                 NavigationStack(path: $navigationManager.path) {
