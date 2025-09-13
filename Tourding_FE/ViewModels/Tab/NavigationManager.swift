@@ -53,5 +53,50 @@ extension NavigationManager {
         let removeCount = min(count, path.count)
         path.removeLast(removeCount)
     }
+    
+    // 특정 뷰까지 pop (해당 뷰는 제거하지 않음)
+    func popToView(_ targetView: ViewType) {
+        guard !path.isEmpty else {
+            print("⚠️ Cannot pop: Navigation path is empty")
+            return
+        }
+        
+        // 뒤에서부터 찾아서 targetView가 나올 때까지 제거
+        while !path.isEmpty {
+            let lastView = path.last!
+            if lastView == targetView {
+                break // targetView를 찾았으면 중단
+            }
+            path.removeLast()
+        }
+        
+        print("🔵 popToView 완료. 현재 path: \(path)")
+    }
+    
+    // 특정 뷰까지 pop (해당 뷰도 제거)
+    func popIncludingView(_ targetView: ViewType) {
+        guard !path.isEmpty else {
+            print("⚠️ Cannot pop: Navigation path is empty")
+            return
+        }
+        
+        // 뒤에서부터 찾아서 targetView까지 제거
+        while !path.isEmpty {
+            let lastView = path.removeLast()
+            if lastView == targetView {
+                break // targetView를 찾아서 제거했으면 중단
+            }
+        }
+        
+        print("🔵 popIncludingView 완료. 현재 path: \(path)")
+    }
+    
+    // 현재 네비게이션 스택 상태 출력 (디버깅용)
+    func printCurrentPath() {
+        print("🔵 현재 네비게이션 스택:")
+        for (index, view) in path.enumerated() {
+            print("  \(index): \(view)")
+        }
+    }
 }
 
