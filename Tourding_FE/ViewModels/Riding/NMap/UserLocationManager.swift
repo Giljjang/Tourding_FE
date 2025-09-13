@@ -33,7 +33,7 @@ final class UserLocationManager: NSObject, ObservableObject {
     private func setupLocationManager() {
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager.distanceFilter = 10 // 10미터마다 업데이트
+        locationManager.distanceFilter = 3 // 3미터마다 업데이트 (사용자 움직임에 더 민감하게)
     }
     
     // MARK: - Public Methods
@@ -118,11 +118,19 @@ final class UserLocationManager: NSObject, ObservableObject {
     
     // 위치 업데이트 시작
     func startLocationUpdates() {
+        print("🌍 UserLocationManager: startLocationUpdates 호출됨")
+        print("🌍 isLocationAuthorized: \(isLocationAuthorized)")
+        
         guard isLocationAuthorized else {
+            print("❌ 위치 권한이 없음 - 권한 요청")
             getCurrentLocation() // 권한이 없으면 먼저 권한 요청
             return
         }
+        
+        print("✅ 위치 권한 있음 - 위치 업데이트 시작")
         locationManager.startUpdatingLocation()
+        print("✅ startUpdatingLocation() 호출 완료")
+        print("✅ locationManager.delegate: \(locationManager.delegate != nil)")
     }
 }
 
@@ -130,7 +138,16 @@ final class UserLocationManager: NSObject, ObservableObject {
 extension UserLocationManager: CLLocationManagerDelegate {
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let location = locations.last else { return }
+        print("🌍 UserLocationManager: didUpdateLocations 호출됨")
+        print("🌍 받은 위치 개수: \(locations.count)")
+        
+        guard let location = locations.last else { 
+            print("❌ 위치 데이터가 없음")
+            return 
+        }
+        
+        print("🌍 최신 위치: \(location.coordinate.latitude), \(location.coordinate.longitude)")
+        print("🌍 정확도: \(location.horizontalAccuracy)m")
         
         currentLocation = location
         currentLocationString = "위도: \(location.coordinate.latitude), 경도: \(location.coordinate.longitude)"
@@ -139,13 +156,43 @@ extension UserLocationManager: CLLocationManagerDelegate {
         // 위치 업데이트 후 중지 (필요시 계속 업데이트하려면 이 줄을 제거)
         // locationManager.stopUpdatingLocation()
         
+        // 이 부분이 핵심 - 콜백이 설정되어 있는지 확인
+        print("🌍 onLocationUpdate 콜백 존재: \(onLocationUpdate != nil)")
+        
         if let onLocationUpdate = onLocationUpdate {
-            onLocationUpdate(NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude))
+            let nmgLocation = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
+            print("🌍 NMGLatLng 변환 완료: \(nmgLocation.lat), \(nmgLocation.lng)")
+            print("🌍 onLocationUpdate 콜백 호출 시도...")
+            print("🌍 콜백 타입: \(type(of: onLocationUpdate))")
+            print("🌍 콜백 메모리 주소: \(Unmanaged.passUnretained(onLocationUpdate as AnyObject).toOpaque())")
+            
+            onLocationUpdate(nmgLocation)
+            
+            print("🌍 onLocationUpdate 콜백 호출 완료")
+        } else {
+            print("❌ onLocationUpdate 콜백이 nil입니다!")
+            print("❌ 콜백이 설정되지 않았습니다")
         }
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("📍 위치 가져오기 실패: \(error.localizedDescription)")
+        print("❌ UserLocationManager: 위치 가져오기 실패: \(error.localizedDescription)")
+        
+        if let clError = error as? CLError {
+            switch clError.code {
+            case .locationUnknown:
+                print("❌ 위치를 찾을 수 없음 - GPS 신호가 약하거나 위치 서비스가 비활성화됨")
+            case .denied:
+                print("❌ 위치 서비스 권한이 거부됨 - 설정에서 권한을 허용해주세요")
+            case .network:
+                print("❌ 네트워크 에러 - 인터넷 연결을 확인해주세요")
+            case .headingFailure:
+                print("❌ 나침반 에러 - 나침반을 사용할 수 없음")
+            default:
+                print("❌ 알 수 없는 CoreLocation 에러: \(clError.code.rawValue)")
+            }
+        }
+        
         currentLocationString = "위치를 가져올 수 없습니다"
         currentLocation = nil
         locationError = error.localizedDescription
