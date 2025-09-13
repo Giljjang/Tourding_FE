@@ -46,7 +46,15 @@ extension RidingViewModel {
     
     // 지나간 마커를 확인하고 제거 (특정 좌표를 지나가면 그 이전의 모든 좌표들 제거)
     private func checkAndRemovePassedMarkers() {
-        guard let userLocation = currentUserLocation else { return }
+        guard let userLocation = currentUserLocation else { 
+            print("❌ 사용자 위치가 없어서 마커 확인 불가")
+            return 
+        }
+        
+        print("🎯 === 마커 지나감 확인 시작 ===")
+        print("🎯 사용자 위치: \(userLocation.lat), \(userLocation.lng)")
+        print("🎯 마커 개수: \(markerCoordinates.count)")
+        print("🎯 임계값: \(markerPassThreshold)m")
         
         // 가장 가까운 마커의 인덱스 찾기
         var closestMarkerIndex: Int? = nil
@@ -54,9 +62,12 @@ extension RidingViewModel {
         
         for (index, markerCoord) in markerCoordinates.enumerated() {
             let distance = calculateDistance(from: userLocation, to: markerCoord)
+            print("🎯 마커[\(index)]: \(markerCoord.lat), \(markerCoord.lng) - 거리: \(String(format: "%.2f", distance))m")
+            
             if distance <= markerPassThreshold && distance < minDistance {
                 minDistance = distance
                 closestMarkerIndex = index
+                print("🎯 새로운 가장 가까운 마커 발견! 인덱스: \(index), 거리: \(String(format: "%.2f", distance))m")
             }
         }
         
@@ -64,8 +75,9 @@ extension RidingViewModel {
         if let closestIndex = closestMarkerIndex {
             let removedCount = closestIndex + 1
             
-            print("🎯 가까운 마커 발견! 인덱스: \(closestIndex), 거리: \(minDistance)m")
-            print("🎯 제거할 마커 개수: \(removedCount)개")
+            print("✅ 🎯 가까운 마커 발견! 인덱스: \(closestIndex), 거리: \(String(format: "%.2f", minDistance))m")
+            print("✅ 제거할 마커 개수: \(removedCount)개")
+            print("✅ 제거할 마커 인덱스: 0~\(closestIndex)")
             
             // guideList의 좌표를 지날 때 showToilet과 showConvenienceStore 상태에 따라 토글 함수 호출
             checkAndToggleFacilities(userLocation: userLocation)
@@ -99,21 +111,35 @@ extension RidingViewModel {
             updateMarkersOnMap()
             
         } else {
-            print("❌ 가까운 마커 없음 (임계값: \(markerPassThreshold)m)")
+            print("⏸️ 가까운 마커 없음 (임계값: \(markerPassThreshold)m)")
+            print("⏸️ 모든 마커가 \(markerPassThreshold)m보다 멀리 있음")
         }
+        
+        print("🎯 === 마커 지나감 확인 완료 ===")
     }
     
     // guideList의 좌표를 지날 때 showToilet과 showConvenienceStore 상태에 따라 마커 업데이트 함수 호출
     private func checkAndToggleFacilities(userLocation: NMGLatLng) {
+        print("🔍 === guideList 좌표 지나감 확인 시작 ===")
+        print("🔍 사용자 위치: \(userLocation.lat), \(userLocation.lng)")
+        print("🔍 guideList 개수: \(guideList.count)")
+        print("🔍 임계값: \(markerPassThreshold)m")
+        
         // guideList의 각 좌표와 사용자 위치 간의 거리 확인
-        for guide in guideList {
+        for (index, guide) in guideList.enumerated() {
             if let lat = Double(guide.lat), let lon = Double(guide.lon) {
                 let guideLocation = NMGLatLng(lat: lat, lng: lon)
                 let distance = calculateDistance(from: userLocation, to: guideLocation)
                 
+                print("🔍 guideList[\(index)]: \(guide.lat), \(guide.lon) - 거리: \(String(format: "%.2f", distance))m")
+                
                 // guideList의 좌표를 지났는지 확인 (임계값: 100m)
                 if distance <= markerPassThreshold {
-                    print("🏃‍♂️ guideList 좌표 지남: \(guide.lat), \(guide.lon), 거리: \(distance)m")
+                    print("✅ 🏃‍♂️ guideList 좌표 지남 감지!")
+                    print("✅ 좌표: \(guide.lat), \(guide.lon)")
+                    print("✅ 거리: \(String(format: "%.2f", distance))m (임계값: \(markerPassThreshold)m)")
+                    print("✅ 가이드 타입: \(guide.guideType?.rawValue ?? "unknown")")
+                    print("✅ 가이드 설명: \(guide.instructions)")
                     
                     // 메인 스레드에서 편의시설 마커 업데이트
                     DispatchQueue.main.async { [weak self] in
@@ -135,10 +161,17 @@ extension RidingViewModel {
                     }
                     
                     // 한 번만 처리하고 break (가장 가까운 좌표만 처리)
+                    print("🔍 가장 가까운 좌표 처리 완료 - 루프 종료")
                     break
+                } else {
+                    print("⏸️ guideList[\(index)] 아직 멀음 - 거리: \(String(format: "%.2f", distance))m")
                 }
+            } else {
+                print("❌ guideList[\(index)] 좌표 변환 실패: lat=\(guide.lat), lon=\(guide.lon)")
             }
         }
+        
+        print("🔍 === guideList 좌표 지나감 확인 완료 ===")
     }
     
     // 두 좌표 간의 거리 계산 (미터 단위)

@@ -158,7 +158,7 @@ struct DetailSpotView: View {
                 addr1: "",
                 typeCode: detail?.typeCode ?? "", contentid: detail?.contentid ?? "", contenttypeid: detail?.contenttypeid ?? "",
                 firstimage: "", firstimage2: "",
-                mapx: detail?.lon ?? "", mapy: detail?.lat ?? "")
+                mapx: detail?.lon ?? "0", mapy: detail?.lat ?? "0")
             
             if detailViewModel.containsCoordinate(originalData: detailViewModel.routeLocation, selectedData: spot){
                 modalManager.showModal(

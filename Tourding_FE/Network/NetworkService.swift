@@ -107,10 +107,22 @@ enum NetworkService {
             }
             
             // 네트워크 요청 실행
+            print("🔵 네트워크 요청 시작: \(request.url?.absoluteString ?? "URL 없음")")
+            print("🔵 HTTP Method: \(request.httpMethod ?? "GET")")
+            if let body = request.httpBody {
+                print("🔵 Request Body: \(String(data: body, encoding: .utf8) ?? "디코딩 실패")")
+            }
+            
             let data: Data
             let response: URLResponse
             
            (data, response) = try await URLSession.shared.data(for: request)
+           
+           print("🔵 네트워크 응답 받음")
+           if let httpResponse = response as? HTTPURLResponse {
+               print("🔵 HTTP Status Code: \(httpResponse.statusCode)")
+           }
+//           print("🔵 Response Data: \(String(data: data, encoding: .utf8) ?? "디코딩 실패")")
             
             if let httpResponse = response as? HTTPURLResponse,
                let defindedErrorCode = NetworkErrorCode(rawValue: httpResponse.statusCode) {
