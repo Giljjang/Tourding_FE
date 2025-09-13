@@ -81,7 +81,9 @@ struct SpotCardView: View {
                     image
                         .resizable()
                         .scaledToFill()
-                        .frame(maxWidth: 204, maxHeight: 204)
+                        .frame(width: 204, height: 204)
+//                        .frame(maxWidth: 204, maxHeight: 204)
+                        .background(.white)
                 } placeholder: {
                     defaultImage
                 }
@@ -89,7 +91,7 @@ struct SpotCardView: View {
                 AsyncImage(url: URL(string: spot.firstimage2)) { image in
                     image
                         .resizable()
-                        .scaledToFill()
+                        .scaledToFit()
                 } placeholder: {
                     defaultImage
                 }
@@ -97,7 +99,8 @@ struct SpotCardView: View {
                 defaultImage
             }
         }
-        .frame(height: 180)
+        .frame(width: 204, height: 204)  // 고정 크기 설정
+        .background(Color.white)  // 전체 배경도 하얀색
         .clipped()
         .cornerRadius(14)
     }
@@ -172,17 +175,17 @@ struct SpotCardView: View {
             mapx: "128.123",
             mapy: "35.456"
         ),
-        SpotData(
-            title: "경산 한옥마을",
-            addr1: "경북 경산시 중앙동",
-            typeCode: "A02",
-            contentid: "2",
-            contenttypeid: "12",
-            firstimage: "https://example.com/image.jpg",
-            firstimage2: "",
-            mapx: "128.124",
-            mapy: "35.457"
-        )
+//        SpotData(
+//            title: "경산 한옥마을",
+//            addr1: "경북 경산시 중앙동",
+//            typeCode: "A02",
+//            contentid: "2",
+//            contenttypeid: "12",
+//            firstimage: "https://example.com/image.jpg",
+//            firstimage2: "",
+//            mapx: "128.124",
+//            mapy: "35.457"
+//        )
     ]
     
     ScrollView {
