@@ -158,6 +158,7 @@ struct SheetDetailView: View {
                         text: detailViewModel.formatOverview(overview),
                         lineLimit: 5,
                         font: .pretendardRegular(size: 15),
+                        fontSize: 15,
                         color: .gray5
                     )
                     .padding(.bottom, 18)

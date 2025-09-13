@@ -11,6 +11,7 @@ struct ExpandableTextView: View {
     let text: String
     let lineLimit: Int
     let font: Font
+    let fontSize: CGFloat
     let color: Color
     
     @State private var isExpanded = false
@@ -21,18 +22,24 @@ struct ExpandableTextView: View {
     init(text: String,
          lineLimit: Int = 5,
          font: Font = .pretendardRegular(size: 15),
+         fontSize: CGFloat = 15,
          color: Color = .gray5) {
         self.text = text
         self.lineLimit = lineLimit
         self.font = font
+        self.fontSize = fontSize
         self.color = color
     }
     
     var body: some View {
+        
+        let spacing = fontSize * 0.6
+        
         VStack(alignment: .leading, spacing: 8) {
             Text(text)
                 .foregroundColor(color)
                 .font(font)
+                .lineSpacing(spacing)
                 .lineLimit(isExpanded ? nil : lineLimit)
                 .multilineTextAlignment(.leading)
                 .animation(.easeInOut(duration: 0.3), value: isExpanded)
@@ -64,6 +71,7 @@ struct ExpandableTextView: View {
                 // 전체 텍스트 높이 측정
                 Text(text)
                     .font(font)
+                    .lineSpacing(spacing)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
                     .background(
@@ -79,6 +87,7 @@ struct ExpandableTextView: View {
                 // 제한된 텍스트 높이 측정
                 Text(text)
                     .font(font)
+                    .lineSpacing(spacing)
                     .multilineTextAlignment(.leading)
                     .lineLimit(lineLimit)
                     .fixedSize(horizontal: false, vertical: true)
