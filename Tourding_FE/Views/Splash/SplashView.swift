@@ -16,7 +16,7 @@ struct SplashView: View {
                 Image("bike")
                     .resizable()
                     .scaledToFit()
-                    .frame(maxWidth: 55)
+                    .frame(maxWidth: 80)
                     .padding(.leading, 35)
                 
                 Spacer()

@@ -30,9 +30,11 @@ class LoginViewModel: NSObject, ObservableObject {
         // 저장된 로그인 provider 확인
         if let provider = KeychainHelper.load(key: "loginProvider") {
             self.loginProvider = provider
+            print("🍀🍀🍀🍀🍀🍀🍀🍀🍀🍀🍀🍀🍀🍀🍀🍀🍀\(self.loginProvider)")
             
             if provider == "kakao" {
                 // 카카오 로그인 상태 확인
+                print("카카오 로그인 상태 확인이야")
                 loadKakaoToken { [weak self] isLoggedIn in
                     if isLoggedIn {
                         self?.isLoggedIn = true
@@ -41,6 +43,7 @@ class LoginViewModel: NSObject, ObservableObject {
                 }
             } else if provider == "apple" {
                 // 애플 로그인 상태 확인
+                print("애플 로그인 상태 확인이야")
                 let appleUserInfo = KeychainHelper.loadAppleUserInfo()
                 if let userId = appleUserInfo.userId {
                     // 애플 ID 상태 확인
@@ -220,7 +223,7 @@ class LoginViewModel: NSObject, ObservableObject {
           Task { [weak self] in
               do {
                   try Task.checkCancellation()
-                  let req = CreateUserRequest(username: self?.userNickname ?? "", email: self?.userEmail ?? "")
+                  let req = CreateUserRequest(username: self?.userNickname ?? "", email: self?.userEmail ?? "", password: "kakao")
                   let created = try await userRepository.createUser(req)
                   // 앱 전역에서 쓰도록 uid Keychain 저장
                   KeychainHelper.saveUid(key: created.id)
@@ -246,7 +249,7 @@ class LoginViewModel: NSObject, ObservableObject {
         Task { [weak self] in
             do {
                 try Task.checkCancellation()
-                let req = CreateUserRequest(username: self?.userNickname ?? "", email: self?.userEmail ?? "")
+                let req = CreateUserRequest(username: self?.userNickname ?? "", email: self?.userEmail ?? "", password: "apple")
                 let created = try await userRepository.createUser(req)
                 // 앱 전역에서 쓰도록 uid Keychain 저장
                 KeychainHelper.saveUid(key: created.id)

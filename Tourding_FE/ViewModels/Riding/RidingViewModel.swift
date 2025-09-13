@@ -29,8 +29,11 @@ final class RidingViewModel: ObservableObject {
     
     // MARK: - 지도 관련 프로퍼티
     var locationManager: LocationManager?
+    var userLocationManager: UserLocationManager?
     var mapView: NMFMapView?
     var markerManager: MarkerManager?
+    var pathManager: PathManager?
+    var mapViewController: MapViewController?
     
     
     // MARK: - 지도 관련 프로퍼티
@@ -50,7 +53,7 @@ final class RidingViewModel: ObservableObject {
     
     // MARK: - 사용자 위치 추적 관련
     @Published var currentUserLocation: NMGLatLng?
-    let markerPassThreshold: Double = 100.0 // 마커를 지나간 것으로 판단하는 거리 (미터) - 50m에서 100m로 증가
+    let markerPassThreshold: Double = 50.0 // 마커를 지나간 것으로 판단하는 거리 (미터)
     
     let routeRepository: RouteRepositoryProtocol
     let kakaoRepository: KakaoRepositoryProtocol
@@ -92,6 +95,28 @@ final class RidingViewModel: ObservableObject {
         print("드래그앤 드랍 후 마커 순서 업데이트 완료: \(markerIcons.count)개")
     }
     
+    // 지도 표시 새로고침 (앱 포그라운드 복귀 시 사용)
+    @MainActor
+    func refreshMapDisplay() {
+        print("🔄 지도 표시 새로고침 시작")
+        
+        // 마커 매니저가 있으면 마커 다시 그리기
+        if let markerManager = markerManager {
+            markerManager.clearMarkers()
+            markerManager.addMarkers(coordinates: markerCoordinates, icons: markerIcons)
+            print("✅ 마커 새로고침 완료: \(markerCoordinates.count)개")
+        }
+        
+        // 경로 매니저가 있으면 경로선 다시 그리기
+        if let pathManager = pathManager {
+            pathManager.clearPath()
+            pathManager.setCoordinates(pathCoordinates)
+//            print("✅ 경로선 새로고침 완료: \(pathCoordinates.count)개")
+        }
+        
+        print("🔄 지도 표시 새로고침 완료")
+    }
+    
     
 }
 
@@ -105,7 +130,7 @@ extension RidingViewModel {
         if showConvenienceStore {
             updateConvenienceStoreMarkers(location: locaion)
         } else {
-            // 편의점 마커 제거
+            // 편의점 마커  제거
             csMarkerCoordinates.removeAll()
             csMarkerIcons.removeAll()
             print("편의점 마커 제거됨")

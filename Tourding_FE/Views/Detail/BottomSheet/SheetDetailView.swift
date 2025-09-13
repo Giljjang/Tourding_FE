@@ -158,6 +158,7 @@ struct SheetDetailView: View {
                         text: detailViewModel.formatOverview(overview),
                         lineLimit: 5,
                         font: .pretendardRegular(size: 15),
+                        fontSize: 15,
                         color: .gray5
                     )
                     .padding(.bottom, 18)
@@ -308,7 +309,6 @@ struct SheetDetailView: View {
                 DetailInfoLine(image: "icon_waiting-time", text: detailViewModel.formatOverview(text), type: nil)
             }
         }
-        .padding(.bottom, 10)
     }
     
     // 행사공연축제
@@ -379,7 +379,6 @@ struct SheetDetailView: View {
                 DetailInfoLine(image: "icon_Price", text: detailViewModel.formatOverview(text), type: nil)
             }
         }
-        .padding(.bottom, 10)
     }
     
     // 여행코스
@@ -421,7 +420,6 @@ struct SheetDetailView: View {
                 DetailInfoLine(image: "icon_course-theme", text: detailViewModel.formatOverview(text), type: nil)
             }
         }
-        .padding(.bottom, 10)
     }
     
     // 레포츠
@@ -486,7 +484,6 @@ struct SheetDetailView: View {
             }
             
         }
-        .padding(.bottom, 10)
     }
     
     // 숙박
@@ -541,7 +538,6 @@ struct SheetDetailView: View {
                 DetailInfoLine(image: "icon_campfire", text: detailViewModel.formatOverview(text), type: nil)
             }
         }
-        .padding(.bottom, 10)
     }
     
     // 쇼핑
@@ -590,7 +586,6 @@ struct SheetDetailView: View {
                 DetailInfoLine(image: "icon_store-information", text: detailViewModel.formatOverview(text), type: nil)
             }
         }
-        .padding(.bottom, 10)
     }
     
     // 음식점
@@ -623,6 +618,5 @@ struct SheetDetailView: View {
                 DetailInfoLine(image: "icon_restaurant", text: detailViewModel.formatOverview(treatmenu), type: nil)
             }
         }
-        .padding(.bottom, 10)
     }
 }

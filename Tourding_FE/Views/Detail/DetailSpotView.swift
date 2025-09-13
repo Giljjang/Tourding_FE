@@ -152,10 +152,13 @@ struct DetailSpotView: View {
     private var spotAddButton: some View {
         Button(action:{
             let detail = detailViewModel.detailData
+            
             let spot = SpotData(
                 title: detail?.title ?? "",
-                addr1: "", typeCode: "", contentid: "", contenttypeid: "", firstimage: "", firstimage2: "",
-                mapx: detail?.lon ?? "", mapy: detail?.lat ?? "")
+                addr1: "",
+                typeCode: detail?.typeCode ?? "", contentid: detail?.contentid ?? "", contenttypeid: detail?.contenttypeid ?? "",
+                firstimage: "", firstimage2: "",
+                mapx: detail?.lon ?? "0", mapy: detail?.lat ?? "0")
             
             if detailViewModel.containsCoordinate(originalData: detailViewModel.routeLocation, selectedData: spot){
                 modalManager.showModal(
@@ -180,7 +183,7 @@ struct DetailSpotView: View {
                     print("취소됨")
                 },
                 onActive: {
-                    print("추가됨")
+                    
                     Task { [weak detailViewModel] in
                         do {
                             try Task.checkCancellation()
@@ -190,7 +193,8 @@ struct DetailSpotView: View {
                             await detailViewModel?.getRouteLocationAPI()
                             
                             await MainActor.run {
-                                navigationManager.pop(count: 2)
+                                // RidingView까지 가기 
+                                navigationManager.popToView(.RidingView)
                             }
                         } catch is CancellationError {
                             print("🚫 DetailSpotView 추가 Task 취소됨")

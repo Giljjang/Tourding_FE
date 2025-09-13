@@ -9,14 +9,20 @@ import Foundation
 
 final class RouteRepository: RouteRepositoryProtocol {
     func postRoutes(requestBody: RequestRouteModel) async throws {
+        print("🔵 RouteRepository.postRoutes 호출")
+        print("🔵 요청 데이터: \(requestBody)")
+        
         do{
+            print("🔵 NetworkService.request 호출 시작")
             _ = try await NetworkService.request(
                 apiType: .main,
                 endpoint: "/routes",
                 body: requestBody,
                 method: "POST"
             ) as EmptyResponse
+            print("🔵 NetworkService.request 성공")
         } catch{
+            print("❌ RouteRepository.postRoutes 에러: \(error)")
             throw error
         }
     }

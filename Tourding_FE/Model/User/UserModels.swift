@@ -14,9 +14,9 @@ struct CreateUserRequest: Codable {
     let password: String   // ✅ optional 아님
     let email: String
 
-    init(username: String, email: String) {
+    init(username: String, email: String, password: String) {
         self.username = username
-        self.password = ""   // ✅ 서버가 "" 허용
+        self.password = password   // ✅ 서버가 "" 허용
         self.email = email
     }
 }
