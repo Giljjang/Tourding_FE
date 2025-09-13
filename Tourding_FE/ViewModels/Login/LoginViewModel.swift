@@ -223,7 +223,7 @@ class LoginViewModel: NSObject, ObservableObject {
           Task { [weak self] in
               do {
                   try Task.checkCancellation()
-                  let req = CreateUserRequest(username: self?.userNickname ?? "", email: self?.userEmail ?? "")
+                  let req = CreateUserRequest(username: self?.userNickname ?? "", email: self?.userEmail ?? "", password: "kakao")
                   let created = try await userRepository.createUser(req)
                   // 앱 전역에서 쓰도록 uid Keychain 저장
                   KeychainHelper.saveUid(key: created.id)
@@ -249,7 +249,7 @@ class LoginViewModel: NSObject, ObservableObject {
         Task { [weak self] in
             do {
                 try Task.checkCancellation()
-                let req = CreateUserRequest(username: self?.userNickname ?? "", email: self?.userEmail ?? "")
+                let req = CreateUserRequest(username: self?.userNickname ?? "", email: self?.userEmail ?? "", password: "apple")
                 let created = try await userRepository.createUser(req)
                 // 앱 전역에서 쓰도록 uid Keychain 저장
                 KeychainHelper.saveUid(key: created.id)
