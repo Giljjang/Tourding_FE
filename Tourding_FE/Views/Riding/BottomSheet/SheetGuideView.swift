@@ -26,7 +26,9 @@ struct SheetGuideView: View {
             
             ScrollView(showsIndicators: false) {
                 ForEach(Array(ridingViewModel.guideList.enumerated()), id:\.1.sequenceNum){ index, item in
-                    guideRowView(text: item.instructions,
+                    let text: String = item.instructions == "출발지" || item.instructions == "목적지" ? item.locationName : item.instructions
+                    
+                    guideRowView(text: text,
                                  guideType: item.guideType ?? .straight,
                                  time: item.duration)
                     .background(index == 0 ? Color.gray1 : Color.white)
