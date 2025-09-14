@@ -262,12 +262,6 @@ struct RidingView: View {
                     // userLocationManager 사용
                     if let userLocationManager = ridingViewModel.userLocationManager {
                         
-                        // 기존 콜백을 백업하고 새로운 콜백 추가
-                        let existingCallback = userLocationManager.onLocationUpdate
-                        
-                        // 기존 콜백을 백업하고 새로운 콜백으로 교체
-                        let backupCallback = existingCallback
-                        
                         // 새로운 콜백 생성
                         let newCallback: (NMGLatLng) -> Void = { (newLocation: NMGLatLng) in
                             
