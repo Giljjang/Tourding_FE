@@ -11,6 +11,8 @@ struct SpotAddView: View {
     @EnvironmentObject var navigationManager: NavigationManager
     @EnvironmentObject var modalManager: ModalManager
     
+    @State private var pageNum: Int = 0
+    
     @StateObject var spotAddViewModel: SpotAddViewModel
     let lat: String
     let lon: String
@@ -77,7 +79,10 @@ struct SpotAddView: View {
             Task { [weak spotAddViewModel] in
                 do {
                     try Task.checkCancellation()
-                    await spotAddViewModel?.fetchNearbySpots(lat: lat, lng: lon, typeCode: spotAddViewModel?.clickFliter == "전체" ? "" : spotAddViewModel?.matchTypeCodeName(for: spotAddViewModel?.clickFliter ?? "전체") ?? "")
+                    await spotAddViewModel?.fetchNearbySpots(
+                        lat: lat,
+                        lng: lon,
+                        typeCode: spotAddViewModel?.clickFliter == "전체" ? "" : spotAddViewModel?.matchTypeCodeName(for: spotAddViewModel?.clickFliter ?? "전체") ?? "")
                     
                     try Task.checkCancellation()
                     await spotAddViewModel?.getRouteLocationAPI()
@@ -133,7 +138,7 @@ struct SpotAddView: View {
                     .font(.pretendardMedium(size: 16))
             } // : VStack
             .padding(.top, 46)
-//            .padding(.trailing, 27)
+            //            .padding(.trailing, 27)
             
             Spacer()
             
@@ -150,6 +155,11 @@ struct SpotAddView: View {
     ) -> some View {
         Button(action:{
             spotAddViewModel.clickFliter = title
+            
+            //토글 필터 변경시 초기화
+            spotAddViewModel.hasMoreData = false
+            spotAddViewModel.currentPage = 0
+            
             Task { [weak spotAddViewModel] in
                 do {
                     try Task.checkCancellation()
@@ -167,7 +177,7 @@ struct SpotAddView: View {
             HStack(spacing: 0) {
                 Image(
                     spotAddViewModel.clickFliter == title ? "\(spotAddViewModel.matchImageName(for: title))_on" :
-                    spotAddViewModel.matchImageName(for: title))
+                        spotAddViewModel.matchImageName(for: title))
                 
                 Text(title)
                     .foregroundColor(
@@ -196,119 +206,141 @@ struct SpotAddView: View {
     }
     
     private var spotRowView: some View {
-        ForEach(spotAddViewModel.spots){ spot in
-            HStack(alignment: .top, spacing: 0){
-                VStack{
-                    if let url = URL(string: spot.firstimage), !spot.firstimage.isEmpty {
-                        AsyncImage(url: url) { image in
-                            image
-                                .resizable()
-                                .scaledToFill()
-                        } placeholder: {
-                            ProgressView()
-                        }
-                    } else {
-                        Image("empty")
-                    }
-                }
-                .frame(width: 52, height: 52)
-                .background(Color.gray1)
-                .cornerRadius(10)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(spot.title.truncated(limit: 14))
-                        .foregroundColor(.gray6)
-                        .font(.pretendardSemiBold(size: 16))
-                    
-                    Text(spot.addr1 == "" ? "-" : spotAddViewModel.simplifiedAddressRegex(spot.addr1).truncated(limit: 16))
-                        .foregroundColor(.gray4)
-                        .font(.pretendardRegular(size: 14))
-                }
-                .padding(.leading, 12)
-                .padding(.top, 5)
-                
-                Spacer()
-                
-                Button(action:{
-                    if spotAddViewModel.containsCoordinate(originalData: spotAddViewModel.routeLocation, selectedData: spot){
-                        modalManager.showModal(
-                            title: "출발지와 도착지가 동일해요",
-                            subText: "확인 후 다른 위치로 설정해 주세요",
-                            activeText: "확인하기",
-                            showView: .spotAdd,
-                            onCancel: {
-                                print("취소됨")
-                            },
-                            onActive: {
-                                print("시작됨")
+        ForEach(Array(spotAddViewModel.spots.enumerated()), id: \.element) { index, spot in
+            LazyVStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top, spacing: 0){
+                    VStack{
+                        if let url = URL(string: spot.firstimage), !spot.firstimage.isEmpty {
+                            AsyncImage(url: url) { image in
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                            } placeholder: {
+                                ProgressView()
                             }
-                        )
-                    } else {
-                        modalManager.showModal(
-                            title: "코스에 이 스팟을 추가할까요?",
-                            subText: "'\(spot.title.truncated(limit: 21))'",
-                            activeText: "추가하기",
-                            showView: .spotAdd,
-                            onCancel: {
-                                print("취소됨")
-                            },
-                            onActive: {
-                                print("추가됨")
-                                Task { [weak spotAddViewModel] in
-                                    do {
-                                        try Task.checkCancellation()
-                                        await spotAddViewModel?.postRouteAPI(originalData: spotAddViewModel?.routeLocation ?? [], updatedData: spot)
-                                        
-                                        try Task.checkCancellation()
-                                        await spotAddViewModel?.getRouteLocationAPI()
-                                        
-                                        await MainActor.run {
-                                            navigationManager.pop()
+                        } else {
+                            Image("empty")
+                        }
+                    }
+                    .frame(width: 52, height: 52)
+                    .background(Color.gray1)
+                    .cornerRadius(10)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(spot.title.truncated(limit: 14))
+                            .foregroundColor(.gray6)
+                            .font(.pretendardSemiBold(size: 16))
+                        
+                        Text(spot.addr1 == "" ? "-" : spotAddViewModel.simplifiedAddressRegex(spot.addr1).truncated(limit: 16))
+                            .foregroundColor(.gray4)
+                            .font(.pretendardRegular(size: 14))
+                    }
+                    .padding(.leading, 12)
+                    .padding(.top, 5)
+                    
+                    Spacer()
+                    
+                    Button(action:{
+                        if spotAddViewModel.containsCoordinate(originalData: spotAddViewModel.routeLocation, selectedData: spot){
+                            modalManager.showModal(
+                                title: "출발지와 도착지가 동일해요",
+                                subText: "확인 후 다른 위치로 설정해 주세요",
+                                activeText: "확인하기",
+                                showView: .spotAdd,
+                                onCancel: {
+                                    print("취소됨")
+                                },
+                                onActive: {
+                                    print("시작됨")
+                                }
+                            )
+                        } else {
+                            modalManager.showModal(
+                                title: "코스에 이 스팟을 추가할까요?",
+                                subText: "'\(spot.title.truncated(limit: 21))'",
+                                activeText: "추가하기",
+                                showView: .spotAdd,
+                                onCancel: {
+                                    print("취소됨")
+                                },
+                                onActive: {
+                                    print("추가됨")
+                                    Task { [weak spotAddViewModel] in
+                                        do {
+                                            try Task.checkCancellation()
+                                            await spotAddViewModel?.postRouteAPI(originalData: spotAddViewModel?.routeLocation ?? [], updatedData: spot)
+                                            
+                                            try Task.checkCancellation()
+                                            await spotAddViewModel?.getRouteLocationAPI()
+                                            
+                                            await MainActor.run {
+                                                navigationManager.pop()
+                                            }
+                                        } catch is CancellationError {
+                                            print("🚫 SpotAdd 추가 Task 취소됨")
+                                        } catch {
+                                            print("❌ SpotAdd 추가 에러: \(error)")
                                         }
-                                    } catch is CancellationError {
-                                        print("🚫 SpotAdd 추가 Task 취소됨")
-                                    } catch {
-                                        print("❌ SpotAdd 추가 에러: \(error)")
                                     }
                                 }
-                            }
-                        )
-                    } // : if-else
-                }){
-                    Text("추가")
-                        .foregroundColor(.gray4)
-                        .font(.pretendardMedium(size: 14))
-                        .padding(.vertical, 9.2)
-                        .padding(.horizontal, 12)
-                        .background(Color.gray1)
-                        .cornerRadius(10)
+                            )
+                        } // : if-else
+                    }){
+                        Text("추가")
+                            .foregroundColor(.gray4)
+                            .font(.pretendardMedium(size: 14))
+                            .padding(.vertical, 9.2)
+                            .padding(.horizontal, 12)
+                            .background(Color.gray1)
+                            .cornerRadius(10)
+                    }
+                    .padding(.vertical, 10)
+                    
+                } // : HStack
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .onTapGesture {
+                    let req = ReqDetailModel(contentid: spot.contentid, contenttypeid: spot.contenttypeid)
+                    
+                    navigationManager.push(.DetailSpotView(isSpotAdd: true, detailId: req))
                 }
-                .padding(.vertical, 10)
+                .onAppear {
+                    // 마지막 아이템이 나타나면 다음 페이지 로드
+                    if index == spotAddViewModel.spots.count - 1 {
+                        loadNextPageIfNeeded()
+                    }
+                }
                 
-            } // : HStack
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .onTapGesture {
-                let req = ReqDetailModel(contentid: spot.contentid, contenttypeid: spot.contenttypeid)
-                
-                navigationManager.push(.DetailSpotView(isSpotAdd: true, detailId: req))
-            }
+            } // :VStack
         } // : ForEach
     }
     
     private var scrollSpotListView: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 0) {
-                //Row Cell List
-                spotRowView
-                
-            } //: VStack
-            .padding(.top, 4)
-            .background(.white)
-            .cornerRadius(16)
-            .padding(.horizontal, 16)
-            .padding(.top, 24)
-        } // : ScrollView
+        ScrollViewReader { proxy in
+            ScrollView(showsIndicators: false) {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    //Row Cell List
+                    spotRowView
+                    
+                    // 하단 로딩 인디케이터
+                    if spotAddViewModel.isScrollLoading {
+                        HStack {
+                            Spacer()
+                            ProgressView()
+                            Spacer()
+                        }
+                        .padding(.vertical, 20)
+                        .id("loading")
+                    }
+                    
+                } //: LazyVStack
+                .padding(.top, 4)
+                .background(.white)
+                .cornerRadius(16)
+                .padding(.horizontal, 16)
+                .padding(.top, 24)
+            } // : ScrollView
+        }
     }
     
     private var emptyView: some View {
@@ -334,5 +366,29 @@ struct SpotAddView: View {
         } // : VStack
         .frame(maxHeight: .infinity)
         .padding(.top, 24)
+    }
+    
+    // MARK: - Helper Functions
+    private func loadNextPageIfNeeded() {
+        
+        guard spotAddViewModel.hasMoreData && !spotAddViewModel.isScrollLoading else { 
+            print("❌ loadNextPageIfNeeded 조건 불만족")
+            return 
+        }
+        
+        Task { [weak spotAddViewModel] in
+            do {
+                try Task.checkCancellation()
+                await spotAddViewModel?.loadNextPage(
+                    lat: lat,
+                    lng: lon,
+                    typeCode: spotAddViewModel?.clickFliter == "전체" ? "" : spotAddViewModel?.matchTypeCodeName(for: spotAddViewModel?.clickFliter ?? "전체") ?? ""
+                )
+            } catch is CancellationError {
+                print("🚫 SpotAdd 무한스크롤 Task 취소됨")
+            } catch {
+                print("❌ SpotAdd 무한스크롤 에러: \(error)")
+            }
+        }
     }
 }
