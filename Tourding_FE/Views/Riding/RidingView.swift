@@ -198,6 +198,9 @@ struct RidingView: View {
             if !ridingViewModel.flag {
                 navigationManager.pop()
             } else { //라이딩 시작 후 뒤로가기
+                
+                wasLastRunNormal = true
+                
                 // 위치 추적 중지
                 locationManager.stopLocationUpdates()
                 
