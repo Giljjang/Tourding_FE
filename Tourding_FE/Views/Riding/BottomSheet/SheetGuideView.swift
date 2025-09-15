@@ -11,6 +11,9 @@ struct SheetGuideView: View {
     @EnvironmentObject var navigationManager: NavigationManager
     @EnvironmentObject var modalManager: ModalManager
     
+    //라이딩 중 비정상 종료 감지
+    @AppStorage("wasLastRunNormal") private var wasLastRunNormal: Bool = true
+    
     @ObservedObject private var ridingViewModel: RidingViewModel
     private var currentPosition: BottomSheetPosition
     
@@ -73,6 +76,8 @@ struct SheetGuideView: View {
                     },
                     onActive: {
                         print("종료됨")
+                        wasLastRunNormal = true // 정상 종료됐을 때 기록
+                        print("wasLastRunNormal: \(wasLastRunNormal)")
                         navigationManager.popToRoot()
                         modalManager.isToastMessage = true
                     }

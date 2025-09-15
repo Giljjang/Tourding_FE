@@ -27,6 +27,9 @@ struct RidingView: View {
         self._ridingViewModel = StateObject(wrappedValue: ridingViewModel)
     }
     
+    //라이딩 중 비정상 종료 감지
+    @AppStorage("wasLastRunNormal") private var wasLastRunNormal: Bool = true
+    
     let topSafeArea = UIApplication.shared.connectedScenes
         .compactMap { $0 as? UIWindowScene }
         .first?.windows.first?.safeAreaInsets.top ?? 0
@@ -172,6 +175,11 @@ struct RidingView: View {
             withAnimation(.easeInOut(duration: 0.3)) {
                 currentPosition = .medium
             }
+            
+            if newValue {
+                wasLastRunNormal = false
+            }
+            
         } // : onChange
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             // 앱이 포그라운드로 돌아왔을 때

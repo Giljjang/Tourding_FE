@@ -13,6 +13,8 @@ struct HomeView: View {
     @EnvironmentObject var routeSharedManager: RouteSharedManager
     @EnvironmentObject private var ridingViewModel: RidingViewModel
     
+    //라이딩 중 비정상 종료 감지
+    @AppStorage("wasLastRunNormal") private var wasLastRunNormal: Bool = true
     
     @StateObject private var viewModel: HomeViewModel
     
@@ -113,7 +115,27 @@ struct HomeView: View {
                 } catch {
                     print("❌ HomeView 초기화 에러: \(error)")
                 }
-            }
+            } // : Task
+            
+            print("초기 wasLastRunNormal: \(wasLastRunNormal)")
+            
+            if !wasLastRunNormal {
+                modalManager.showModal(
+                    title: "라이딩이 비정상 종료됐어요",
+                    subText: "안내했던 경로로 다시 시작할까요?",
+                    activeText: "시작하기",
+                    showView: .tabView,
+                    onCancel: {
+                        print("취소됨")
+                    },
+                    onActive: {
+                        print("시작됨")
+                        navigationManager.push(.RidingView)
+                        wasLastRunNormal = true
+                        print("wasLastRunNormal: \(wasLastRunNormal)")
+                    }
+                )
+            } // 비정상 종료일 시 모달 등장
         } // : onAppear
     }
     
