@@ -127,6 +127,7 @@ struct HomeView: View {
                     showView: .tabView,
                     onCancel: {
                         print("취소됨")
+                        wasLastRunNormal = true
                     },
                     onActive: {
                         print("시작됨")
