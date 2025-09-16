@@ -29,11 +29,11 @@ struct SheetGuideView: View {
             
             ScrollView(showsIndicators: false) {
                 ForEach(Array(ridingViewModel.guideList.enumerated()), id:\.1.sequenceNum){ index, item in
-                    let text: String = item.instructions == "출발지" || item.instructions == "목적지" ? item.locationName : item.instructions
+                    let text: String = item.guideType == .start  || item.guideType == .end ? item.locationName : item.guideText
                     
                     guideRowView(text: text,
                                  guideType: item.guideType ?? .straight,
-                                 time: item.duration)
+                                 distance: item.distance)
                     .background(index == 0 ? Color.gray1 : Color.white)
                 }
                 
@@ -108,7 +108,7 @@ struct SheetGuideView: View {
 struct guideRowView: View {
     let text: String
     let guideType: GuideModel.GuideType
-    let time: Int?
+    let distance: Int?
     
     var body: some View {
         HStack(spacing: 0) {
@@ -138,6 +138,10 @@ struct guideRowView: View {
                 Image("start")
                     .padding(.vertical, 13)
                     .padding(.horizontal, 16)
+            case .roundabout:
+                Image("icon_crossing")
+                    .padding(.vertical, 13)
+                    .padding(.horizontal, 16)
             }
             
             Text(RidingViewModel.insertLineBreakAtMiddleWord(text))
@@ -146,8 +150,8 @@ struct guideRowView: View {
             
             Spacer()
             
-            if let t = time {
-                Text(RidingViewModel.formatMillisecondsToMinutes(Double(t)))
+            if let distance = distance {
+                Text(RidingViewModel.formatDistance(distance))
                     .font(.pretendardRegular(size: 14))
                     .foregroundColor(.gray4)
                     .padding(.trailing, 28)

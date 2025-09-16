@@ -194,7 +194,7 @@ struct DetailSpotView: View {
                             
                             await MainActor.run {
                                 // RidingView까지 가기 
-                                navigationManager.popToView(.RidingView)
+                                navigationManager.popToView(.RidingView())
                             }
                         } catch is CancellationError {
                             print("🚫 DetailSpotView 추가 Task 취소됨")

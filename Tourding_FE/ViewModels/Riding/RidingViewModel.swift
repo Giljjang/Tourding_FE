@@ -11,6 +11,7 @@ import NMapsMap
 final class RidingViewModel: ObservableObject {
     @Published var userId: Int?
     @Published var isLoading: Bool = false
+    @Published var isStartingRiding: Bool = false // 라이딩 시작하기 전용 로딩 상태
     @Published var flag: Bool = false // 라이딩 전 <-> 라이딩 후 화면 변경
     
     //라이딩 시작 전

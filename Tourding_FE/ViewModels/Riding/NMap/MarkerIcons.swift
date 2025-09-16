@@ -18,6 +18,7 @@ enum MarkerIcons {
     static let rightMarker = NMFOverlayImage(name: "rightMarker")
     static let straightMarker = NMFOverlayImage(name: "straightMarker")
     static let stopoverMarker = NMFOverlayImage(name: "stopoverMarker")
+    static let crossingMarker = NMFOverlayImage(name: "crossingMarker")
     
     // 토글 마커
     static let csMarker = NMFOverlayImage(name: "csMarker")
@@ -77,6 +78,7 @@ enum MarkerIcons {
         if icon === rightMarker { return .rightMarker }
         if icon === straightMarker { return .straightMarker }
         if icon === stopoverMarker {return .stopoverMarker}
+        if icon === crossingMarker {return .crossingMarker}
         
         if icon === csMarker { return .csMarker }
         if icon === toiletMarker { return .toiletMarker }
@@ -87,7 +89,7 @@ enum MarkerIcons {
     
     enum MarkerType {
         case startMarker, goalMarker,
-             leftMarker, rightMarker, straightMarker, stopoverMarker,
+             leftMarker, rightMarker, straightMarker, stopoverMarker, crossingMarker,
              csMarker, toiletMarker,
              userMarker, numberMarker, unknown
     }

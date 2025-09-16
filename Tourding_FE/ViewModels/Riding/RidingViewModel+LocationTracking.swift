@@ -95,10 +95,10 @@ extension RidingViewModel {
                     self.guideList.removeFirst(removedCount)
                 }
                 
-                // 경로 좌표에서도 제거 (경로선 업데이트)
-                if removedCount <= self.pathCoordinates.count {
-                    self.pathCoordinates.removeFirst(removedCount)
-                }
+                // 경로 좌표는 라이딩 중에 제거하지 않음 (전체 경로 유지)
+                // if removedCount <= self.pathCoordinates.count {
+                //     self.pathCoordinates.removeFirst(removedCount)
+                // }
                 
                 // 디버깅용 로그
                 print("✅ 지나간 마커 \(removedCount)개 제거됨 (인덱스 0~\(closestIndex))")

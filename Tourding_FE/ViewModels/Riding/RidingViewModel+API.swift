@@ -227,7 +227,7 @@ extension RidingViewModel {
             return
         }
         
-        isLoading = true
+//        isLoading = true
         do {
             let response = try await routeRepository.getRoutesGuide(userId: userId)
             guideList = response
@@ -242,6 +242,9 @@ extension RidingViewModel {
                     return nil
                 }
             }
+            
+//            print("markerCoordinates: \(markerCoordinates)")
+            
             
             markerIcons = guideList.map { item in
                 switch item.guideType {
@@ -259,13 +262,17 @@ extension RidingViewModel {
                     return MarkerIcons.stopoverMarker
                 case .none:
                     return MarkerIcons.straightMarker
+                case .roundabout:
+                    return MarkerIcons.crossingMarker
                 }
             }
+            
+//            print("markerIcons: \(markerIcons)")
             
         } catch {
             print("GET ERROR: /routes/guide \(error)")
         }
-        isLoading = false
+//        isLoading = false
     }
     
     @MainActor
