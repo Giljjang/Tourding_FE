@@ -14,7 +14,7 @@ enum ViewType : Hashable {
     case MyPageView
     
     case LoginView
-    case RidingView
+    case RidingView(flag: Bool? = nil) //비정상 종료일 때 true
     case SpotAddView(lat: String, lon: String)
     case ServiceView
     case DestinationSearchView(isFromHome: Bool, isAddSpot: Bool)

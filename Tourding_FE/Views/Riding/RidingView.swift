@@ -23,8 +23,11 @@ struct RidingView: View {
     @State private var currentPosition: BottomSheetPosition = .medium
     @State private var forceUpdate: Bool = false
     
-    init(ridingViewModel: RidingViewModel) {
+    let flag: Bool? // 비정상 종료일 때 true를 받음
+    
+    init(ridingViewModel: RidingViewModel, flag: Bool?) {
         self._ridingViewModel = StateObject(wrappedValue: ridingViewModel)
+        self.flag = flag
     }
     
     //라이딩 중 비정상 종료 감지
@@ -138,6 +141,11 @@ struct RidingView: View {
             // 위치 권한 확인 및 요청
             checkAndRequestLocationPermission()
             
+            if let flag = flag { // 비정상 종료일 때 바로 라이딩 중으로 이동
+                ridingViewModel.flag = flag
+                
+                startRidingProcess()
+            }
             
             Task { [weak ridingViewModel] in
                 do {
@@ -268,40 +276,7 @@ struct RidingView: View {
                 },
                 onActive: {
                     print("🚀 === 라이딩 시작 ===")
-                    ridingViewModel.flag = true
-                    
-                    // userLocationManager 사용
-                    if let userLocationManager = ridingViewModel.userLocationManager {
-                        
-                        // 새로운 콜백 생성
-                        let newCallback: (NMGLatLng) -> Void = { (newLocation: NMGLatLng) in
-                            
-                            if let mapViewController = ridingViewModel.mapViewController {
-                                let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
-                                mapViewController.updateUserLocation(clLocation)
-                            }
-                            
-                            ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
-                        }
-                        
-                        // 콜백 설정
-                        userLocationManager.onLocationUpdate = newCallback
-                        
-                        userLocationManager.startLocationUpdates()
-                    } else {
-                        print("❌ userLocationManager가 nil")
-                    }
-                    
-                    Task { [weak ridingViewModel] in
-                        do {
-                            try Task.checkCancellation()
-                            await ridingViewModel?.getRouteGuideAPI()
-                        } catch is CancellationError {
-                            print("🚫 라이딩 가이드 API Task 취소됨")
-                        } catch {
-                            print("❌ 라이딩 가이드 API 에러: \(error)")
-                        }
-                    }
+                    startRidingProcess()
                 } // : onActive
             )
         }){
@@ -464,12 +439,41 @@ struct RidingView: View {
             }
         }
     }
-}
+    
+    // 라이딩 중 API 호출 로직
+    func startRidingProcess() {
+        // flag 설정
+        ridingViewModel.flag = true
+        
+        // userLocationManager 사용
+        if let userLocationManager = ridingViewModel.userLocationManager {
+            // 새로운 콜백 생성
+            let newCallback: (NMGLatLng) -> Void = { newLocation in
+                if let mapViewController = ridingViewModel.mapViewController {
+                    let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
+                    mapViewController.updateUserLocation(clLocation)
+                }
+                ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+            }
+            
+            // 콜백 설정
+            userLocationManager.onLocationUpdate = newCallback
+            userLocationManager.startLocationUpdates()
+        } else {
+            print("❌ userLocationManager가 nil")
+        }
+        
+        // 라이딩 가이드 API 호출
+        Task { [weak ridingViewModel] in
+            do {
+                try Task.checkCancellation()
+                await ridingViewModel?.getRouteGuideAPI()
+            } catch is CancellationError {
+                print("🚫 라이딩 가이드 API Task 취소됨")
+            } catch {
+                print("❌ 라이딩 가이드 API 에러: \(error)")
+            }
+        }
+    }
 
-#Preview {
-    RidingView(ridingViewModel: RidingViewModel(
-        routeRepository: RouteRepository(),
-        kakaoRepository: KakaoRepository()))
-    .environmentObject(NavigationManager())
-    .environmentObject(ModalManager())
 }

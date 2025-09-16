@@ -17,12 +17,14 @@ struct CustomModalView: View {
                 .font(.pretendardSemiBold(size: 20))
                 .frame(height: 28)
                 .padding(.top, 38)
+                .padding(.bottom, 4)
             
             Text(modalManager.subText)
                 .foregroundColor(.gray4)
                 .font(.pretendardMedium(size: 16))
                 .frame(height: 26)
                 .padding(.bottom, 27)
+                .padding(.horizontal, 12)
             
             HStack(alignment: .top, spacing: 8) {
                 Button(action:{

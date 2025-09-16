@@ -11,7 +11,6 @@ struct HomeView: View {
     @EnvironmentObject var navigationManager: NavigationManager
     @EnvironmentObject var modalManager: ModalManager
     @EnvironmentObject var routeSharedManager: RouteSharedManager
-    @EnvironmentObject private var ridingViewModel: RidingViewModel
     
     //라이딩 중 비정상 종료 감지
     @AppStorage("wasLastRunNormal") private var wasLastRunNormal: Bool = true
@@ -131,7 +130,7 @@ struct HomeView: View {
                     },
                     onActive: {
                         print("시작됨")
-                        navigationManager.push(.RidingView)
+                        navigationManager.push(.RidingView(flag: true))
                         wasLastRunNormal = true
                         print("wasLastRunNormal: \(wasLastRunNormal)")
                     }
@@ -257,7 +256,7 @@ struct HomeView: View {
                             await viewModel?.postRouteAPI(start: start, end: end)
                             
                             await MainActor.run {
-                                navigationManager.push(.RidingView)
+                                navigationManager.push(.RidingView())
                             }
                         } catch is CancellationError {
                             print("🚫 HomeView 라이딩 시작 Task 취소됨")
@@ -292,7 +291,7 @@ struct HomeView: View {
     private var routeContinue: some View {
         Button(action: {
             //modal test code
-            navigationManager.push(.RidingView)
+            navigationManager.push(.RidingView())
         }) {
             HStack(alignment: .top, spacing: 0) {
                 Image("route")
