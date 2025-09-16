@@ -72,12 +72,22 @@ extension RidingViewModel {
         return firstPart + "\n" + secondPart
     }
     
-    static func formatMillisecondsToMinutes(_ milliseconds: Double) -> String {
-        let minutes = Int((milliseconds / 1000 / 60).rounded()) // 밀리초 → 분, 정수 반올림
-        if minutes == 0 {
-            return "" // 0분이면 빈 문자열
+//    static func formatMillisecondsToMinutes(_ milliseconds: Double) -> String {
+//        let minutes = Int((milliseconds / 1000 / 60).rounded()) // 밀리초 → 분, 정수 반올림
+//        if minutes == 0 {
+//            return "" // 0분이면 빈 문자열
+//        } else {
+//            return "약 \(minutes)분"
+//        }
+//    }
+    
+    static func formatDistance(_ distance: Int) -> String {
+        if distance >= 1000 {
+            let km = Double(distance) / 1000
+            return String(format: "%.1fkm", km) // 1.2km
         } else {
-            return "약 \(minutes)분"
+            return "\(distance)m" // 69m
         }
     }
+
 }

@@ -33,7 +33,7 @@ struct SheetGuideView: View {
                     
                     guideRowView(text: text,
                                  guideType: item.guideType ?? .straight,
-                                 time: item.duration)
+                                 distance: item.distance)
                     .background(index == 0 ? Color.gray1 : Color.white)
                 }
                 
@@ -108,7 +108,7 @@ struct SheetGuideView: View {
 struct guideRowView: View {
     let text: String
     let guideType: GuideModel.GuideType
-    let time: Int?
+    let distance: Int?
     
     var body: some View {
         HStack(spacing: 0) {
@@ -150,8 +150,8 @@ struct guideRowView: View {
             
             Spacer()
             
-            if let t = time {
-                Text(RidingViewModel.formatMillisecondsToMinutes(Double(t)))
+            if let distance = distance {
+                Text(RidingViewModel.formatDistance(distance))
                     .font(.pretendardRegular(size: 14))
                     .foregroundColor(.gray4)
                     .padding(.trailing, 28)
