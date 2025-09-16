@@ -464,9 +464,18 @@ struct SheetDetailView: View {
             
             // 예약안내 reservation
             if let reservation = detailViewModel.detailData?.reservation,
-               reservation != "" {
-                let text = "예약안내: \(reservation)"
-                DetailInfoLine(image: "icon_reservation", text: detailViewModel.formatOverview(text), type: nil)
+               !reservation.isEmpty {
+                if reservation.contains("http") {
+                    DetailInfoLine(
+                        image: "icon_reservation",
+                        text: detailViewModel.formatOverview(detailViewModel.extractURL(from: reservation) ?? reservation),
+                        type: "link")
+                } else {
+                    DetailInfoLine(
+                        image: "icon_reservation",
+                        text: detailViewModel.formatOverview("예약안내: \(reservation)"),
+                        type: nil)
+                }
             }
             
             //규모 scaleleports

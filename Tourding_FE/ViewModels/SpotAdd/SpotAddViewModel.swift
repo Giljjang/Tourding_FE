@@ -20,7 +20,12 @@ final class SpotAddViewModel: ObservableObject {
     
     @Published var routeLocation: [LocationNameModel] = []
     @Published var spots: [SpotData] = []
-    @Published var isLoading = false
+    
+    @Published var isLoading = false //전체 로딩
+    @Published var isScrollLoading: Bool = false // 스크롤 로딩
+    @Published var hasMoreData = true // 가져올 데이터가 더 있는지 확인
+    @Published var currentPage = 0
+    
     @Published var errorMessage: String?
     
     private let tourRepository: TourRepositoryProtocol
@@ -105,32 +110,73 @@ final class SpotAddViewModel: ObservableObject {
     }
     
     //MARK: - API 호출
-    func fetchNearbySpots(lat: String, lng: String, typeCode: String) async {
-        isLoading = true
+    func fetchNearbySpots(lat: String, lng: String, typeCode: String, pageNum: Int = 0) async {
+        if pageNum == 0 {
+            isLoading = true
+            currentPage = 0
+            hasMoreData = true
+        } else {
+            isScrollLoading = true
+        }
         errorMessage = nil
         
         do {
             var results = try await tourRepository.searchLocationSpots(
-                pageNum: 0,
+                pageNum: pageNum,
                 mapX: lng,
                 mapY: lat,
                 radius: "20000",
                 typeCode: typeCode
             )
             
-            print("fetchNearbySpots typeCode : \(typeCode)")
-//            print("fetchNearbySpots : \(results)")
+            print("fetchNearbySpots typeCode : \(typeCode), pageNum: \(pageNum)")
+            print("📊 받은 데이터 개수: \(results.count)")
             
             //추천 코스 제외
-            spots = results.filter { $0.typeCode != "C01" }
-        
+            let filteredResults = results.filter { $0.typeCode != "C01" }
+            print("🔍 필터링 후 데이터 개수: \(filteredResults.count)")
+            
+            if pageNum == 0 {
+                // 첫 페이지 → 기존 데이터 리셋
+                spots = filteredResults
+                currentPage = 0
+                print("🔄 첫 페이지 로드 완료 - 총 \(spots.count)개")
+            } else {
+                // 다음 페이지 → 기존 데이터 뒤에 추가
+                spots.append(contentsOf: filteredResults)
+                currentPage = pageNum
+                print("➕ 다음 페이지 추가 완료 - 총 \(spots.count)개")
+            }
+            
+            // 더 이상 데이터가 없는지 확인 (빈 배열이면 마지막 페이지)
+            hasMoreData = !filteredResults.isEmpty
+            print("📄 hasMoreData: \(hasMoreData) (데이터 있음: \(!filteredResults.isEmpty))")
+            
         } catch {
             errorMessage = "스팟을 불러오는데 실패했습니다."
             print("API 오류: \(error)")
             
         }
         
-        isLoading = false
+        if pageNum == 0 {
+            isLoading = false
+        } else {
+            isScrollLoading = false
+        }
+    }
+    
+    // 무한 스크롤을 위한 다음 페이지 로드
+    func loadNextPage(lat: String, lng: String, typeCode: String) async {
+        print("🔄 loadNextPage 호출됨 - hasMoreData: \(hasMoreData), isScrollLoading: \(isScrollLoading), currentPage: \(currentPage)")
+        
+        guard hasMoreData && !isScrollLoading else { 
+            print("❌ loadNextPage 조건 불만족 - hasMoreData: \(hasMoreData), isScrollLoading: \(isScrollLoading)")
+            return 
+        }
+        
+        let nextPage = currentPage + 1
+        print("📄 다음 페이지 로드 시작: \(nextPage)")
+        await fetchNearbySpots(lat: lat, lng: lng, typeCode: typeCode, pageNum: nextPage)
     }
     
     @MainActor
