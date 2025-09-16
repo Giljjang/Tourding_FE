@@ -29,7 +29,7 @@ struct RecentSearchSectionComponent: View {
                 .font(.pretendardMedium(size: 14))
                 .foregroundColor(.gray5)
             }
-            .padding(.horizontal, 25)
+            .padding(.horizontal, 16)
             .padding(.bottom, 14)
             
             // 최근 검색어 칩들 (가로 스크롤)

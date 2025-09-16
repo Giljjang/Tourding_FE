@@ -61,8 +61,19 @@ struct DestinationSearchView: View {
             )
             .padding(.bottom, 18)
             
+            myPositionButton
+                .padding(.leading, 16)
+                .padding(.bottom, 16)
+            
             // 최근 검색어 섹션 - 단순한 조건으로 변경
             if !recentSearchViewModel.items.isEmpty && shouldShowRecentSearches {
+                
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundStyle(Color.gray1)
+                    .padding(.bottom, 14)
+                    .padding(.horizontal, 16)
+                
                 RecentSearchSectionComponent(
                     recentSearchItems: recentSearchViewModel.items,
                     onChipTap: { searchTerm in
@@ -225,6 +236,30 @@ struct DestinationSearchView: View {
         }
     }
     
+    //MARK: - 현재위치 버튼
+    private var myPositionButton: some View {
+        Button(action: {
+            print("📍 내 위치 버튼 눌림")
+            // TODO: 위치 갱신 액션 추가
+        }) {
+            HStack(spacing: 4) {
+                Image("gpsblue")
+                    .resizable()
+                    .frame(width: 20, height: 20)
+                    .foregroundColor(Color.mainCalm)
+                Text("현재 위치")
+                    .font(.pretendardMedium(size: 14))
+                    .foregroundColor(Color.mainCalm)
+
+                Spacer()
+            }
+            
+        }
+    }
+
+    
+    
+    
     // MARK: - 콘텐츠 영역
     @ViewBuilder
     private var contentArea: some View {
@@ -324,15 +359,20 @@ struct DestinationSearchView: View {
     }
 }
 
-//// MARK: - 미리보기
-//#Preview {
-//    let filterViewModel = FilterBarViewModel(tourRepository: TourRepository())
-//    
-//    return NavigationView {
-//        DestinationSearchView(isFromHome: false, filterViewModel: filterViewModel)
-//            .environmentObject(NavigationManager())
-//            .environmentObject(RecentSearchViewModel())
-//            .environmentObject(RouteSharedManager())
-//            .environmentObject(HomeViewModel(testRepository: TestRepository()))
-//    }
-//}
+// MARK: - 미리보기
+#Preview {
+    let filterViewModel = FilterBarViewModel(tourRepository: TourRepository())
+    let recentSearchViewModel = RecentSearchViewModel()
+    
+    return NavigationView {
+        DestinationSearchView(
+            isFromHome: false,
+            filterViewModel: filterViewModel,
+            RecentSearchViewModel: recentSearchViewModel,
+            isAddSpot: false
+        )
+        .environmentObject(NavigationManager())
+        .environmentObject(RouteSharedManager())
+        .environmentObject(HomeViewModel(routeRepository: RouteRepository()))
+    }
+}
