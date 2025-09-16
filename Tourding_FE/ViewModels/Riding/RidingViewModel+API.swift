@@ -98,6 +98,10 @@ extension RidingViewModel {
                     }
                 }
                 
+                // API에서 받은 경로 데이터를 백업으로 저장 (다음에 API 호출 없이 사용)
+                originalPathCoordinates = pathCoordinates
+                print("💾 API에서 받은 경로 데이터를 백업으로 저장: \(pathCoordinates.count)개")
+                
                 // 성공하면 루프 종료
                 break
                 

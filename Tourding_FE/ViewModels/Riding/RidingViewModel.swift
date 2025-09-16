@@ -45,7 +45,7 @@ final class RidingViewModel: ObservableObject {
     @Published var markerIcons: [NMFOverlayImage] = []
     
     // 라이딩 중 경로선 유지를 위한 백업 데이터
-    private var originalPathCoordinates: [NMGLatLng] = []
+    var originalPathCoordinates: [NMGLatLng] = []
     private var originalMarkerCoordinates: [NMGLatLng] = []
     private var originalMarkerIcons: [NMFOverlayImage] = []
     
@@ -166,6 +166,28 @@ final class RidingViewModel: ObservableObject {
         }
         
         print("🔄 라이딩 종료 후 원본 데이터 복원 완료")
+    }
+    
+    // 백업 데이터가 있는지 확인
+    func hasBackupPathData() -> Bool {
+        return !originalPathCoordinates.isEmpty
+    }
+    
+    // 백업 경로 데이터로 복원 (API 호출 없이)
+    @MainActor
+    func restoreFromBackupPathData() {
+        guard hasBackupPathData() else {
+            print("❌ 백업 경로 데이터가 없습니다")
+            return
+        }
+        
+        pathCoordinates = originalPathCoordinates
+        
+        // 경로 매니저에 복원된 경로선 적용
+        if let pathManager = pathManager {
+            pathManager.setCoordinates(pathCoordinates)
+            print("🔄 백업 경로 데이터로 복원 완료: \(pathCoordinates.count)개")
+        }
     }
     
     

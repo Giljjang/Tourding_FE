@@ -204,7 +204,15 @@ struct RidingView: View {
                     await ridingViewModel?.getRouteLocationAPI()
                     
                     try Task.checkCancellation()
-                    await ridingViewModel?.getRoutePathAPI()
+                    
+                    // 백업 경로 데이터가 있으면 API 호출 건너뛰고 백업 데이터 사용
+                    if let ridingViewModel = ridingViewModel, ridingViewModel.hasBackupPathData() {
+                        print("🔄 백업 경로 데이터가 있으므로 API 호출 건너뛰고 백업 데이터 사용")
+                        await ridingViewModel.restoreFromBackupPathData()
+                    } else {
+                        print("🔄 백업 경로 데이터가 없으므로 API 호출 진행")
+                        await ridingViewModel?.getRoutePathAPI()
+                    }
                     
                     // API 호출 완료 후 초기 카메라 위치 설정 (flag가 false일 때만)
                     try Task.checkCancellation()
@@ -468,7 +476,15 @@ struct RidingView: View {
                 await ridingViewModel?.getRouteLocationAPI()
                 
                 try Task.checkCancellation()
-                await ridingViewModel?.getRoutePathAPI()
+                
+                // 백업 경로 데이터가 있으면 API 호출 건너뛰고 백업 데이터 사용
+                if let ridingViewModel = ridingViewModel, ridingViewModel.hasBackupPathData() {
+                    print("🔄 새로고침: 백업 경로 데이터가 있으므로 API 호출 건너뛰고 백업 데이터 사용")
+                    await ridingViewModel.restoreFromBackupPathData()
+                } else {
+                    print("🔄 새로고침: 백업 경로 데이터가 없으므로 API 호출 진행")
+                    await ridingViewModel?.getRoutePathAPI()
+                }
                 
                 // API 호출 완료 후 초기 카메라 위치 설정
                 try Task.checkCancellation()
