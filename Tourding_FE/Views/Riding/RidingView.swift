@@ -23,11 +23,11 @@ struct RidingView: View {
     @State private var currentPosition: BottomSheetPosition = .medium
     @State private var forceUpdate: Bool = false
     
-    let flag: Bool? // 비정상 종료일 때 true를 받음
+    let isNotNomal: Bool? // 비정상 종료일 때 true를 받음
     
-    init(ridingViewModel: RidingViewModel, flag: Bool?) {
+    init(ridingViewModel: RidingViewModel, isNotNomal: Bool?) {
         self._ridingViewModel = StateObject(wrappedValue: ridingViewModel)
-        self.flag = flag
+        self.isNotNomal = isNotNomal
     }
     
     //라이딩 중 비정상 종료 감지
@@ -160,8 +160,8 @@ struct RidingView: View {
             // 위치 권한 확인 및 요청
             checkAndRequestLocationPermission()
             
-            if let flag = flag { // 비정상 종료일 때 바로 라이딩 중으로 이동
-                ridingViewModel.flag = flag
+            if let isNotNomal = isNotNomal { // 비정상 종료일 때 바로 라이딩 중으로 이동
+                ridingViewModel.flag = isNotNomal
                 
                 startRidingWithLoading()
             }
