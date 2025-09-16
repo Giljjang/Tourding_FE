@@ -499,9 +499,10 @@ struct RidingView: View {
         // 라이딩 시작 로딩 상태 활성화
         ridingViewModel.isStartingRiding = true
         
+        self.startRidingAPIProcess()
+        
         // 3초 후 라이딩 시작
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            self.startRidingAPIProcess()
             self.ridingViewModel.isStartingRiding = false
         }
     }
