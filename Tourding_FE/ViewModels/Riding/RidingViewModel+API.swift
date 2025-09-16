@@ -243,6 +243,9 @@ extension RidingViewModel {
                 }
             }
             
+//            print("markerCoordinates: \(markerCoordinates)")
+            
+            
             markerIcons = guideList.map { item in
                 switch item.guideType {
                 case .start:
@@ -259,8 +262,12 @@ extension RidingViewModel {
                     return MarkerIcons.stopoverMarker
                 case .none:
                     return MarkerIcons.straightMarker
+                case .roundabout:
+                    return MarkerIcons.crossingMarker
                 }
             }
+            
+//            print("markerIcons: \(markerIcons)")
             
         } catch {
             print("GET ERROR: /routes/guide \(error)")

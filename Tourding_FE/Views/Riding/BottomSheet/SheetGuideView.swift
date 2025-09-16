@@ -29,7 +29,7 @@ struct SheetGuideView: View {
             
             ScrollView(showsIndicators: false) {
                 ForEach(Array(ridingViewModel.guideList.enumerated()), id:\.1.sequenceNum){ index, item in
-                    let text: String = item.instructions == "출발지" || item.instructions == "목적지" ? item.locationName : item.instructions
+                    let text: String = item.guideType == .start  || item.guideType == .end ? item.locationName : item.guideText
                     
                     guideRowView(text: text,
                                  guideType: item.guideType ?? .straight,
@@ -136,6 +136,10 @@ struct guideRowView: View {
                     .padding(.horizontal, 16)
             case .start:
                 Image("start")
+                    .padding(.vertical, 13)
+                    .padding(.horizontal, 16)
+            case .roundabout:
+                Image("icon_crossing")
                     .padding(.vertical, 13)
                     .padding(.horizontal, 16)
             }
