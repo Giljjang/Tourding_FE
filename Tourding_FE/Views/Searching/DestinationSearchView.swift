@@ -57,12 +57,24 @@ struct DestinationSearchView: View {
                 onTextChange: {
                     // onChange(of: searchText)를 사용하므로 여기서는 아무것도 하지 않음
 //                    handleSearchTextChange(searchText)
-                }
+                },
+                shouldAutoFocus: true // 자동 포커스 활성화
             )
             .padding(.bottom, 18)
             
+            myPositionButton
+                .padding(.leading, 16)
+                .padding(.bottom, 16)
+            
             // 최근 검색어 섹션 - 단순한 조건으로 변경
             if !recentSearchViewModel.items.isEmpty && shouldShowRecentSearches {
+                
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundStyle(Color.gray1)
+                    .padding(.bottom, 14)
+                    .padding(.horizontal, 16)
+                
                 RecentSearchSectionComponent(
                     recentSearchItems: recentSearchViewModel.items,
                     onChipTap: { searchTerm in
@@ -118,6 +130,17 @@ struct DestinationSearchView: View {
         .onTapGesture {hideKeyboard() }
         .navigationBarHidden(true)
         .navigationBarBackButtonHidden(true)
+        .interactiveDismissDisabled(false) // 네이티브 스와이프 백 제스처 활성화
+        .gesture(
+            DragGesture()
+                .onEnded { value in
+                    // 왼쪽에서 오른쪽으로 스와이프 감지
+                    if value.translation.width > 100 && abs(value.translation.height) < 50 {
+                        print("👈 스와이프 뒤로가기 감지")
+                        navigationManager.pop()
+                    }
+                }
+        )
         .onChange(of: searchText) { newValue in
             print("?????onChange가 눌리는겨")
             handleSearchTextChange(newValue)
@@ -225,6 +248,58 @@ struct DestinationSearchView: View {
         }
     }
     
+    //MARK: - 현재위치 버튼
+    private var myPositionButton: some View {
+        Button(action: {
+            print("📍 내 위치 버튼 눌림")
+            Task {
+                // 1. 위치 갱신 요청
+                dsViewModel.refreshLocation()
+                
+                // 2. 현재 위치를 Place 객체로 변환
+                if let currentPlace = await dsViewModel.getCurrentLocationAsPlace() {
+                    print("✅ 현재 위치 Place 객체 생성 성공")
+                    
+                    // 3. 최근 검색어에 추가
+                    recentSearchViewModel.add(currentPlace.placeName)
+                    
+                    // 4. RouteManager를 통해 위치 설정
+                    if routeManager.currentSelectionMode == .startLocation {
+                        routeManager.setStartLocation(from: currentPlace)
+                    } else if routeManager.currentSelectionMode == .endLocation {
+                        routeManager.setEndLocation(from: currentPlace)
+                    }
+                    
+                    // 5. 선택된 장소 처리
+                    dsViewModel.selectPlace(currentPlace)
+                    
+                    // 6. 이전 화면으로 돌아가기
+                    navigationManager.pop()
+                    
+                } else {
+                    print("❌ 현재 위치 정보를 가져올 수 없습니다")
+                    // TODO: 사용자에게 오류 메시지 표시 (토스트 등)
+                }
+            }
+        }) {
+            HStack(spacing: 4) {
+                Image("gpsblue")
+                    .resizable()
+                    .frame(width: 20, height: 20)
+                    .foregroundColor(Color.mainCalm)
+                Text("현재 위치")
+                    .font(.pretendardMedium(size: 14))
+                    .foregroundColor(Color.mainCalm)
+
+                Spacer()
+            }
+            
+        }
+    }
+
+    
+    
+    
     // MARK: - 콘텐츠 영역
     @ViewBuilder
     private var contentArea: some View {
@@ -324,15 +399,20 @@ struct DestinationSearchView: View {
     }
 }
 
-//// MARK: - 미리보기
-//#Preview {
-//    let filterViewModel = FilterBarViewModel(tourRepository: TourRepository())
-//    
-//    return NavigationView {
-//        DestinationSearchView(isFromHome: false, filterViewModel: filterViewModel)
-//            .environmentObject(NavigationManager())
-//            .environmentObject(RecentSearchViewModel())
-//            .environmentObject(RouteSharedManager())
-//            .environmentObject(HomeViewModel(testRepository: TestRepository()))
-//    }
-//}
+// MARK: - 미리보기
+#Preview {
+    let filterViewModel = FilterBarViewModel(tourRepository: TourRepository())
+    let recentSearchViewModel = RecentSearchViewModel()
+    
+    return NavigationView {
+        DestinationSearchView(
+            isFromHome: false,
+            filterViewModel: filterViewModel,
+            RecentSearchViewModel: recentSearchViewModel,
+            isAddSpot: false
+        )
+        .environmentObject(NavigationManager())
+        .environmentObject(RouteSharedManager())
+        .environmentObject(HomeViewModel(routeRepository: RouteRepository()))
+    }
+}
