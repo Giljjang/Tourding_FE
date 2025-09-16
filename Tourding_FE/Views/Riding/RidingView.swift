@@ -166,6 +166,21 @@ struct RidingView: View {
                 startRidingWithLoading()
             }
             
+            // flag가 true일 때 카메라를 사용자 위치로 이동하고 위치 추적 시작
+            if ridingViewModel.flag {
+                if let coordinate = locationManager.getCurrentLocationAsNMGLatLng(),
+                   let mapView = ridingViewModel.mapView {
+                    ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
+                    print("🎯 onAppear - 라이딩 중 카메라를 사용자 위치로 이동: \(coordinate.lat), \(coordinate.lng)")
+                    
+                    // 사용자 마커 표시를 위해 위치 추적 시작
+                    locationManager.startLocationUpdates()
+                    print("📍 onAppear - 사용자 위치 추적 시작 - 마커 표시")
+                } else {
+                    print("❌ onAppear - 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
+                }
+            }
+            
             Task { [weak ridingViewModel] in
                 do {
                     try Task.checkCancellation()
@@ -174,7 +189,7 @@ struct RidingView: View {
                     try Task.checkCancellation()
                     await ridingViewModel?.getRoutePathAPI()
                     
-                    // API 호출 완료 후 초기 카메라 위치 설정
+                    // API 호출 완료 후 초기 카메라 위치 설정 (flag가 false일 때만)
                     try Task.checkCancellation()
                     await MainActor.run {
                         guard let ridingViewModel = ridingViewModel,
@@ -186,9 +201,12 @@ struct RidingView: View {
                             return
                         }
                         
-                        let coordinate = NMGLatLng(lat: lat, lng: lon)
-                        ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
-                        print("초기 카메라 위치를 경로 첫 번째 좌표로 설정: \(lat), \(lon)")
+                        // flag가 false일 때만 경로 첫 번째 좌표로 카메라 설정
+                        if !ridingViewModel.flag {
+                            let coordinate = NMGLatLng(lat: lat, lng: lon)
+                            ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
+                            print("초기 카메라 위치를 경로 첫 번째 좌표로 설정: \(lat), \(lon)")
+                        }
                     }
                 } catch is CancellationError {
                     print("🚫 RidingView 초기화 Task 취소됨")
@@ -474,6 +492,15 @@ struct RidingView: View {
     func startRidingProcess() {
         // flag 설정
         ridingViewModel.flag = true
+        
+        // 카메라를 사용자 위치로 이동
+        if let coordinate = locationManager.getCurrentLocationAsNMGLatLng(),
+           let mapView = ridingViewModel.mapView {
+            ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
+            print("🎯 startRidingProcess - 카메라를 사용자 위치로 이동: \(coordinate.lat), \(coordinate.lng)")
+        } else {
+            print("❌ startRidingProcess - 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
+        }
         
         // userLocationManager 사용
         if let userLocationManager = ridingViewModel.userLocationManager {
