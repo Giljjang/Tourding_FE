@@ -227,6 +227,9 @@ extension RidingViewModel {
             return
         }
         
+        // 라이딩 시작 전 원본 데이터 백업
+        backupOriginalData()
+        
 //        isLoading = true
         do {
             let response = try await routeRepository.getRoutesGuide(userId: userId)
@@ -266,6 +269,9 @@ extension RidingViewModel {
                     return MarkerIcons.crossingMarker
                 }
             }
+            
+            // 가이드 마커 설정 후 경로선 복원 (경로선이 사라지지 않도록)
+            restorePathWithGuides()
             
 //            print("markerIcons: \(markerIcons)")
             

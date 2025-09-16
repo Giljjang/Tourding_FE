@@ -294,6 +294,9 @@ struct RidingView: View {
                             
                             ridingViewModel.showConvenienceStore = false
                             ridingViewModel.showToilet = false
+                            
+                            // 라이딩 종료 시 원본 데이터로 복원
+                            ridingViewModel.restoreOriginalData()
                         }
                         ridingViewModel?.flag = false
                     } catch is CancellationError {
