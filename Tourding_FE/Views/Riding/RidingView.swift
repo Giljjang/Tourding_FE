@@ -163,22 +163,15 @@ struct RidingView: View {
             if let isNotNomal = isNotNomal { // 비정상 종료일 때 바로 라이딩 중으로 이동
                 ridingViewModel.flag = isNotNomal
                 
+                moveCameraToUserLocationAndStartTracking()
+                
                 startRidingWithLoading()
             }
             
             // flag가 true일 때 카메라를 사용자 위치로 이동하고 위치 추적 시작
             if ridingViewModel.flag {
-                if let coordinate = locationManager.getCurrentLocationAsNMGLatLng(),
-                   let mapView = ridingViewModel.mapView {
-                    ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
-                    print("🎯 onAppear - 라이딩 중 카메라를 사용자 위치로 이동: \(coordinate.lat), \(coordinate.lng)")
-                    
-                    // 사용자 마커 표시를 위해 위치 추적 시작
-                    locationManager.startLocationUpdates()
-                    print("📍 onAppear - 사용자 위치 추적 시작 - 마커 표시")
-                } else {
-                    print("❌ onAppear - 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
-                }
+                print("🎯 onAppear - 라이딩 중")
+                moveCameraToUserLocationAndStartTracking()
             }
             
             Task { [weak ridingViewModel] in
@@ -219,6 +212,12 @@ struct RidingView: View {
             // flag가 변경될 때마다 currentPosition을 .medium으로 설정
             withAnimation(.easeInOut(duration: 0.3)) {
                 currentPosition = .medium
+            }
+            
+            // flag가 true로 변경될 때 카메라를 사용자 위치로 이동하고 위치 추적 시작
+            if newValue == true {
+                print("🎯 onChange - 라이딩 시작")
+                moveCameraToUserLocationAndStartTracking()
             }
             
         } // : onChange
@@ -382,6 +381,58 @@ struct RidingView: View {
     
     //MARK: - function
     
+    // 사용자 위치로 카메라 이동 및 위치 추적 시작
+    private func moveCameraToUserLocationAndStartTracking() {
+        print("🔍 moveCameraToUserLocationAndStartTracking 시작")
+        print("🔍 locationManager.getCurrentLocationAsNMGLatLng(): \(locationManager.getCurrentLocationAsNMGLatLng() != nil)")
+        print("🔍 ridingViewModel.mapView: \(ridingViewModel.mapView != nil)")
+        print("🔍 ridingViewModel.mapViewController: \(ridingViewModel.mapViewController != nil)")
+        
+        if let coordinate = locationManager.getCurrentLocationAsNMGLatLng(),
+           let mapView = ridingViewModel.mapView {
+            ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
+            print("🎯 카메라를 사용자 위치로 이동: \(coordinate.lat), \(coordinate.lng)")
+            
+            // 사용자 마커 표시를 위해 콜백 설정 및 위치 추적 시작
+            let newCallback: (NMGLatLng) -> Void = { newLocation in
+                print("🔄 위치 업데이트 콜백 호출됨: \(newLocation.lat), \(newLocation.lng)")
+                if let mapViewController = ridingViewModel.mapViewController {
+                    let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
+                    mapViewController.updateUserLocation(clLocation)
+                    print("✅ MapViewController.updateUserLocation 호출 완료")
+                } else {
+                    print("❌ mapViewController가 nil")
+                }
+                ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+            }
+            
+            locationManager.onLocationUpdate = newCallback
+            locationManager.startLocationUpdates()
+            print("📍 사용자 위치 추적 시작 - 마커 표시")
+        } else {
+            print("❌ 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
+            print("❌ getCurrentLocationAsNMGLatLng: \(locationManager.getCurrentLocationAsNMGLatLng() != nil)")
+            print("❌ mapView: \(ridingViewModel.mapView != nil)")
+            
+            // 위치가 아직 없으면 위치 추적만 시작
+            let newCallback: (NMGLatLng) -> Void = { newLocation in
+                print("🔄 위치 업데이트 콜백 호출됨 (지연): \(newLocation.lat), \(newLocation.lng)")
+                if let mapViewController = ridingViewModel.mapViewController {
+                    let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
+                    mapViewController.updateUserLocation(clLocation)
+                    print("✅ MapViewController.updateUserLocation 호출 완료 (지연)")
+                } else {
+                    print("❌ mapViewController가 nil (지연)")
+                }
+                ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+            }
+            
+            locationManager.onLocationUpdate = newCallback
+            locationManager.startLocationUpdates()
+            print("📍 위치 추적만 시작 (위치 데이터 대기 중)")
+        }
+    }
+    
     private func checkAndRequestLocationPermission() {
         let authStatus = locationManager.checkLocationAuthorizationStatus()
         
@@ -490,35 +541,9 @@ struct RidingView: View {
     
     // 라이딩 중 API 호출 로직
     func startRidingProcess() {
-        // flag 설정
+        // flag 설정 (onChange에서 카메라 이동 및 위치 추적 처리)
         ridingViewModel.flag = true
-        
-        // 카메라를 사용자 위치로 이동
-        if let coordinate = locationManager.getCurrentLocationAsNMGLatLng(),
-           let mapView = ridingViewModel.mapView {
-            ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
-            print("🎯 startRidingProcess - 카메라를 사용자 위치로 이동: \(coordinate.lat), \(coordinate.lng)")
-        } else {
-            print("❌ startRidingProcess - 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
-        }
-        
-        // userLocationManager 사용
-        if let userLocationManager = ridingViewModel.userLocationManager {
-            // 새로운 콜백 생성
-            let newCallback: (NMGLatLng) -> Void = { newLocation in
-                if let mapViewController = ridingViewModel.mapViewController {
-                    let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
-                    mapViewController.updateUserLocation(clLocation)
-                }
-                ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
-            }
-            
-            // 콜백 설정
-            userLocationManager.onLocationUpdate = newCallback
-            userLocationManager.startLocationUpdates()
-        } else {
-            print("❌ userLocationManager가 nil")
-        }
+        print("🎯 startRidingProcess - 라이딩 시작 (flag 설정)")
         
         // 라이딩 가이드 API 호출
         Task { [weak ridingViewModel] in
