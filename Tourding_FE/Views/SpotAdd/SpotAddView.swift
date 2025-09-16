@@ -75,6 +75,17 @@ struct SpotAddView: View {
         }// :Zstck
         .navigationBarBackButtonHidden()
         .background(Color.gray1)
+        .interactiveDismissDisabled(false) // 네이티브 스와이프 백 제스처 활성화
+        .gesture(
+            DragGesture()
+                .onEnded { value in
+                    // 왼쪽에서 오른쪽으로 스와이프 감지
+                    if value.translation.width > 100 && abs(value.translation.height) < 50 {
+                        print("👈 SpotAddView 스와이프 뒤로가기 감지")
+                        navigationManager.pop()
+                    }
+                }
+        )
         .onAppear{
             Task { [weak spotAddViewModel] in
                 do {

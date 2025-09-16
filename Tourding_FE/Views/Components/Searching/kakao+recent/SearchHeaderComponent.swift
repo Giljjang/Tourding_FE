@@ -13,6 +13,7 @@ struct SearchHeaderComponent: View {
     let onBack: () -> Void
     let onSearchSubmit: () -> Void
     let onTextChange: () -> Void
+    var shouldAutoFocus: Bool = false // 자동 포커스 옵션 추가
     
     var body: some View {
         HStack(spacing: 0) {
@@ -29,7 +30,8 @@ struct SearchHeaderComponent: View {
                 text: $searchText,
                 hasSearched: $hasSearched,
                 onSubmit: onSearchSubmit,
-                onTextChange: onTextChange
+                onTextChange: onTextChange,
+                shouldAutoFocus: shouldAutoFocus
             )
             
             Spacer()

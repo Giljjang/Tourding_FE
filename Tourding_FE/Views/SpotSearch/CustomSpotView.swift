@@ -46,7 +46,7 @@ struct SpotCardView: View {
             }
             
             // 텍스트 정보 섹션
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(spot.title)
                     .font(.pretendardSemiBold(size: 18))
                     .foregroundColor(.gray6)

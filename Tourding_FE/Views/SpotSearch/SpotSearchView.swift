@@ -103,12 +103,13 @@ struct SpotSearchView: View {
     
     private var headerSpot: some View {
         HStack(spacing:0){
-            VStack(alignment: .leading, spacing:0) {
+            VStack(alignment: .leading, spacing:4) {
                 
                 Text("스팟 탐색")
                     .font(.pretendardSemiBold(size: 26))
                     .foregroundColor(Color.gray6)
-                Text("새로운 여행지를 찾아볼까요?")
+                    
+                Text("나에게 맞는 여행지를 탐색해요")
                     .font(.pretendardMedium(size: 16))
                     .foregroundColor(Color.gray4)
             }
@@ -206,7 +207,7 @@ struct SpotSearchView: View {
     }
     
 }
-//
+
 //#Preview {
 //    SpotSearchView(
 //        spotviewModel: SpotSearchViewModel(tourRepository: TourRepository()),
