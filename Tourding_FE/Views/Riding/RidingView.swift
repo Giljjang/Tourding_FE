@@ -128,7 +128,26 @@ struct RidingView: View {
                         
                         Spacer()
                     }
-                }// if 로딩 상태
+                }// if 로딩 상태(일반)
+                
+                if ridingViewModel.isStartingRiding {
+                    Color.white.opacity(0.8)
+                        .ignoresSafeArea()
+                    
+                    VStack(spacing: 4){
+                        Spacer()
+                        
+                        GIFView(name: "searching-route-속도-2")
+                            .frame(width: 200, height: 200)
+                        
+                        Text("길 안내를 준비하고 있어요\n잠시만 기다려 주세요")
+                            .foregroundColor(.gray5)
+                            .font(.pretendardSemiBold(size: 20))
+                            .multilineTextAlignment(.center)
+                        
+                        Spacer()
+                    }
+                }// if 로딩 상태(라이딩 시작하기)
                 
             } // : ZStack
         } // : GeometryReader
@@ -182,10 +201,6 @@ struct RidingView: View {
             // flag가 변경될 때마다 currentPosition을 .medium으로 설정
             withAnimation(.easeInOut(duration: 0.3)) {
                 currentPosition = .medium
-            }
-            
-            if newValue {
-                wasLastRunNormal = false
             }
             
         } // : onChange
@@ -276,7 +291,7 @@ struct RidingView: View {
                 },
                 onActive: {
                     print("🚀 === 라이딩 시작 ===")
-                    startRidingProcess()
+                    startRidingWithLoading()
                 } // : onActive
             )
         }){
@@ -437,6 +452,21 @@ struct RidingView: View {
             } catch {
                 print("❌ 경로 데이터 새로고침 에러: \(error)")
             }
+        }
+    }
+    
+    // 라이딩 시작하기 버튼 클릭 시 3초 로딩과 함께 시작
+    func startRidingWithLoading() {
+        
+        wasLastRunNormal = false
+        
+        // 라이딩 시작 로딩 상태 활성화
+        ridingViewModel.isStartingRiding = true
+        
+        // 3초 후 라이딩 시작
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            self.startRidingProcess()
+            self.ridingViewModel.isStartingRiding = false
         }
     }
     

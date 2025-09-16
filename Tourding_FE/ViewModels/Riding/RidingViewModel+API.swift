@@ -227,7 +227,7 @@ extension RidingViewModel {
             return
         }
         
-        isLoading = true
+//        isLoading = true
         do {
             let response = try await routeRepository.getRoutesGuide(userId: userId)
             guideList = response
@@ -265,7 +265,7 @@ extension RidingViewModel {
         } catch {
             print("GET ERROR: /routes/guide \(error)")
         }
-        isLoading = false
+//        isLoading = false
     }
     
     @MainActor

@@ -13,13 +13,27 @@ import ImageIO
 struct GIFView: UIViewRepresentable {
     let name: String
 
-    func makeUIView(context: Context) -> GIFImageView {
+    func makeUIView(context: Context) -> UIView {
+        let containerView = UIView()
         let gifView = GIFImageView()
         gifView.loadGif(name: name)
-        return gifView
+        
+        containerView.addSubview(gifView)
+        gifView.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            gifView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            gifView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            gifView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            gifView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
+        ])
+        
+        return containerView
     }
 
-    func updateUIView(_ uiView: GIFImageView, context: Context) {}
+    func updateUIView(_ uiView: UIView, context: Context) {
+        // 업데이트할 내용 없음
+    }
 }
 
 // MARK: - GIFImageView
@@ -32,8 +46,20 @@ class GIFImageView: UIImageView {
     private var totalDuration: Double = 0.0
 
     func loadGif(name: String) {
-        guard let path = Bundle.main.path(forResource: name, ofType: "gif"),
-              let data = try? Data(contentsOf: URL(fileURLWithPath: path)) else { return }
+        self.contentMode = .scaleAspectFill  // scaleAspectFit 대신 scaleAspectFill 사용
+        self.clipsToBounds = true
+        
+        guard let path = Bundle.main.path(forResource: name, ofType: "gif") else {
+            print("❌ GIF 파일을 찾을 수 없습니다: \(name).gif")
+            return
+        }
+        
+        guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)) else {
+            print("❌ GIF 파일 데이터를 읽을 수 없습니다: \(name).gif")
+            return
+        }
+        
+        print("✅ GIF 파일 로드 성공: \(name).gif")
         parseGif(data: data)
         startAnimation()
     }
