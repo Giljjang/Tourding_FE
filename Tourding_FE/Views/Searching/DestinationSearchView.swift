@@ -240,7 +240,35 @@ struct DestinationSearchView: View {
     private var myPositionButton: some View {
         Button(action: {
             print("📍 내 위치 버튼 눌림")
-            // TODO: 위치 갱신 액션 추가
+            Task {
+                // 1. 위치 갱신 요청
+                dsViewModel.refreshLocation()
+                
+                // 2. 현재 위치를 Place 객체로 변환
+                if let currentPlace = await dsViewModel.getCurrentLocationAsPlace() {
+                    print("✅ 현재 위치 Place 객체 생성 성공")
+                    
+                    // 3. 최근 검색어에 추가
+                    recentSearchViewModel.add(currentPlace.placeName)
+                    
+                    // 4. RouteManager를 통해 위치 설정
+                    if routeManager.currentSelectionMode == .startLocation {
+                        routeManager.setStartLocation(from: currentPlace)
+                    } else if routeManager.currentSelectionMode == .endLocation {
+                        routeManager.setEndLocation(from: currentPlace)
+                    }
+                    
+                    // 5. 선택된 장소 처리
+                    dsViewModel.selectPlace(currentPlace)
+                    
+                    // 6. 이전 화면으로 돌아가기
+                    navigationManager.pop()
+                    
+                } else {
+                    print("❌ 현재 위치 정보를 가져올 수 없습니다")
+                    // TODO: 사용자에게 오류 메시지 표시 (토스트 등)
+                }
+            }
         }) {
             HStack(spacing: 4) {
                 Image("gpsblue")

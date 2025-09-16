@@ -267,5 +267,63 @@ extension DestinationSearchViewModel: CLLocationManagerDelegate {
         }
     }
     
+    // MARK: - 현재 위치를 Place 객체로 변환하여 반환
+    func getCurrentLocationAsPlace() async -> Place? {
+        guard let currentLocation = currentLocation else {
+            print("❌ 현재 위치 정보가 없습니다")
+            return nil
+        }
+        
+        do {
+            // 역지오코딩을 통해 주소 정보 가져오기
+            let response = try await KakaoLocalService.reverseGeocode(
+                x: currentLocation.longitude,
+                y: currentLocation.latitude
+            )
+            
+            // 가장 상세한 주소 정보 선택 (H: 행정구역, B: 법정구역)
+            guard let region = response.documents.first(where: { $0.regionType == "H" }) ?? response.documents.first else {
+                print("❌ 주소 정보를 가져올 수 없습니다")
+                return nil
+            }
+            
+            // 더 간결한 주소 형태로 placeName 생성
+            let shortAddress = [
+                region.region1depthName,
+                region.region2depthName,
+                region.region3depthName
+            ].compactMap { $0 }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+            
+            // Place 객체 생성
+            let place = Place(
+                id: "current_location_\(Date().timeIntervalSince1970)", // 고유 ID 생성
+                placeName: shortAddress.isEmpty ? "현재 위치" : shortAddress, // 실제 주소를 placeName으로 사용
+                categoryName: "현재위치",
+                categoryGroupCode: "",
+                categoryGroupName: "",
+                phone: "",
+                addressName: region.addressName,
+                roadAddressName: region.addressName, // 도로명 주소가 없으므로 일반 주소 사용
+                x: String(currentLocation.longitude),
+                y: String(currentLocation.latitude),
+                placeUrl: "",
+                distance: "0" // 현재 위치이므로 거리는 0
+            )
+            
+            print("✅ 현재 위치 Place 객체 생성 완료:")
+            print("   장소명: \(place.placeName)")
+            print("   주소: \(place.addressName)")
+            print("   좌표: \(place.latitude), \(place.longitude)")
+            
+            return place
+            
+        } catch {
+            print("❌ 역지오코딩 실패: \(error)")
+            return nil
+        }
+    }
+    
     
 }
