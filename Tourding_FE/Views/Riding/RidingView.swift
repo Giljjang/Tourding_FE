@@ -163,7 +163,7 @@ struct RidingView: View {
             if let flag = flag { // 비정상 종료일 때 바로 라이딩 중으로 이동
                 ridingViewModel.flag = flag
                 
-                startRidingProcess()
+                startRidingWithLoading()
             }
             
             Task { [weak ridingViewModel] in
