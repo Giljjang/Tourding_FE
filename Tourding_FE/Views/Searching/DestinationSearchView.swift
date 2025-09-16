@@ -57,7 +57,8 @@ struct DestinationSearchView: View {
                 onTextChange: {
                     // onChange(of: searchText)를 사용하므로 여기서는 아무것도 하지 않음
 //                    handleSearchTextChange(searchText)
-                }
+                },
+                shouldAutoFocus: true // 자동 포커스 활성화
             )
             .padding(.bottom, 18)
             

@@ -9,8 +9,10 @@ import SwiftUI
 struct SearchBar: View {
     @Binding var text: String
     @Binding var hasSearched: Bool // 검색 실행 여부 추적
+    @FocusState var isFocused: Bool // 포커스 상태 관리
     var onSubmit: (() -> Void)? = nil
     var onTextChange: (() -> Void)? = nil // 텍스트 변경 콜백 추가
+    var shouldAutoFocus: Bool = false // 자동 포커스 여부
 
     var body: some View {
         HStack {
@@ -23,6 +25,7 @@ struct SearchBar: View {
             )
             .frame(height: 26)
             .submitLabel(.search)
+            .focused($isFocused) // 포커스 상태 바인딩
             .onSubmit {
                 onSubmit?()
                 hideKeyboard()
@@ -31,6 +34,14 @@ struct SearchBar: View {
                 // onSubmit이 호출된 직후에는 onChange를 무시
                 if !newValue.isEmpty {
                     onTextChange?()
+                }
+            }
+            .onAppear {
+                // 자동 포커스가 설정되어 있으면 포커스 설정
+                if shouldAutoFocus {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        isFocused = true
+                    }
                 }
             }
             .foregroundColor(.gray6)
