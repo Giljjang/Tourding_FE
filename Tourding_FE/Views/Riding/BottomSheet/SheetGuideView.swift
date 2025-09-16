@@ -11,6 +11,9 @@ struct SheetGuideView: View {
     @EnvironmentObject var navigationManager: NavigationManager
     @EnvironmentObject var modalManager: ModalManager
     
+    //라이딩 중 비정상 종료 감지
+    @AppStorage("wasLastRunNormal") private var wasLastRunNormal: Bool = true
+    
     @ObservedObject private var ridingViewModel: RidingViewModel
     private var currentPosition: BottomSheetPosition
     
@@ -26,7 +29,9 @@ struct SheetGuideView: View {
             
             ScrollView(showsIndicators: false) {
                 ForEach(Array(ridingViewModel.guideList.enumerated()), id:\.1.sequenceNum){ index, item in
-                    guideRowView(text: item.instructions,
+                    let text: String = item.instructions == "출발지" || item.instructions == "목적지" ? item.locationName : item.instructions
+                    
+                    guideRowView(text: text,
                                  guideType: item.guideType ?? .straight,
                                  time: item.duration)
                     .background(index == 0 ? Color.gray1 : Color.white)
@@ -71,6 +76,8 @@ struct SheetGuideView: View {
                     },
                     onActive: {
                         print("종료됨")
+                        wasLastRunNormal = true // 정상 종료됐을 때 기록
+                        print("wasLastRunNormal: \(wasLastRunNormal)")
                         navigationManager.popToRoot()
                         modalManager.isToastMessage = true
                     }

@@ -25,7 +25,7 @@ struct TourKeywordRequest: Codable {
 }
 
 // MARK: - Response
-struct SpotData: Codable, Identifiable {
+struct SpotData: Codable, Identifiable, Hashable {
     let id = UUID()
     let title: String
     let addr1: String

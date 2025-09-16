@@ -12,6 +12,7 @@ struct GuideModel: Codable, Hashable {
     let distance: Int
     let duration: Int
     let instructions: String
+    let locationName: String
     let pointIndex: Int
     let type: Int
     let lon: String

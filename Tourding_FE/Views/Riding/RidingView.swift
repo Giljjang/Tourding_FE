@@ -27,6 +27,9 @@ struct RidingView: View {
         self._ridingViewModel = StateObject(wrappedValue: ridingViewModel)
     }
     
+    //라이딩 중 비정상 종료 감지
+    @AppStorage("wasLastRunNormal") private var wasLastRunNormal: Bool = true
+    
     let topSafeArea = UIApplication.shared.connectedScenes
         .compactMap { $0 as? UIWindowScene }
         .first?.windows.first?.safeAreaInsets.top ?? 0
@@ -51,10 +54,6 @@ struct RidingView: View {
                     toiletButton
                     
                     csButton
-                    
-//                    #if DEBUG
-//                    testButtons
-//                    #endif
                     
                 } // : if
                 
@@ -177,10 +176,10 @@ struct RidingView: View {
                 currentPosition = .medium
             }
             
-            // ToDo: 라이딩 중 테스트 완료 후 제거!!
-//            if newValue {
-//                ridingViewModel.testMarkerRemoval()
-//            }
+            if newValue {
+                wasLastRunNormal = false
+            }
+            
         } // : onChange
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             // 앱이 포그라운드로 돌아왔을 때
@@ -199,6 +198,9 @@ struct RidingView: View {
             if !ridingViewModel.flag {
                 navigationManager.pop()
             } else { //라이딩 시작 후 뒤로가기
+                
+                wasLastRunNormal = true
+                
                 // 위치 추적 중지
                 locationManager.stopLocationUpdates()
                 
@@ -270,32 +272,9 @@ struct RidingView: View {
                     
                     // userLocationManager 사용
                     if let userLocationManager = ridingViewModel.userLocationManager {
-                        print("🔄 UserLocationManager 콜백 설정")
-                        print("🔄 userLocationManager 인스턴스: \(userLocationManager)")
-                        print("🔄 콜백 설정 전 onLocationUpdate: \(userLocationManager.onLocationUpdate != nil)")
-                        
-                        // 기존 콜백을 백업하고 새로운 콜백 추가
-                        let existingCallback = userLocationManager.onLocationUpdate
-                        print("🔄 기존 콜백 존재 여부: \(existingCallback != nil)")
-                        if existingCallback != nil {
-                            print("🔄 기존 콜백이 있습니다 - 덮어씌우기 전에 백업")
-                            print("🔄 기존 콜백 타입: \(type(of: existingCallback))")
-                        }
-                        
-                        // 기존 콜백을 백업하고 새로운 콜백으로 교체
-                        let backupCallback = existingCallback
                         
                         // 새로운 콜백 생성
                         let newCallback: (NMGLatLng) -> Void = { (newLocation: NMGLatLng) in
-                            print("📍 === UserLocationManager 콜백 실행! ===")
-                            print("📍 위치: \(newLocation.lat), \(newLocation.lng)")
-                            
-                            // 기존 콜백도 실행 (다른 곳에서 설정된 콜백이 있다면)
-                            if let backupCallback = backupCallback {
-                                print("🔄 기존 콜백 실행 중...")
-                                backupCallback(newLocation)
-                                print("🔄 기존 콜백 실행 완료")
-                            }
                             
                             if let mapViewController = ridingViewModel.mapViewController {
                                 let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
@@ -308,16 +287,9 @@ struct RidingView: View {
                         // 콜백 설정
                         userLocationManager.onLocationUpdate = newCallback
                         
-                        print("🔄 콜백 설정 완료")
-                        
-                        print("🔄 콜백 설정 후 onLocationUpdate: \(userLocationManager.onLocationUpdate != nil)")
-                        print("🔄 설정된 콜백 타입: \(type(of: userLocationManager.onLocationUpdate))")
-                        print("🔄 newCallback 타입: \(type(of: newCallback))")
-                        print("🔄 startLocationUpdates 호출")
                         userLocationManager.startLocationUpdates()
                     } else {
                         print("❌ userLocationManager가 nil")
-                        print("❌ ridingViewModel.userLocationManager: \(ridingViewModel.userLocationManager)")
                     }
                     
                     Task { [weak ridingViewModel] in
@@ -330,7 +302,7 @@ struct RidingView: View {
                             print("❌ 라이딩 가이드 API 에러: \(error)")
                         }
                     }
-                }
+                } // : onActive
             )
         }){
             
@@ -400,52 +372,7 @@ struct RidingView: View {
         .position(x: 208, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : csButton
     
-    #if DEBUG
-    private var testButtons: some View {
-        VStack(spacing: 8) {
-            // 상태 확인 버튼
-            Button(action: {
-                ridingViewModel.printGuideListStatus()
-            }) {
-                Text("상태확인")
-                    .font(.pretendardMedium(size: 12))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.blue)
-                    .cornerRadius(8)
-            }
-            
-            // 카메라 테스트 버튼
-            Button(action: {
-                ridingViewModel.testCameraTracking()
-            }) {
-                Text("카메라테스트")
-                    .font(.pretendardMedium(size: 12))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.green)
-                    .cornerRadius(8)
-            }
-            
-            // 위치 시뮬레이션 버튼
-            Button(action: {
-                // 다음 좌표로 이동 시뮬레이션
-                ridingViewModel.simulateLocationUpdate(lat: 36.0202331, lng: 129.3560241)
-            }) {
-                Text("위치시뮬레이션")
-                    .font(.pretendardMedium(size: 12))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.orange)
-                    .cornerRadius(8)
-            }
-        }
-        .position(x: 300, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
-    }
-    #endif
+    //MARK: - function
     
     private func checkAndRequestLocationPermission() {
         let authStatus = locationManager.checkLocationAuthorizationStatus()

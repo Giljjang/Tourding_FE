@@ -129,8 +129,6 @@ final class UserLocationManager: NSObject, ObservableObject {
         
         print("✅ 위치 권한 있음 - 위치 업데이트 시작")
         locationManager.startUpdatingLocation()
-        print("✅ startUpdatingLocation() 호출 완료")
-        print("✅ locationManager.delegate: \(locationManager.delegate != nil)")
     }
 }
 
@@ -161,10 +159,6 @@ extension UserLocationManager: CLLocationManagerDelegate {
         
         if let onLocationUpdate = onLocationUpdate {
             let nmgLocation = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
-            print("🌍 NMGLatLng 변환 완료: \(nmgLocation.lat), \(nmgLocation.lng)")
-            print("🌍 onLocationUpdate 콜백 호출 시도...")
-            print("🌍 콜백 타입: \(type(of: onLocationUpdate))")
-            print("🌍 콜백 메모리 주소: \(Unmanaged.passUnretained(onLocationUpdate as AnyObject).toOpaque())")
             
             onLocationUpdate(nmgLocation)
             
