@@ -44,6 +44,11 @@ final class RidingViewModel: ObservableObject {
     @Published var markerCoordinates: [NMGLatLng] = []
     @Published var markerIcons: [NMFOverlayImage] = []
     
+    // 라이딩 중 경로선 유지를 위한 백업 데이터
+    var originalPathCoordinates: [NMGLatLng] = []
+    private var originalMarkerCoordinates: [NMGLatLng] = []
+    private var originalMarkerIcons: [NMFOverlayImage] = []
+    
     // 화장실 마커
     @Published var toiletMarkerCoordinates: [NMGLatLng] = []
     @Published var toiletMarkerIcons: [NMFOverlayImage] = []
@@ -116,6 +121,73 @@ final class RidingViewModel: ObservableObject {
         }
         
         print("🔄 지도 표시 새로고침 완료")
+    }
+    
+    // 라이딩 시작 전 원본 데이터 백업
+    @MainActor
+    func backupOriginalData() {
+        originalPathCoordinates = pathCoordinates
+        originalMarkerCoordinates = markerCoordinates
+        originalMarkerIcons = markerIcons
+        print("💾 원본 경로 데이터 백업 완료: 경로선 \(originalPathCoordinates.count)개, 마커 \(originalMarkerCoordinates.count)개")
+    }
+    
+    // 라이딩 중 경로선 복원 (가이드 마커와 함께 표시)
+    @MainActor
+    func restorePathWithGuides() {
+        // 경로선은 원본 데이터로 복원
+        pathCoordinates = originalPathCoordinates
+        
+        // 마커는 가이드 마커 유지 (라이딩 중이므로)
+        // pathCoordinates만 복원하여 경로선이 다시 표시되도록 함
+        
+        // 경로 매니저에 복원된 경로선 적용
+        if let pathManager = pathManager {
+            pathManager.setCoordinates(pathCoordinates)
+            print("🔄 라이딩 중 경로선 복원 완료: \(pathCoordinates.count)개")
+        }
+    }
+    
+    // 라이딩 종료 시 원본 데이터로 완전 복원
+    @MainActor
+    func restoreOriginalData() {
+        pathCoordinates = originalPathCoordinates
+        markerCoordinates = originalMarkerCoordinates
+        markerIcons = originalMarkerIcons
+        
+        // 지도에 복원된 데이터 적용
+        if let pathManager = pathManager {
+            pathManager.setCoordinates(pathCoordinates)
+        }
+        
+        if let markerManager = markerManager {
+            markerManager.clearMarkers()
+            markerManager.addMarkers(coordinates: markerCoordinates, icons: markerIcons)
+        }
+        
+        print("🔄 라이딩 종료 후 원본 데이터 복원 완료")
+    }
+    
+    // 백업 데이터가 있는지 확인
+    func hasBackupPathData() -> Bool {
+        return !originalPathCoordinates.isEmpty
+    }
+    
+    // 백업 경로 데이터로 복원 (API 호출 없이)
+    @MainActor
+    func restoreFromBackupPathData() {
+        guard hasBackupPathData() else {
+            print("❌ 백업 경로 데이터가 없습니다")
+            return
+        }
+        
+        pathCoordinates = originalPathCoordinates
+        
+        // 경로 매니저에 복원된 경로선 적용
+        if let pathManager = pathManager {
+            pathManager.setCoordinates(pathCoordinates)
+            print("🔄 백업 경로 데이터로 복원 완료: \(pathCoordinates.count)개")
+        }
     }
     
     
