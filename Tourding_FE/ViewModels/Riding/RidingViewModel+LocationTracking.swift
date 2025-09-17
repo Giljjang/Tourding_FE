@@ -96,6 +96,7 @@ extension RidingViewModel {
                 }
                 
                 // 경로 좌표는 라이딩 중에 제거하지 않음 (전체 경로 유지)
+                // 라이딩 중에는 경로선이 계속 표시되어야 함
                 // if removedCount <= self.pathCoordinates.count {
                 //     self.pathCoordinates.removeFirst(removedCount)
                 // }
