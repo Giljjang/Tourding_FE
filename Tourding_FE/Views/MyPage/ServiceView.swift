@@ -37,15 +37,6 @@ struct ServiceView: View {
             // MARK: - Terms Content
             ScrollView {
                 VStack(alignment: .leading) {
-//                    Text("서비스 이용 약관")
-//                        .font(.pretendardSemiBold(size: 16))
-//                        .foregroundColor(Color.gray5)
-//                        .padding(.bottom, 19)
-//                    
-//                        Text("제 1장 총칙")
-//                        .font(.pretendardRegular(size: 14))
-//                        .foregroundColor(Color.gray5)
-//                        .padding(.bottom, 1)
                         
                         Text(dummyTermsText)
                         .font(.pretendardRegular(size: 14))
@@ -66,6 +57,17 @@ struct ServiceView: View {
         }
         .background(Color(.white).ignoresSafeArea())
         .navigationBarHidden(true)  // ✅ 시스템 네비게이션 바 숨김
+        .interactiveDismissDisabled(false) // 네이티브 스와이프 백 제스처 활성화
+        .gesture(
+            DragGesture()
+                .onEnded { value in
+                    // 왼쪽에서 오른쪽으로 스와이프 감지
+                    if value.translation.width > 100 && abs(value.translation.height) < 50 {
+                        print("👈 스와이프 뒤로가기 감지")
+                        navigationManager.pop()
+                    }
+                }
+        ) // :gesture
     }
 }
 
