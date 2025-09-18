@@ -29,7 +29,7 @@ struct SheetGuideView: View {
             
             ScrollView(showsIndicators: false) {
                 ForEach(Array(ridingViewModel.guideList.enumerated()), id: \.1.sequenceNum) { index, item in
-                    let text: String = item.guideType == .start || item.guideType == .end
+                    let text: String = item.guideType == .start || item.guideType == .end || item.guideType == .stopOver
                         ? item.locationName
                         : item.guideText
 
