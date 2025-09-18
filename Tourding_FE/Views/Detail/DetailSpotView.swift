@@ -91,7 +91,7 @@ struct DetailSpotView: View {
             } // :ZStack
         } // :GeometryReader
         .ignoresSafeArea()
-        .navigationBarBackButtonHidden()
+        .navigationBarBackButtonHidden(true)
         .onAppear{
             Task { [weak detailViewModel] in
                 do {
@@ -107,6 +107,17 @@ struct DetailSpotView: View {
                 }
             }
         } // :onAppear
+        .interactiveDismissDisabled(false) // 네이티브 스와이프 백 제스처 활성화
+        .gesture(
+            DragGesture()
+                .onEnded { value in
+                    // 왼쪽에서 오른쪽으로 스와이프 감지
+                    if value.translation.width > 100 && abs(value.translation.height) < 50 {
+                        print("👈 스와이프 뒤로가기 감지")
+                        navigationManager.pop()
+                    }
+                }
+        ) // :gesture
     }
     
     //MARK: - View

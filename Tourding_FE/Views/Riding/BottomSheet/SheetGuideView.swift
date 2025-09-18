@@ -28,14 +28,19 @@ struct SheetGuideView: View {
             header
             
             ScrollView(showsIndicators: false) {
-                ForEach(Array(ridingViewModel.guideList.enumerated()), id:\.1.sequenceNum){ index, item in
-                    let text: String = item.guideType == .start  || item.guideType == .end ? item.locationName : item.guideText
-                    
-                    guideRowView(text: text,
-                                 guideType: item.guideType ?? .straight,
-                                 distance: item.distance)
+                ForEach(Array(ridingViewModel.guideList.enumerated()), id: \.1.sequenceNum) { index, item in
+                    let text: String = item.guideType == .start || item.guideType == .end
+                        ? item.locationName
+                        : item.guideText
+
+                    guideRowView(
+                        text: text,
+                        guideType: ridingViewModel.resolvedGuideType(for: item, index: index, count: ridingViewModel.guideList.count),
+                        distance: item.distance
+                    )
                     .background(index == 0 ? Color.gray1 : Color.white)
                 }
+
                 
                 //컨텐츠뷰 하단 여백 추가
                 if currentPosition == .large {

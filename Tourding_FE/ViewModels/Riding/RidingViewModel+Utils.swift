@@ -89,5 +89,13 @@ extension RidingViewModel {
             return "\(distance)m" // 69m
         }
     }
+    
+    func resolvedGuideType(for item: GuideModel, index: Int, count: Int) -> GuideModel.GuideType {
+        if item.guideType == .end, index != count - 1 {
+            return .stopOver
+        } else {
+            return item.guideType ?? .straight
+        }
+    }
 
 }
