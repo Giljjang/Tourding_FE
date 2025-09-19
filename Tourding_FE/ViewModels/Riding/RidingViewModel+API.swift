@@ -27,7 +27,6 @@ extension RidingViewModel {
             do {
                 let response = try await routeRepository.getRoutesLocationName(userId: userId)
                 routeLocation = response
-                //                print("✅ 경로 위치 API 호출 성공: \(routeLocation.count)개")
                 
                 markerCoordinates = routeLocation.compactMap { item in
                     if let lat = Double(item.lat), let lon = Double(item.lon) {
@@ -87,7 +86,6 @@ extension RidingViewModel {
             do {
                 let response = try await routeRepository.getRoutesPath(userId: userId)
                 routeMapPaths = response
-                //                print("✅ 경로 경로선 API 호출 성공: \(routeMapPaths.count)개")
                 
                 pathCoordinates = routeMapPaths.compactMap { item in
                     if let lat = Double(item.lat),
@@ -221,21 +219,21 @@ extension RidingViewModel {
     
     //MARK: - 라이딩 중 API 호출
     @MainActor
-    func getRouteGuideAPI() async {
+    func getRouteGuideAPI(isNotNomal: Bool?) async {
         guard let userId = userId else {
             print("❌ userId가 nil입니다")
             return
         }
         
-        // 라이딩 시작 전 원본 데이터 백업
-        backupOriginalData()
+        // 비정상 종료일 때 있는 데이터 불러오기
+        if let isNotNomal = isNotNomal{
+            // 라이딩 시작 전 원본 데이터 백업
+            backupOriginalData()
+        }
         
-        //        isLoading = true
         do {
             let response = try await routeRepository.getRoutesGuide(userId: userId)
             guideList = response
-            
-            //            print("guideList: \(guideList)")
             
             // 기존 마커들을 제거하고 가이드 마커들로 교체
             markerCoordinates = guideList.compactMap { item in
@@ -245,8 +243,6 @@ extension RidingViewModel {
                     return nil
                 }
             }
-            
-            //            print("markerCoordinates: \(markerCoordinates)")
             
             
             markerIcons = guideList.enumerated().map { (index, item) in
@@ -276,13 +272,10 @@ extension RidingViewModel {
             
             // 가이드 마커 설정 후 경로선 복원 (경로선이 사라지지 않도록)
             restorePathWithGuides()
-            
-            //            print("markerIcons: \(markerIcons)")
-            
+                
         } catch {
             print("GET ERROR: /routes/guide \(error)")
         }
-        //        isLoading = false
     }
     
     @MainActor
@@ -292,8 +285,7 @@ extension RidingViewModel {
         let requestBody: ReqFacilityInfoModel = ReqFacilityInfoModel(lon: lon, lat: lat)
         do {
             toiletList = try await kakaoRepository.postRouteToilet(requestBody: requestBody)
-            
-            //            print("postRoutesToiletAPI: \(toiletList)")
+ 
         } catch {
             print("GET ERROR: /routes/toilet \(error)")
         }
@@ -308,7 +300,6 @@ extension RidingViewModel {
         do {
             csList = try await kakaoRepository.postRouteConvenienceStore(requestBody: requestBody)
             
-            //            print("postRoutesConvenienceStoreAPI: \(csList)")
         } catch {
             print("GET ERROR: /routes/convenience-store \(error)")
         }

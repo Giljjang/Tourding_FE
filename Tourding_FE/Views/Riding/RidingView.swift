@@ -24,10 +24,12 @@ struct RidingView: View {
     @State private var forceUpdate: Bool = false
     
     let isNotNomal: Bool? // 비정상 종료일 때 true를 받음
+    let isStart: Bool // 바로 라이딩 시작하면 true
     
-    init(ridingViewModel: RidingViewModel, isNotNomal: Bool?) {
+    init(ridingViewModel: RidingViewModel, isNotNomal: Bool?, isStart: Bool) {
         self._ridingViewModel = StateObject(wrappedValue: ridingViewModel)
         self.isNotNomal = isNotNomal
+        self.isStart = isStart
     }
     
     //라이딩 중 비정상 종료 감지
@@ -163,6 +165,10 @@ struct RidingView: View {
             if let isNotNomal = isNotNomal { // 비정상 종료일 때 바로 라이딩 중으로 이동
                 ridingViewModel.flag = isNotNomal
                 
+                startRidingWithLoading()
+            }
+            
+            if isStart {
                 startRidingWithLoading()
             }
             
@@ -541,7 +547,7 @@ struct RidingView: View {
         Task { [weak ridingViewModel] in
             do {
                 try Task.checkCancellation()
-                await ridingViewModel?.getRouteGuideAPI()
+                await ridingViewModel?.getRouteGuideAPI(isNotNomal: isNotNomal)
             } catch is CancellationError {
                 print("🚫 라이딩 가이드 API Task 취소됨")
             } catch {

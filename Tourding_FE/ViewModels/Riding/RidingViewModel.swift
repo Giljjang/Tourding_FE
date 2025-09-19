@@ -129,6 +129,7 @@ final class RidingViewModel: ObservableObject {
         originalPathCoordinates = pathCoordinates
         originalMarkerCoordinates = markerCoordinates
         originalMarkerIcons = markerIcons
+        
         print("💾 원본 경로 데이터 백업 완료: 경로선 \(originalPathCoordinates.count)개, 마커 \(originalMarkerCoordinates.count)개")
     }
     
