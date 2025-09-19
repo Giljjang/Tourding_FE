@@ -19,7 +19,7 @@ final class MapViewController: UIViewController {
     let locationManager = LocationManager()
     private let locationButton = UIButton(type: .custom)
     var ridingViewModel: RidingViewModel?
-    var userLocationManager: UserLocationManager?
+    var userLocationManager: LocationManager?
     
     // MARK: - Data Properties
     var pathCoordinates: [NMGLatLng] = []
@@ -118,12 +118,12 @@ final class MapViewController: UIViewController {
         locationManager.startLocationUpdates()
     }
     
-    // UserLocationManager 설정 메서드 추가
-    func setupUserLocationManager(_ userLocationManager: UserLocationManager) {
+    // LocationManager 설정 메서드 추가
+    func setupUserLocationManager(_ userLocationManager: LocationManager) {
         self.userLocationManager = userLocationManager
         
         // 콜백은 RidingView에서 설정하므로 여기서는 설정하지 않음
-        print("🗺️ MapViewController: UserLocationManager 설정 완료 (콜백은 RidingView에서 설정)")
+        print("🗺️ MapViewController: LocationManager 설정 완료 (콜백은 RidingView에서 설정)")
     }
     
     // MARK: - Public Methods
@@ -219,7 +219,7 @@ final class MapViewController: UIViewController {
         mapView.mapView.moveCamera(cameraUpdate)
     }
     
-    // 라이딩 중 UserLocationManager에서 호출되는 메서드
+    // 라이딩 중 LocationManager에서 호출되는 메서드
     private func updateUserLocationForRiding(_ location: CLLocation) {
         guard let mapView = mapView else {
             print("❌ mapView가 nil입니다")

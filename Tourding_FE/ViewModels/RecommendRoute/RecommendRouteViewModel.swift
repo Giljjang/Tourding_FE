@@ -16,7 +16,7 @@ final class RecommendRouteViewModel: ObservableObject {
     
     // MARK: - 지도 관련 프로퍼티
     var locationManager: LocationManager?
-    var userLocationManager: UserLocationManager?
+    var userLocationManager: LocationManager?
     var mapView: NMFMapView?
     var markerManager: MarkerManager?
     var pathManager: PathManager?

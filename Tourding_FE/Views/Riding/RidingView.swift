@@ -17,7 +17,7 @@ struct RidingView: View {
     //객체 참조 문제: 모달이 열리고 닫힐 때 부모 뷰가 다시 렌더링되지 않아서 @ObservedObject가 업데이트를 감지하지 못합
     // 즉, 부모 뷰의 렌더링과 관계없이 @Published 속성 변경을 즉시 감지해야함
     @StateObject private var ridingViewModel: RidingViewModel
-    @StateObject private var locationManager = UserLocationManager()
+    @StateObject private var locationManager = LocationManager()
     
     @State private var currentPosition: BottomSheetPosition = .medium
     @State private var forceUpdate: Bool = false
@@ -155,7 +155,7 @@ struct RidingView: View {
         .ignoresSafeArea()
         .navigationBarBackButtonHidden()
         .onAppear{
-            // UserLocationManager 인스턴스를 RidingViewModel에 전달
+            // LocationManager 인스턴스를 RidingViewModel에 전달
             ridingViewModel.userLocationManager = locationManager
             
             // 위치 권한 확인 및 요청
@@ -183,7 +183,7 @@ struct RidingView: View {
                     print("❌ onAppear - 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
                 }
                 
-                // userLocationManager 사용 (startRidingProcess와 동일)
+                // locationManager 사용 (startRidingProcess와 동일)
                 if let userLocationManager = ridingViewModel.userLocationManager {
                     // 새로운 콜백 생성
                     let newCallback: (NMGLatLng) -> Void = { newLocation in
@@ -195,7 +195,7 @@ struct RidingView: View {
                     }
                     
                     // 콜백 설정
-                    userLocationManager.onLocationUpdate = newCallback
+                    userLocationManager.onLocationUpdateNMGLatLng = newCallback
                     userLocationManager.startLocationUpdates()
                     print("📍 onAppear - 사용자 위치 추적 시작 - 마커 표시")
                 } else {
@@ -539,7 +539,7 @@ struct RidingView: View {
         }
         
         // 기존 locationManager의 콜백 업데이트
-        locationManager.onLocationUpdate = newCallback
+        locationManager.onLocationUpdateNMGLatLng = newCallback
         print("📍 startRidingProcess - locationManager 콜백 업데이트 완료")
         
         // 라이딩 가이드 API 호출

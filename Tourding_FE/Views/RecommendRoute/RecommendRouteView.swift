@@ -13,7 +13,7 @@ struct RecommendRouteView: View {
     @EnvironmentObject var modalManager: ModalManager
     
     @StateObject private var recommendRouteViewModel: RecommendRouteViewModel
-    @StateObject private var locationManager = UserLocationManager()
+    @StateObject private var locationManager = LocationManager()
     
     @State private var currentPosition: RecommendBottomSheetPosition = .medium
     
@@ -67,7 +67,7 @@ struct RecommendRouteView: View {
             
         } // : onChange
         .onAppear{
-            // 1. UserLocationManager 인스턴스를 recommendRouteViewModel에 전달
+            // 1. LocationManager 인스턴스를 recommendRouteViewModel에 전달
             recommendRouteViewModel.userLocationManager = locationManager
             
             // 2. API 호출 완료 후 초기 카메라 위치 설정

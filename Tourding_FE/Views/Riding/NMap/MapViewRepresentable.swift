@@ -26,7 +26,7 @@ struct MapViewRepresentable: UIViewRepresentable {
     @Binding var csMarkerIcons: [NMFOverlayImage]
     
     var ridingViewModel: RidingViewModel?
-    var userLocationManager: UserLocationManager?
+    var userLocationManager: LocationManager?
     
     // MARK: - Callbacks
     var onLocationUpdate: ((CLLocation) -> Void)?

@@ -20,7 +20,7 @@ struct RecommendMapViewRepresentable: UIViewRepresentable {
     @Binding var markerIcons: [NMFOverlayImage]
     
     var recommendRouteViewModel: RecommendRouteViewModel?
-    var userLocationManager: UserLocationManager?
+    var userLocationManager: LocationManager?
     
     // MARK: - Callbacks
     var onLocationUpdate: ((CLLocation) -> Void)?

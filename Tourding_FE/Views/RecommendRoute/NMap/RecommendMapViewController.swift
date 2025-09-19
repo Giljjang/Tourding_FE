@@ -19,7 +19,7 @@ final class RecommendMapViewController: UIViewController {
     let locationManager = LocationManager()
     private let locationButton = UIButton(type: .custom)
     var recommendRouteViewModel: RecommendRouteViewModel?
-    var userLocationManager: UserLocationManager?
+    var userLocationManager: LocationManager?
     
     // MARK: - Data Properties
     var pathCoordinates: [NMGLatLng] = []
@@ -104,12 +104,12 @@ final class RecommendMapViewController: UIViewController {
         locationManager.startLocationUpdates()
     }
     
-    // UserLocationManager 설정 메서드 추가
-    func setupUserLocationManager(_ userLocationManager: UserLocationManager) {
+    // LocationManager 설정 메서드 추가
+    func setupUserLocationManager(_ userLocationManager: LocationManager) {
         self.userLocationManager = userLocationManager
         
         // 콜백은 RidingView에서 설정하므로 여기서는 설정하지 않음
-        print("🗺️ MapViewController: UserLocationManager 설정 완료 (콜백은 RidingView에서 설정)")
+        print("🗺️ MapViewController: LocationManager 설정 완료 (콜백은 RidingView에서 설정)")
     }
     
     // MARK: - Public Methods

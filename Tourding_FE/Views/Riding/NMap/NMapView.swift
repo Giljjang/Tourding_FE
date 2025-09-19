@@ -13,12 +13,12 @@ struct NMapView: View {
     
     // MARK: - Properties
     @ObservedObject private var ridingViewModel: RidingViewModel
-    @ObservedObject private var userLocationManager: UserLocationManager
+    @ObservedObject private var userLocationManager: LocationManager
     
     @State private var currentLocation: CLLocation?
     @State private var locationText: String = "위치 정보 없음"
     
-    init(ridingViewModel: RidingViewModel, userLocationManager: UserLocationManager) {
+    init(ridingViewModel: RidingViewModel, userLocationManager: LocationManager) {
         self.ridingViewModel = ridingViewModel
         self.userLocationManager = userLocationManager
     }
