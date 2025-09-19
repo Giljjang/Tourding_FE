@@ -11,7 +11,6 @@ import NMapsMap
 struct RidingView: View {
     @EnvironmentObject var navigationManager: NavigationManager
     @EnvironmentObject var modalManager: ModalManager
-    @EnvironmentObject var routeSharedManager: RouteSharedManager
     
     // @ObservedObject가 아닌 이유 -> @StateObject 사용한 이유
     // 부모 뷰가 다시 렌더링되지 않음: @ObservedObject는 부모 뷰가 다시 렌더링될 때만 업데이트됨.
