@@ -59,14 +59,24 @@ struct RecommendRouteView: View {
         .navigationBarBackButtonHidden()
         .onChange(of: navigationManager.path) { newValue in
             // newValue가 변경될 때마다 currentPosition을 .medium으로 설정
-            withAnimation(.easeInOut(duration: 0.3)) {
-                currentPosition = .medium
+            if newValue.isEmpty {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    currentPosition = .medium
+                }
             }
             
         } // : onChange
+        .onAppear{
+            // 1. UserLocationManager 인스턴스를 recommendRouteViewModel에 전달
+            recommendRouteViewModel.userLocationManager = locationManager
+            
+            // 2. API 호출 완료 후 초기 카메라 위치 설정
+        }
+        .onDisappear {
+            // 뷰가 사라질 때 메모리 정리
+            recommendRouteViewModel.cleanup()
+        } // : onDisappear
     }
-    
-    //MARK: - View
     
     //MARK: - View
     private var backButton: some View {

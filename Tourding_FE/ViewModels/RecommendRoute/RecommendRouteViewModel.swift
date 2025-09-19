@@ -37,4 +37,29 @@ final class RecommendRouteViewModel: ObservableObject {
             self.tourRepository = tourRepository
     }
     
+    // MARK: - 메모리 정리
+    func cleanup() {
+        // 지도 관련 리소스 정리
+        mapView = nil
+        locationManager = nil
+        userLocationManager = nil
+        markerManager = nil
+        pathManager = nil
+        mapViewController = nil
+        
+        // 배열 데이터 정리
+        routeLocation.removeAll()
+        routeMapPaths.removeAll()
+        pathCoordinates.removeAll()
+        markerCoordinates.removeAll()
+        markerIcons.removeAll()
+        
+        // 사용자 ID 초기화
+        userId = nil
+    }
+    
+    deinit {
+        cleanup()
+    }
+    
 }
