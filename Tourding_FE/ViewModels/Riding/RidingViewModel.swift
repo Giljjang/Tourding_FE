@@ -117,7 +117,6 @@ final class RidingViewModel: ObservableObject {
         if let pathManager = pathManager {
             pathManager.clearPath()
             pathManager.setCoordinates(pathCoordinates)
-//            print("✅ 경로선 새로고침 완료: \(pathCoordinates.count)개")
         }
         
         print("🔄 지도 표시 새로고침 완료")

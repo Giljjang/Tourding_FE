@@ -8,6 +8,11 @@
 import Foundation
 
 final class RouteRepository: RouteRepositoryProtocol {
+    
+    static let shared = RouteRepository()
+    
+    private init() {}
+    
     func postRoutes(requestBody: RequestRouteModel) async throws {
         print("🔵 RouteRepository.postRoutes 호출")
         print("🔵 요청 데이터: \(requestBody)")

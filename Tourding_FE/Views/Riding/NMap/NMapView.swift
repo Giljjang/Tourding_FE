@@ -63,8 +63,3 @@ struct NMapView: View {
         }
     }
 }
-
-#Preview {
-    NMapView(ridingViewModel: RidingViewModel(routeRepository: RouteRepository(),kakaoRepository: KakaoRepository()),
-             userLocationManager: UserLocationManager())
-}

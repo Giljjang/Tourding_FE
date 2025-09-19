@@ -340,9 +340,3 @@ struct HomeView: View {
             .ignoresSafeArea()
     }
 }
-
-#Preview {
-    HomeView(viewModel: HomeViewModel(routeRepository: RouteRepository()))
-        .environmentObject(NavigationManager())
-        .environmentObject(RouteSharedManager())
-}
