@@ -171,7 +171,7 @@ struct RidingView: View {
                 startRidingWithLoading()
             }
             
-            // flag가 true일 때 카메라를 사용자 위치로 이동하고 위치 추적 시작
+                // flag가 true일 때 카메라를 사용자 위치로 이동하고 위치 추적 시작
             if ridingViewModel.flag {
                 print("🎯 onAppear - 라이딩 중, startRidingProcess 로직 실행")
                 // startRidingProcess와 동일한 로직 실행
@@ -179,6 +179,10 @@ struct RidingView: View {
                    let mapView = ridingViewModel.mapView {
                     ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
                     print("🎯 onAppear - 카메라를 사용자 위치로 이동: \(coordinate.lat), \(coordinate.lng)")
+                    
+                    // 네비게이션 모드 시작
+                    print("🧭 onAppear - 나침반 사용 가능 여부: \(CLLocationManager.headingAvailable())")
+                    locationManager.startNavigationMode(on: mapView)
                 } else {
                     print("❌ onAppear - 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
                 }
@@ -264,8 +268,9 @@ struct RidingView: View {
                 
                 wasLastRunNormal = true
                 
-                // 위치 추적 중지
+                // 위치 추적 중지 및 네비게이션 모드 종료
                 locationManager.stopLocationUpdates()
+                locationManager.stopNavigationMode()
                 
                 if let firstLocation = ridingViewModel.routeLocation.first,
                    let lat = Double(firstLocation.lat),
@@ -520,11 +525,15 @@ struct RidingView: View {
         // flag 설정
         ridingViewModel.flag = true
         
-        // 카메라를 사용자 위치로 이동
+        // 카메라를 사용자 위치로 이동하고 네비게이션 모드 시작
         if let coordinate = locationManager.getCurrentLocationAsNMGLatLng(),
            let mapView = ridingViewModel.mapView {
             ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
             print("🎯 startRidingProcess - 카메라를 사용자 위치로 이동: \(coordinate.lat), \(coordinate.lng)")
+            
+            // 네비게이션 모드 시작 (사용자가 바라보는 방향에 따라 카메라 회전)
+            print("🧭 나침반 사용 가능 여부: \(CLLocationManager.headingAvailable())")
+            locationManager.startNavigationMode(on: mapView)
         } else {
             print("❌ startRidingProcess - 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
         }
