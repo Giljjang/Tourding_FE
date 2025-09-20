@@ -13,6 +13,7 @@ enum ShowViewType {
     case ridingNextView
     case spotAdd
     case detail
+    case recommendRoute
 }
 
 final class ModalManager: ObservableObject {

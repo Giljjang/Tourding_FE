@@ -19,7 +19,7 @@ final class MapViewController: UIViewController {
     let locationManager = LocationManager()
     private let locationButton = UIButton(type: .custom)
     var ridingViewModel: RidingViewModel?
-    var userLocationManager: UserLocationManager?
+    var userLocationManager: LocationManager?
     
     // MARK: - Data Properties
     var pathCoordinates: [NMGLatLng] = []
@@ -118,12 +118,45 @@ final class MapViewController: UIViewController {
         locationManager.startLocationUpdates()
     }
     
-    // UserLocationManager 설정 메서드 추가
-    func setupUserLocationManager(_ userLocationManager: UserLocationManager) {
+    // LocationManager 설정 메서드 추가
+    func setupUserLocationManager(_ userLocationManager: LocationManager) {
         self.userLocationManager = userLocationManager
         
-        // 콜백은 RidingView에서 설정하므로 여기서는 설정하지 않음
-        print("🗺️ MapViewController: UserLocationManager 설정 완료 (콜백은 RidingView에서 설정)")
+        // 헤딩 업데이트 콜백 설정 (네비게이션 모드용)
+        userLocationManager.onHeadingUpdate = { [weak self] heading in
+            guard let self = self,
+                  let mapView = self.mapView?.mapView,
+                  userLocationManager.isNavigationMode else { 
+                print("❌ MapViewController: 헤딩 콜백 조건 불만족")
+                return 
+            }
+            
+            print("🗺️ MapViewController: 헤딩 콜백 호출됨 - \(heading.magneticHeading)도")
+            
+            // 사용자 마커 방향 업데이트
+            userLocationManager.updateLocationOverlayHeading(on: mapView)
+            
+            // 네비게이션 모드에서 헤딩 업데이트 시 카메라 회전
+            if let location = userLocationManager.currentLocation {
+                userLocationManager.updateNavigationCamera(on: mapView, location: location)
+            }
+        }
+        
+        // 위치 업데이트 콜백 설정 (네비게이션 모드용)
+        userLocationManager.onLocationUpdate = { [weak self] location in
+            guard let self = self,
+                  let mapView = self.mapView?.mapView,
+                  userLocationManager.isNavigationMode else { 
+                return 
+            }
+            
+            print("🗺️ MapViewController: 위치 업데이트 콜백 호출됨 - 네비게이션 모드")
+            
+            // 네비게이션 모드에서 위치 업데이트 시 카메라 설정
+            userLocationManager.updateNavigationCamera(on: mapView, location: location)
+        }
+        
+        print("🗺️ MapViewController: LocationManager 설정 완료 (콜백은 RidingView에서 설정)")
     }
     
     // MARK: - Public Methods
@@ -185,7 +218,7 @@ final class MapViewController: UIViewController {
         
         // 초기 카메라 위치를 사용자 현재 위치로 설정
         let cameraUpdate = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng))
-        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.4) // moveToCurrentLocation과 동일한 pivot 설정
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.3) // moveToCurrentLocation과 동일한 pivot 설정
         cameraUpdate.animation = .easeIn
         mapView.mapView.moveCamera(cameraUpdate)
     }
@@ -213,13 +246,13 @@ final class MapViewController: UIViewController {
         
         // moveToCurrentLocation과 동일한 카메라 설정
         let cameraUpdate = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng))
-        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.4) // 카메라 중심점을 위쪽으로 조정
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.3) // 카메라 중심점을 위쪽으로 조정
         cameraUpdate.animation = .easeIn
         
         mapView.mapView.moveCamera(cameraUpdate)
     }
     
-    // 라이딩 중 UserLocationManager에서 호출되는 메서드
+    // 라이딩 중 LocationManager에서 호출되는 메서드
     private func updateUserLocationForRiding(_ location: CLLocation) {
         guard let mapView = mapView else {
             print("❌ mapView가 nil입니다")

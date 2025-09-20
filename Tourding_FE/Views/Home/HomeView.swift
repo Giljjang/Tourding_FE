@@ -131,7 +131,7 @@ struct HomeView: View {
                     onActive: {
                         print("시작됨")
                         wasLastRunNormal = true
-                        navigationManager.push(.RidingView(isNotNomal: true))
+                        navigationManager.push(.RidingView(isNotNomal: true, isStart: true))
                         print("wasLastRunNormal: \(wasLastRunNormal)")
                     }
                 )
@@ -339,10 +339,4 @@ struct HomeView: View {
         Color.black.opacity(0.3)
             .ignoresSafeArea()
     }
-}
-
-#Preview {
-    HomeView(viewModel: HomeViewModel(routeRepository: RouteRepository()))
-        .environmentObject(NavigationManager())
-        .environmentObject(RouteSharedManager())
 }

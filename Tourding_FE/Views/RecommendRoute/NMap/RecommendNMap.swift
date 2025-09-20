@@ -1,4 +1,11 @@
 //
+//  RecommendNMap.swift
+//  Tourding_FE
+//
+//  Created by 이유현 on 9/20/25.
+//
+
+//
 //  NMapView.swift
 //  Tourding_FE
 //
@@ -9,30 +16,26 @@ import SwiftUI
 import NMapsMap
 import CoreLocation
 
-struct NMapView: View {
+struct RecommendNMap: View {
     
     // MARK: - Properties
-    @ObservedObject private var ridingViewModel: RidingViewModel
+    @ObservedObject private var recommendRouteViewModel: RecommendRouteViewModel
     @ObservedObject private var userLocationManager: LocationManager
     
     @State private var currentLocation: CLLocation?
     @State private var locationText: String = "위치 정보 없음"
     
-    init(ridingViewModel: RidingViewModel, userLocationManager: LocationManager) {
-        self.ridingViewModel = ridingViewModel
+    init(recommendRouteViewModel: RecommendRouteViewModel, userLocationManager: LocationManager) {
+        self.recommendRouteViewModel = recommendRouteViewModel
         self.userLocationManager = userLocationManager
     }
     
     var body: some View {
-            MapViewRepresentable(
-                pathCoordinates: $ridingViewModel.pathCoordinates,
-                markerCoordinates: $ridingViewModel.markerCoordinates,
-                markerIcons: $ridingViewModel.markerIcons,
-                toiletMarkerCoordinates: $ridingViewModel.toiletMarkerCoordinates,
-                toiletMarkerIcons: $ridingViewModel.toiletMarkerIcons,
-                csMarkerCoordinates: $ridingViewModel.csMarkerCoordinates,
-                csMarkerIcons: $ridingViewModel.csMarkerIcons,
-                ridingViewModel: ridingViewModel,
+            RecommendMapViewRepresentable(
+                pathCoordinates: $recommendRouteViewModel.pathCoordinates,
+                markerCoordinates: $recommendRouteViewModel.markerCoordinates,
+                markerIcons: $recommendRouteViewModel.markerIcons,
+                
                 userLocationManager: userLocationManager,
                 onLocationUpdate: { location in
                     currentLocation = location
@@ -52,14 +55,15 @@ struct NMapView: View {
             lng: -122.0 + Double.random(in: -0.01...0.01)
         )
         
-        ridingViewModel.pathCoordinates.append(newCoordinate)
+        recommendRouteViewModel.pathCoordinates.append(newCoordinate)
         
         let marker1 = MarkerIcons.numberMarker(1)
         
         // 마커도 추가 (선택적)
         if Bool.random() {
-            ridingViewModel.markerCoordinates.append(newCoordinate)
-            ridingViewModel.markerIcons.append(marker1)
+            recommendRouteViewModel.markerCoordinates.append(newCoordinate)
+            recommendRouteViewModel.markerIcons.append(marker1)
         }
     }
 }
+

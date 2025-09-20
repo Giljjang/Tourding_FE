@@ -61,27 +61,3 @@ struct TabContentView: View {
         .edgesIgnoringSafeArea(.bottom)
     }
 }
-
-#Preview {
-    let repository = RouteRepository()
-    let TourRepository = TourRepository()
-    
-    let homeViewModel = HomeViewModel(routeRepository: repository)
-    let myPageViewModel = MyPageViewModel()
-    let spotSearchViewModel = SpotSearchViewModel(tourRepository: TourRepository)
-    let dsViewModel = DestinationSearchViewModel()
-    let RecentSearchViewModel = RecentSearchViewModel()
-    
-    let viewModels = TabViewModelsContainer(
-        homeViewModel: homeViewModel,
-        myPageViewModel: myPageViewModel,
-        spotSearchViewModel: spotSearchViewModel,
-        dsViewModel: dsViewModel,
-        recentSearchViewModel: RecentSearchViewModel
-    )
-    
-    TabContentView(viewModel: viewModels)
-        .environmentObject(NavigationManager())
-        .environmentObject(ModalManager())
-        .environmentObject(RouteSharedManager())
-}

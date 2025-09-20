@@ -1,8 +1,8 @@
 //
-//  MapViewRepresentable.swift
+//  RecommendMapViewRepresentable.swift
 //  Tourding_FE
 //
-//  Created by 이유현 on 8/26/25.
+//  Created by 이유현 on 9/20/25.
 //
 
 import SwiftUI
@@ -11,7 +11,7 @@ import NMapsMap
 import CoreLocation
 import Combine
 
-struct MapViewRepresentable: UIViewRepresentable {
+struct RecommendMapViewRepresentable: UIViewRepresentable {
     
     // MARK: - Properties
     @Binding var pathCoordinates: [NMGLatLng]
@@ -19,13 +19,7 @@ struct MapViewRepresentable: UIViewRepresentable {
     @Binding var markerCoordinates: [NMGLatLng]
     @Binding var markerIcons: [NMFOverlayImage]
     
-    @Binding var toiletMarkerCoordinates: [NMGLatLng]
-    @Binding var toiletMarkerIcons: [NMFOverlayImage]
-    
-    @Binding var csMarkerCoordinates: [NMGLatLng]
-    @Binding var csMarkerIcons: [NMFOverlayImage]
-    
-    var ridingViewModel: RidingViewModel?
+    var recommendRouteViewModel: RecommendRouteViewModel?
     var userLocationManager: LocationManager?
     
     // MARK: - Callbacks
@@ -37,21 +31,15 @@ struct MapViewRepresentable: UIViewRepresentable {
         let containerView = UIView()
         
         // ViewController 생성 및 설정
-        let mapViewController = MapViewController()
+        let mapViewController = RecommendMapViewController()
         mapViewController.pathCoordinates = pathCoordinates
         mapViewController.markerCoordinates = markerCoordinates
         mapViewController.markerIcons = markerIcons
-        
-        mapViewController.toiletMarkerCoordinates = toiletMarkerCoordinates
-        mapViewController.toiletMarkerIcons = toiletMarkerIcons
-        
-        mapViewController.csMarkerCoordinates = csMarkerCoordinates
-        mapViewController.csMarkerIcons = csMarkerIcons
-        
+ 
         mapViewController.onMapTap = onMapTap
         
         // ridingViewModel 전달
-        mapViewController.ridingViewModel = ridingViewModel
+        mapViewController.recommendRouteViewModel = recommendRouteViewModel
         
         // userLocationManager 설정
         if let userLocationManager = userLocationManager {
@@ -88,27 +76,24 @@ struct MapViewRepresentable: UIViewRepresentable {
         mapViewController.pathCoordinates = pathCoordinates
         mapViewController.markerCoordinates = markerCoordinates
         mapViewController.markerIcons = markerIcons
-        mapViewController.toiletMarkerCoordinates = toiletMarkerCoordinates
-        mapViewController.toiletMarkerIcons = toiletMarkerIcons
-        mapViewController.csMarkerCoordinates = csMarkerCoordinates
-        mapViewController.csMarkerIcons = csMarkerIcons
+
         mapViewController.onLocationUpdate = onLocationUpdate
         mapViewController.onMapTap = onMapTap
         
         // RidingViewModel에 LocationManager, NMFMapView, MarkerManager 설정 (viewDidLoad 완료 후)
-        if let ridingViewModel = ridingViewModel {
-            ridingViewModel.locationManager = mapViewController.locationManager
+        if let recommendRouteViewModel = recommendRouteViewModel {
+            recommendRouteViewModel.locationManager = mapViewController.locationManager
             if let nmfMapView = mapViewController.nmfMapView {
-                ridingViewModel.mapView = nmfMapView
+                recommendRouteViewModel.mapView = nmfMapView
             }
             // MarkerManager 연결
-            ridingViewModel.markerManager = mapViewController.markerManager
+            recommendRouteViewModel.markerManager = mapViewController.markerManager
             // MapViewController 연결
-            ridingViewModel.mapViewController = mapViewController
+            recommendRouteViewModel.mapViewController = mapViewController
         }
         
         // ridingViewModel 업데이트
-        mapViewController.ridingViewModel = ridingViewModel
+        mapViewController.recommendRouteViewModel = recommendRouteViewModel
         
         // userLocationManager 업데이트
         if let userLocationManager = userLocationManager {
@@ -125,11 +110,11 @@ struct MapViewRepresentable: UIViewRepresentable {
     
     // MARK: - Coordinator
     class Coordinator: NSObject {
-        var mapViewController: MapViewController?
+        var mapViewController: RecommendMapViewController?
         private var parentViewController: UIViewController?
         
         deinit {
-            print("🗺️ MapViewRepresentable Coordinator deinit 시작")
+
             cleanupResources()
         }
         
@@ -140,8 +125,7 @@ struct MapViewRepresentable: UIViewRepresentable {
             }
             mapViewController = nil
             parentViewController = nil
-            
-            print("✅ MapViewRepresentable Coordinator 리소스 정리 완료")
+
         }
         
         func addChild(_ child: UIViewController, to parent: UIViewController) {
