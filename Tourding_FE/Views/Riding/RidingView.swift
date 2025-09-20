@@ -163,7 +163,7 @@ struct RidingView: View {
             
             if let isNotNomal = isNotNomal { // 비정상 종료일 때 바로 라이딩 중으로 이동
                 ridingViewModel.flag = isNotNomal
-                
+                print("🔄 비정상 종료 감지 - 라이딩 모드로 복구")
                 startRidingWithLoading()
             }
             
@@ -185,6 +185,12 @@ struct RidingView: View {
                     locationManager.startNavigationMode(on: mapView)
                 } else {
                     print("❌ onAppear - 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
+                    
+                    // 비정상 종료 시 위치가 없어도 네비게이션 모드는 시작
+                    if let mapView = ridingViewModel.mapView {
+                        print("🧭 onAppear - 위치 없이 네비게이션 모드 시작 (위치 업데이트 대기)")
+                        locationManager.startNavigationMode(on: mapView)
+                    }
                 }
                 
                 // locationManager 사용 (startRidingProcess와 동일)
@@ -536,6 +542,12 @@ struct RidingView: View {
             locationManager.startNavigationMode(on: mapView)
         } else {
             print("❌ startRidingProcess - 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
+            
+            // 위치가 없어도 네비게이션 모드는 시작
+            if let mapView = ridingViewModel.mapView {
+                print("🧭 startRidingProcess - 위치 없이 네비게이션 모드 시작 (위치 업데이트 대기)")
+                locationManager.startNavigationMode(on: mapView)
+            }
         }
         
         // locationManager의 콜백만 업데이트 (이미 startLocationUpdates가 호출된 상태)

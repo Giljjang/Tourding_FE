@@ -142,6 +142,20 @@ final class MapViewController: UIViewController {
             }
         }
         
+        // 위치 업데이트 콜백 설정 (네비게이션 모드용)
+        userLocationManager.onLocationUpdate = { [weak self] location in
+            guard let self = self,
+                  let mapView = self.mapView?.mapView,
+                  userLocationManager.isNavigationMode else { 
+                return 
+            }
+            
+            print("🗺️ MapViewController: 위치 업데이트 콜백 호출됨 - 네비게이션 모드")
+            
+            // 네비게이션 모드에서 위치 업데이트 시 카메라 설정
+            userLocationManager.updateNavigationCamera(on: mapView, location: location)
+        }
+        
         print("🗺️ MapViewController: LocationManager 설정 완료 (콜백은 RidingView에서 설정)")
     }
     
