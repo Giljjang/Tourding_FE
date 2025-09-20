@@ -212,7 +212,7 @@ final class LocationManager: NSObject, ObservableObject {
         
         // 카메라 중심점을 위쪽으로 조정
         let cameraUpdate = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng))
-        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.3) // x: 0.5(가로 중앙), y: 0.3(세로 위쪽)
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.4) // x: 0.5(가로 중앙), y: 0.4(세로 위쪽)
         cameraUpdate.animation = .easeIn
         mapView.moveCamera(cameraUpdate)
     }
