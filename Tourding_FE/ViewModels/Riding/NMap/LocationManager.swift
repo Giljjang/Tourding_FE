@@ -212,7 +212,7 @@ final class LocationManager: NSObject, ObservableObject {
         
         // 카메라 중심점을 위쪽으로 조정
         let cameraUpdate = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng))
-        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.4) // x: 0.5(가로 중앙), y: 0.4(세로 위쪽)
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.3) // x: 0.5(가로 중앙), y: 0.3(세로 위쪽)
         cameraUpdate.animation = .easeIn
         mapView.moveCamera(cameraUpdate)
     }
@@ -241,8 +241,15 @@ final class LocationManager: NSObject, ObservableObject {
             print("❌ 나침반을 사용할 수 없습니다")
         }
         
-        // 현재 위치로 카메라 이동하고 헤딩 적용
+        // 현재 위치로 카메라 이동하고 헤딩 적용 (네비게이션 모드에서는 중앙에 위치)
         if let location = currentLocation {
+            let coordinate = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
+            let cameraUpdate = NMFCameraUpdate(scrollTo: coordinate)
+            cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.3) // 네비게이션 모드에서는 화면 중앙
+            cameraUpdate.animation = .easeIn
+            mapView.moveCamera(cameraUpdate)
+            
+            // 헤딩 적용
             updateCameraWithHeading(on: mapView, location: location)
         }
     }
@@ -284,8 +291,9 @@ final class LocationManager: NSObject, ObservableObject {
             heading: currentHeading
         )
         
-        // 카메라 업데이트
+        // 카메라 업데이트 - 네비게이션 모드에서는 화면 중앙에 위치
         let cameraUpdate = NMFCameraUpdate(position: newCameraPosition)
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.3) // 네비게이션 모드에서는 화면 중앙
         cameraUpdate.animation = .easeOut
         cameraUpdate.animationDuration = 0.3 // 부드러운 애니메이션
         
