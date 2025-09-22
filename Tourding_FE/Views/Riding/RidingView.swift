@@ -7,6 +7,8 @@
 
 import SwiftUI
 import NMapsMap
+import SDWebImageSwiftUI
+
 
 struct RidingView: View {
     @EnvironmentObject var navigationManager: NavigationManager
@@ -136,7 +138,9 @@ struct RidingView: View {
                     VStack(spacing: 4){
                         Spacer()
                         
-                        GIFView(name: "searching-route-속도-2")
+                        AnimatedImage(name: "searching-route-속도-2.gif")
+                            .resizable()
+                            .scaledToFit()
                             .frame(width: 200, height: 200)
                         
                         Text("길 안내를 준비하고 있어요\n잠시만 기다려 주세요")
