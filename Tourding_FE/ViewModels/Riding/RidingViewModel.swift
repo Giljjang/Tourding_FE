@@ -7,6 +7,8 @@
 
 import Foundation
 import NMapsMap
+import SwiftUI
+import CoreLocation
 
 final class RidingViewModel: ObservableObject {
     @Published var userId: Int?
@@ -64,12 +66,23 @@ final class RidingViewModel: ObservableObject {
     let routeRepository: RouteRepositoryProtocol
     let kakaoRepository: KakaoRepositoryProtocol
     
+    // 앱 생명주기 관련
+    @AppStorage("wasLastRunNormal") var wasLastRunNormal: Bool = true
+    
     init(routeRepository: RouteRepositoryProtocol,
          kakaoRepository: KakaoRepositoryProtocol
     ) {
         self.routeRepository = routeRepository
         self.kakaoRepository = kakaoRepository
         self.userId = KeychainHelper.loadUid()
+        
+        // 앱 생명주기 알림 등록
+        setupAppLifecycleObservers()
+    }
+    
+    deinit {
+        // 알림 해제
+        NotificationCenter.default.removeObserver(self)
     }
     
     // 드래그앤 드랍 후 마커 업데이트 메서드 추가
@@ -168,6 +181,7 @@ final class RidingViewModel: ObservableObject {
         print("🔄 라이딩 종료 후 원본 데이터 복원 완료")
     }
     
+   
     
 }
 
