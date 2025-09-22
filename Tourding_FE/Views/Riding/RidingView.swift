@@ -218,7 +218,9 @@ struct RidingView: View {
                             let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
                             mapViewController.updateUserLocation(clLocation)
                         }
-                        ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+                        Task {
+                            await ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+                        }
                     }
                     
                     // 콜백 설정
@@ -573,7 +575,9 @@ struct RidingView: View {
                 let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
                 mapViewController.updateUserLocation(clLocation)
             }
-            ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+            Task {
+                await ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+            }
         }
         
         // 기존 locationManager의 콜백 업데이트

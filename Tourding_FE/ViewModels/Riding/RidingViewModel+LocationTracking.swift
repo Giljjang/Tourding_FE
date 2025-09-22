@@ -12,7 +12,7 @@ import NMapsMap
 //MARK: - 사용자 위치 추적 및 업데이트
 extension RidingViewModel {
     // 사용자 위치 업데이트 시 호출하여 지나간 마커 확인 및 제거
-    func updateUserLocationAndCheckMarkers(_ newLocation: NMGLatLng) {
+    func updateUserLocationAndCheckMarkers(_ newLocation: NMGLatLng) async {
         print("🔄 === 위치 업데이트 시작 ===")
         print("🔄 flag 상태: \(flag)")
         print("🔄 guideList 개수: \(guideList.count)")
@@ -48,15 +48,15 @@ extension RidingViewModel {
             print("✅ 위치 변경 감지됨: \(newLocation.lat), \(newLocation.lng)")
             print("📍 현재 가이드 리스트 개수: \(guideList.count)")
             print("📍 현재 마커 개수: \(markerCoordinates.count)")
-            checkAndRemovePassedMarkers()
-            updateCameraToUserLocation()
+            await checkAndRemovePassedMarkers()
+            await updateCameraToUserLocation()
         } else {
             print("⏸️ 사용자가 움직이지 않음 - 카메라 추적 중단")
         }
     }
     
     // 지나간 마커를 확인하고 제거 (특정 좌표를 지나가면 그 이전의 모든 좌표들 제거)
-    private func checkAndRemovePassedMarkers() {
+    private func checkAndRemovePassedMarkers() async {
         guard let userLocation = currentUserLocation else { 
             print("❌ 사용자 위치가 없어서 마커 확인 불가")
             return 
@@ -91,36 +91,10 @@ extension RidingViewModel {
             print("✅ 제거할 마커 인덱스: 0~\(closestIndex)")
             
             // guideList의 좌표를 지날 때 showToilet과 showConvenienceStore 상태에 따라 토글 함수 호출
-            checkAndToggleFacilities(userLocation: userLocation)
+            await checkAndToggleFacilities(userLocation: userLocation)
             
-            // 메인 스레드에서 @Published 프로퍼티들 업데이트
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                
-                // 마커 좌표와 아이콘에서 제거 (0부터 closestIndex까지)
-                self.markerCoordinates.removeFirst(removedCount)
-                self.markerIcons.removeFirst(removedCount)
-                
-                // 가이드 리스트에서도 제거
-                if removedCount <= self.guideList.count {
-                    self.guideList.removeFirst(removedCount)
-                }
-                
-                // 경로 좌표는 라이딩 중에 제거하지 않음 (전체 경로 유지)
-                // 라이딩 중에는 경로선이 계속 표시되어야 함
-                // if removedCount <= self.pathCoordinates.count {
-                //     self.pathCoordinates.removeFirst(removedCount)
-                // }
-                
-                // 디버깅용 로그
-                print("✅ 지나간 마커 \(removedCount)개 제거됨 (인덱스 0~\(closestIndex))")
-                print("✅ 남은 가이드 리스트: \(self.guideList.count)개")
-                print("✅ 남은 마커: \(self.markerCoordinates.count)개")
-                print("✅ 남은 경로 좌표: \(self.pathCoordinates.count)개")
-                
-                // 실제 지도에서 마커 업데이트 (메인 스레드에서 실행)
-                self.updateMarkersOnMap()
-            }
+            // @MainActor를 사용하여 동기적으로 처리
+            await removePassedMarkers(removedCount: removedCount, closestIndex: closestIndex)
             
         } else {
             print("⏸️ 가까운 마커 없음 (임계값: \(markerPassThreshold)m)")
@@ -130,8 +104,36 @@ extension RidingViewModel {
         print("🎯 === 마커 지나감 확인 완료 ===")
     }
     
+    // 지나간 마커들을 제거하는 메서드 (@MainActor로 동기 처리)
+    @MainActor
+    private func removePassedMarkers(removedCount: Int, closestIndex: Int) {
+        // 마커 좌표와 아이콘에서 제거 (0부터 closestIndex까지)
+        markerCoordinates.removeFirst(removedCount)
+        markerIcons.removeFirst(removedCount)
+        
+        // 가이드 리스트에서도 제거
+        if removedCount <= guideList.count {
+            guideList.removeFirst(removedCount)
+        }
+        
+        // 경로 좌표는 라이딩 중에 제거하지 않음 (전체 경로 유지)
+        // 라이딩 중에는 경로선이 계속 표시되어야 함
+        // if removedCount <= pathCoordinates.count {
+        //     pathCoordinates.removeFirst(removedCount)
+        // }
+        
+        // 디버깅용 로그
+        print("✅ 지나간 마커 \(removedCount)개 제거됨 (인덱스 0~\(closestIndex))")
+        print("✅ 남은 가이드 리스트: \(guideList.count)개")
+        print("✅ 남은 마커: \(markerCoordinates.count)개")
+        print("✅ 남은 경로 좌표: \(pathCoordinates.count)개")
+        
+        // 실제 지도에서 마커 업데이트 (메인 스레드에서 실행)
+        updateMarkersOnMap()
+    }
+    
     // guideList의 좌표를 지날 때 showToilet과 showConvenienceStore 상태에 따라 마커 업데이트 함수 호출
-    private func checkAndToggleFacilities(userLocation: NMGLatLng) {
+    private func checkAndToggleFacilities(userLocation: NMGLatLng) async {
         print("🔍 === guideList 좌표 지나감 확인 시작 ===")
         print("🔍 사용자 위치: \(userLocation.lat), \(userLocation.lng)")
         print("🔍 guideList 개수: \(guideList.count)")
@@ -153,24 +155,8 @@ extension RidingViewModel {
                     print("✅ 가이드 타입: \(guide.guideType?.rawValue ?? "unknown")")
                     print("✅ 가이드 설명: \(guide.instructions)")
                     
-                    // 메인 스레드에서 편의시설 마커 업데이트
-                    DispatchQueue.main.async { [weak self] in
-                        guard let self = self else { return }
-                        
-                        // showToilet이 true이면 updateToiletMarkers 함수 호출 (토글 없이)
-                        if self.showToilet {
-                            print("🚽 showToilet이 true이므로 updateToiletMarkers 함수 호출")
-                            let locationString = "\(guide.lat),\(guide.lon)"
-                            self.updateToiletMarkers(location: locationString)
-                        }
-                        
-                        // showConvenienceStore가 true이면 updateConvenienceStoreMarkers 함수 호출 (토글 없이)
-                        if self.showConvenienceStore {
-                            print("🏪 showConvenienceStore가 true이므로 updateConvenienceStoreMarkers 함수 호출")
-                            let locationString = "\(guide.lat),\(guide.lon)"
-                            self.updateConvenienceStoreMarkers(location: locationString)
-                        }
-                    }
+                    // @MainActor를 사용하여 동기적으로 처리
+                    await updateFacilityMarkers(guide: guide)
                     
                     // 한 번만 처리하고 break (가장 가까운 좌표만 처리)
                     print("🔍 가장 가까운 좌표 처리 완료 - 루프 종료")
@@ -184,6 +170,24 @@ extension RidingViewModel {
         }
         
         print("🔍 === guideList 좌표 지나감 확인 완료 ===")
+    }
+    
+    // 편의시설 마커 업데이트 메서드 (@MainActor로 동기 처리)
+    @MainActor
+    private func updateFacilityMarkers(guide: GuideModel) {
+        // showToilet이 true이면 updateToiletMarkers 함수 호출 (토글 없이)
+        if showToilet {
+            print("🚽 showToilet이 true이므로 updateToiletMarkers 함수 호출")
+            let locationString = "\(guide.lat),\(guide.lon)"
+            updateToiletMarkers(location: locationString)
+        }
+        
+        // showConvenienceStore가 true이면 updateConvenienceStoreMarkers 함수 호출 (토글 없이)
+        if showConvenienceStore {
+            print("🏪 showConvenienceStore가 true이므로 updateConvenienceStoreMarkers 함수 호출")
+            let locationString = "\(guide.lat),\(guide.lon)"
+            updateConvenienceStoreMarkers(location: locationString)
+        }
     }
     
     // 두 좌표 간의 거리 계산 (미터 단위)
@@ -211,7 +215,8 @@ extension RidingViewModel {
         return distance <= markerPassThreshold
     }
     
-    // 사용자 위치로 카메라 업데이트
+    // 사용자 위치로 카메라 업데이트 (@MainActor로 동기 처리)
+    @MainActor
     private func updateCameraToUserLocation() {
         guard let userLocation = currentUserLocation,
               let mapView = mapView else { 
@@ -219,28 +224,23 @@ extension RidingViewModel {
             return 
         }
         
-        // 메인 스레드에서 카메라 업데이트 실행
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
-            let cameraUpdate = NMFCameraUpdate(scrollTo: userLocation)
-            cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.3) // x: 0.5(가로 중앙), y: 0.3(세로 위쪽)
-            cameraUpdate.animation = .easeIn
-            mapView.moveCamera(cameraUpdate)
-            
-            print("📷 카메라가 사용자 위치로 업데이트됨: \(userLocation.lat), \(userLocation.lng)")
-            print("📷 사용자가 움직였으므로 카메라가 따라감")
-        }
+        let cameraUpdate = NMFCameraUpdate(scrollTo: userLocation)
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.3) // x: 0.5(가로 중앙), y: 0.3(세로 위쪽)
+        cameraUpdate.animation = .easeIn
+        mapView.moveCamera(cameraUpdate)
+        
+        print("📷 카메라가 사용자 위치로 업데이트됨: \(userLocation.lat), \(userLocation.lng)")
+        print("📷 사용자가 움직였으므로 카메라가 따라감")
     }
     
-    // 지도에서 마커 업데이트
+    // 지도에서 마커 업데이트 (@MainActor로 동기 처리)
+    @MainActor
     private func updateMarkersOnMap() {
         guard let markerManager = markerManager else { 
             print("❌ 마커 업데이트 실패: markerManager가 nil")
             return 
         }
         
-        // 메인 스레드에서 마커 업데이트 실행 (이미 메인 스레드에서 호출되므로 async 불필요)
         // 기존 마커들을 모두 제거하고 새로운 마커들로 업데이트
         print("🗺️ 마커 업데이트 시작 - 제거할 마커: \(markerManager.getMarkers().count)개, 추가할 마커: \(markerCoordinates.count)개")
         
