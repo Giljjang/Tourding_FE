@@ -229,7 +229,31 @@ extension RidingViewModel {
         
         // 라이딩 시작 전 원본 데이터 백업 (정상/비정상 종료 모두)
         print("🔄 라이딩 시작 - 원본 데이터 백업")
-        backupOriginalData()
+        
+        // 비정상 종료 시에는 기존 데이터가 비어있을 수 있으므로 API 호출 후 백업
+        if let isNotNomal = isNotNomal, isNotNomal {
+            print("🔄 비정상 종료 감지 - 경로 데이터 재로드 후 백업")
+            
+            // 경로 데이터 재로드
+            do {
+                try Task.checkCancellation()
+                await getRouteLocationAPI()
+                
+                try Task.checkCancellation()
+                await getRoutePathAPI()
+                
+                // 데이터 로드 완료 후 백업
+                backupOriginalData()
+                print("✅ 비정상 종료 복구 - 경로 데이터 재로드 및 백업 완료")
+            } catch {
+                print("❌ 비정상 종료 복구 실패: \(error)")
+                // 실패해도 기존 데이터로 백업 시도
+                backupOriginalData()
+            }
+        } else {
+            // 정상 시작 시에는 기존 데이터로 바로 백업
+            backupOriginalData()
+        }
         
         // 재시도 메커니즘 (비정상 종료 시 안정성 강화)
         var retryCount = 0
