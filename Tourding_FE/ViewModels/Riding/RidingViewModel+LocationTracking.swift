@@ -19,6 +19,12 @@ extension RidingViewModel {
             return 
         }
         
+        // 비정상 종료 시 가이드 데이터가 아직 로드되지 않은 경우 대기
+        if guideList.isEmpty {
+            print("⚠️ 가이드 데이터가 비어있음 - 위치 업데이트 건너뜀")
+            return
+        }
+        
         // 이전 위치와 비교하여 위치가 실제로 변경되었는지 확인
         let hasLocationChanged: Bool
         if let previousLocation = currentUserLocation {

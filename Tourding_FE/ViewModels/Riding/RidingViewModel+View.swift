@@ -147,43 +147,48 @@ extension RidingViewModel {
         // flag 설정
         flag = true
         
-        // 카메라를 사용자 위치로 이동하고 네비게이션 모드 시작
-        if let coordinate = locationManager.getCurrentLocationAsNMGLatLng(),
-           let mapView = mapView {
-            locationManager.setInitialCameraPosition(to: coordinate, on: mapView)
-            print("🎯 startRidingProcess - 카메라를 사용자 위치로 이동: \(coordinate.lat), \(coordinate.lng)")
-            
-            // 네비게이션 모드 시작 (사용자가 바라보는 방향에 따라 카메라 회전)
-            print("🧭 나침반 사용 가능 여부: \(CLLocationManager.headingAvailable())")
+        print("🚀 라이딩 API 프로세스 시작 - isNotNomal: \(isNotNomal != nil)")
+        
+        // 비정상 종료 시 네비게이션 모드 강제 시작
+        if let mapView = mapView {
+            print("🧭 네비게이션 모드 시작")
             locationManager.startNavigationMode(on: mapView)
-        } else {
-            print("❌ startRidingProcess - 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
             
-            // 위치가 없어도 네비게이션 모드는 시작
-            if let mapView = mapView {
-                print("🧭 startRidingProcess - 위치 없이 네비게이션 모드 시작 (위치 업데이트 대기)")
-                locationManager.startNavigationMode(on: mapView)
+            // 카메라를 사용자 위치로 이동
+            if let coordinate = locationManager.getCurrentLocationAsNMGLatLng() {
+                locationManager.setInitialCameraPosition(to: coordinate, on: mapView)
+                print("🎯 카메라를 사용자 위치로 이동: \(coordinate.lat), \(coordinate.lng)")
+            } else if let firstLocation = routeLocation.first,
+                      let lat = Double(firstLocation.lat),
+                      let lon = Double(firstLocation.lon) {
+                let coordinate = NMGLatLng(lat: lat, lng: lon)
+                locationManager.setInitialCameraPosition(to: coordinate, on: mapView)
+                print("🎯 카메라를 경로 첫 번째 좌표로 이동: \(lat), \(lon)")
+            } else {
+                print("⚠️ 사용자 위치와 경로 데이터 모두 없음 - 기본 카메라 위치 유지")
             }
+        } else {
+            print("❌ mapView가 nil - 네비게이션 모드 시작 불가")
         }
         
-        // locationManager의 콜백만 업데이트 (이미 startLocationUpdates가 호출된 상태)
-        let newCallback: (NMGLatLng) -> Void = { newLocation in
-            if let mapViewController = self.mapViewController {
-                let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
-                mapViewController.updateUserLocation(clLocation)
-            }
-            self.updateUserLocationAndCheckMarkers(newLocation)
-        }
-        
-        // 기존 locationManager의 콜백 업데이트
-        locationManager.onLocationUpdateNMGLatLng = newCallback
-        print("📍 startRidingProcess - locationManager 콜백 업데이트 완료")
+        // 위치 추적 콜백 설정 (비정상 종료 시 강화)
+        setupLocationTrackingCallback(locationManager: locationManager)
         
         // 라이딩 가이드 API 호출
         Task { [weak self] in
             do {
                 try Task.checkCancellation()
                 await self?.getRouteGuideAPI(isNotNomal: isNotNomal)
+                
+                // 가이드 데이터 로드 완료 후 추가 안정화
+                await MainActor.run {
+                    if let self = self {
+                        print("✅ 가이드 데이터 로드 완료 - 네비게이션 준비됨")
+                        print("  - 가이드 개수: \(self.guideList.count)")
+                        print("  - 마커 개수: \(self.markerCoordinates.count)")
+                        print("  - 경로선 개수: \(self.pathCoordinates.count)")
+                    }
+                }
             } catch is CancellationError {
                 print("🚫 라이딩 가이드 API Task 취소됨")
             } catch {
@@ -250,9 +255,25 @@ extension RidingViewModel {
         // LocationManager 인스턴스를 RidingViewModel에 전달
         userLocationManager = locationManager
         
+        // 비정상 종료 시 디버깅 정보 출력
+        if let isNotNomal = isNotNomal {
+            print("🔍 === 비정상 종료 복구 상태 확인 ===")
+            print("  - isNotNomal: \(isNotNomal)")
+            print("  - userLocationManager: \(userLocationManager != nil)")
+            print("  - mapView: \(mapView != nil)")
+            print("  - locationManager: \(locationManager)")
+            print("  - 현재 flag 상태: \(flag)")
+        }
+        
         if let isNotNomal = isNotNomal { // 비정상 종료일 때 바로 라이딩 중으로 이동
             flag = isNotNomal
             print("🔄 비정상 종료 감지 - 라이딩 모드로 복구")
+            
+            // 비정상 종료 시 위치 추적 강제 재시작
+            locationManager.stopLocationUpdates()
+            locationManager.startLocationUpdates()
+            print("📍 비정상 종료 - 위치 추적 강제 재시작")
+            
             startRidingWithLoading(locationManager: locationManager, isNotNomal: isNotNomal)
         }
         
@@ -263,43 +284,31 @@ extension RidingViewModel {
         // flag가 true일 때 카메라를 사용자 위치로 이동하고 위치 추적 시작
         if flag {
             print("🎯 onAppear - 라이딩 중, startRidingProcess 로직 실행")
-            // startRidingProcess와 동일한 로직 실행
-            if let coordinate = locationManager.getCurrentLocationAsNMGLatLng(),
-               let mapView = mapView {
-                locationManager.setInitialCameraPosition(to: coordinate, on: mapView)
-                print("🎯 onAppear - 카메라를 사용자 위치로 이동: \(coordinate.lat), \(coordinate.lng)")
-                
-                // 네비게이션 모드 시작
-                print("🧭 onAppear - 나침반 사용 가능 여부: \(CLLocationManager.headingAvailable())")
+            
+            // 비정상 종료 시 네비게이션 모드 강제 시작
+            if let mapView = mapView {
+                print("🧭 네비게이션 모드 강제 시작")
                 locationManager.startNavigationMode(on: mapView)
-            } else {
-                print("❌ onAppear - 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
                 
-                // 비정상 종료 시 위치가 없어도 네비게이션 모드는 시작
-                if let mapView = mapView {
-                    print("🧭 onAppear - 위치 없이 네비게이션 모드 시작 (위치 업데이트 대기)")
-                    locationManager.startNavigationMode(on: mapView)
+                // 위치가 있으면 사용자 위치로, 없으면 경로 첫 번째 좌표로 카메라 설정
+                if let coordinate = locationManager.getCurrentLocationAsNMGLatLng() {
+                    locationManager.setInitialCameraPosition(to: coordinate, on: mapView)
+                    print("🎯 카메라를 사용자 위치로 이동: \(coordinate.lat), \(coordinate.lng)")
+                } else if let firstLocation = routeLocation.first,
+                          let lat = Double(firstLocation.lat),
+                          let lon = Double(firstLocation.lon) {
+                    let coordinate = NMGLatLng(lat: lat, lng: lon)
+                    locationManager.setInitialCameraPosition(to: coordinate, on: mapView)
+                    print("🎯 카메라를 경로 첫 번째 좌표로 이동: \(lat), \(lon)")
+                } else {
+                    print("⚠️ 사용자 위치와 경로 데이터 모두 없음 - 기본 카메라 위치 유지")
                 }
+            } else {
+                print("❌ mapView가 nil - 네비게이션 모드 시작 불가")
             }
             
-            // locationManager 사용 (startRidingProcess와 동일)
-            if let userLocationManager = userLocationManager {
-                // 새로운 콜백 생성
-                let newCallback: (NMGLatLng) -> Void = { newLocation in
-                    if let mapViewController = self.mapViewController {
-                        let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
-                        mapViewController.updateUserLocation(clLocation)
-                    }
-                    self.updateUserLocationAndCheckMarkers(newLocation)
-                }
-                
-                // 콜백 설정
-                userLocationManager.onLocationUpdateNMGLatLng = newCallback
-                userLocationManager.startLocationUpdates()
-                print("📍 onAppear - 사용자 위치 추적 시작 - 마커 표시")
-            } else {
-                print("❌ onAppear - userLocationManager가 nil")
-            }
+            // 위치 추적 콜백 설정 (비정상 종료 시 강화)
+            setupLocationTrackingCallback(locationManager: locationManager)
         }
         
         Task { [weak self] in
@@ -335,6 +344,41 @@ extension RidingViewModel {
                 print("❌ RidingView 초기화 에러: \(error)")
             }
         } // : Task
+    }
+    
+    // MARK: - 위치 추적 콜백 설정 (비정상 종료 시 강화)
+    @MainActor private func setupLocationTrackingCallback(locationManager: LocationManager) {
+        print("📍 위치 추적 콜백 설정 시작")
+        
+        // 새로운 콜백 생성
+        let newCallback: (NMGLatLng) -> Void = { newLocation in
+            print("📍 위치 업데이트 수신: \(newLocation.lat), \(newLocation.lng)")
+            
+            // mapViewController 업데이트
+            if let mapViewController = self.mapViewController {
+                let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
+                mapViewController.updateUserLocation(clLocation)
+                print("📍 mapViewController 위치 업데이트 완료")
+            }
+            
+            // 마커 추적 및 카메라 업데이트
+            self.updateUserLocationAndCheckMarkers(newLocation)
+        }
+        
+        // 콜백 설정
+        locationManager.onLocationUpdateNMGLatLng = newCallback
+        
+        // 위치 추적 시작
+        locationManager.startLocationUpdates()
+        print("📍 위치 추적 시작 완료 - 콜백 설정됨")
+        
+        // 비정상 종료 시 추가 안정화 로직
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            if locationManager.onLocationUpdateNMGLatLng == nil {
+                print("⚠️ 위치 추적 콜백이 nil - 재설정 시도")
+                locationManager.onLocationUpdateNMGLatLng = newCallback
+            }
+        }
     }
     
 }

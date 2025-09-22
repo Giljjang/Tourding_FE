@@ -225,56 +225,85 @@ extension RidingViewModel {
             return
         }
         
+        print("🔄 가이드 API 호출 시작 - isNotNomal: \(isNotNomal != nil)")
+        
         // 비정상 종료일 때 있는 데이터 불러오기
         if let isNotNomal = isNotNomal{
+            print("🔄 비정상 종료 감지 - 원본 데이터 백업")
             // 라이딩 시작 전 원본 데이터 백업
             backupOriginalData()
         }
         
-        do {
-            let response = try await routeRepository.getRoutesGuide(userId: userId)
-            guideList = response
-            
-            // 기존 마커들을 제거하고 가이드 마커들로 교체
-            markerCoordinates = guideList.compactMap { item in
-                if let lat = Double(item.lat), let lon = Double(item.lon) {
-                    return NMGLatLng(lat: lat, lng: lon)
-                } else {
-                    return nil
-                }
-            }
-            
-            
-            markerIcons = guideList.enumerated().map { (index, item) in
-                switch item.guideType {
-                case .start:
-                    return MarkerIcons.startMarker
-                case .end:
-                    if index == guideList.count - 1 {
-                        return MarkerIcons.goalMarker
-                    } else {
-                        return MarkerIcons.stopoverMarker
-                    }
-                case .leftTurn:
-                    return MarkerIcons.leftMarker
-                case .rightTurn:
-                    return MarkerIcons.rightMarker
-                case .straight:
-                    return MarkerIcons.straightMarker
-                case .stopOver:
-                    return MarkerIcons.stopoverMarker
-                case .none:
-                    return MarkerIcons.straightMarker
-                case .roundabout:
-                    return MarkerIcons.crossingMarker
-                }
-            }
-            
-            // 가이드 마커 설정 후 경로선 복원 (경로선이 사라지지 않도록)
-            restorePathWithGuides()
+        // 재시도 메커니즘 (비정상 종료 시 안정성 강화)
+        var retryCount = 0
+        let maxRetries = 3
+        
+        while retryCount < maxRetries {
+            do {
+                let response = try await routeRepository.getRoutesGuide(userId: userId)
+                guideList = response
                 
-        } catch {
-            print("GET ERROR: /routes/guide \(error)")
+                print("✅ 가이드 데이터 로드 완료: \(guideList.count)개")
+                
+                // 기존 마커들을 제거하고 가이드 마커들로 교체
+                markerCoordinates = guideList.compactMap { item in
+                    if let lat = Double(item.lat), let lon = Double(item.lon) {
+                        return NMGLatLng(lat: lat, lng: lon)
+                    } else {
+                        return nil
+                    }
+                }
+                
+                markerIcons = guideList.enumerated().map { (index, item) in
+                    switch item.guideType {
+                    case .start:
+                        return MarkerIcons.startMarker
+                    case .end:
+                        if index == guideList.count - 1 {
+                            return MarkerIcons.goalMarker
+                        } else {
+                            return MarkerIcons.stopoverMarker
+                        }
+                    case .leftTurn:
+                        return MarkerIcons.leftMarker
+                    case .rightTurn:
+                        return MarkerIcons.rightMarker
+                    case .straight:
+                        return MarkerIcons.straightMarker
+                    case .stopOver:
+                        return MarkerIcons.stopoverMarker
+                    case .none:
+                        return MarkerIcons.straightMarker
+                    case .roundabout:
+                        return MarkerIcons.crossingMarker
+                    }
+                }
+                
+                print("✅ 가이드 마커 설정 완료: \(markerCoordinates.count)개")
+                
+                // 가이드 마커 설정 후 경로선 복원 (경로선이 사라지지 않도록)
+                restorePathWithGuides()
+                
+                // 성공하면 루프 종료
+                break
+                
+            } catch {
+                retryCount += 1
+                print("❌ 가이드 API 호출 실패 (시도 \(retryCount)/\(maxRetries)): \(error)")
+                
+                if retryCount < maxRetries {
+                    // 재시도 전 잠시 대기
+                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1초 대기
+                } else {
+                    print("❌ 가이드 API 호출 최종 실패")
+                    
+                    // 비정상 종료 시 가이드 데이터가 없어도 기본 마커 유지
+                    if isNotNomal != nil {
+                        print("⚠️ 비정상 종료 시 가이드 데이터 없음 - 기본 마커 유지")
+                        // 기존 마커 데이터 유지
+                    }
+                }
+            }
         }
     }
     
