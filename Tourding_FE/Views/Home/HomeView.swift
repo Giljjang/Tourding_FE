@@ -69,9 +69,6 @@ struct HomeView: View {
             if modalManager.isPresented && modalManager.showView == .tabView {
                 Color.black.opacity(0.3)
                     .ignoresSafeArea()
-                    .onTapGesture {
-                        modalManager.hideModal()
-                    }
                 
                 CustomModalView(modalManager: modalManager)
             }

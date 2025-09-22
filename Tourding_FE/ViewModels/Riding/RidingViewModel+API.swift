@@ -227,12 +227,9 @@ extension RidingViewModel {
         
         print("🔄 가이드 API 호출 시작 - isNotNomal: \(isNotNomal != nil)")
         
-        // 비정상 종료일 때 있는 데이터 불러오기
-        if let isNotNomal = isNotNomal{
-            print("🔄 비정상 종료 감지 - 원본 데이터 백업")
-            // 라이딩 시작 전 원본 데이터 백업
-            backupOriginalData()
-        }
+        // 라이딩 시작 전 원본 데이터 백업 (정상/비정상 종료 모두)
+        print("🔄 라이딩 시작 - 원본 데이터 백업")
+        backupOriginalData()
         
         // 재시도 메커니즘 (비정상 종료 시 안정성 강화)
         var retryCount = 0
