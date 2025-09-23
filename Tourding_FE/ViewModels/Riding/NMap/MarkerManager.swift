@@ -106,8 +106,13 @@ final class MarkerManager {
     }
     
     func clearMarkers() {
-        markers.forEach { $0.mapView = nil }
+        print("🗑️ MarkerManager: 마커 제거 시작 - \(markers.count)개")
+        markers.forEach { 
+            $0.mapView = nil
+            $0.hidden = true  // 마커를 숨김으로 확실하게 제거
+        }
         markers.removeAll()
+        print("🗑️ MarkerManager: 마커 제거 완료")
     }
     
     func clearToiletMarkers() {

@@ -7,6 +7,8 @@
 
 import SwiftUI
 import NMapsMap
+import SDWebImageSwiftUI
+
 
 struct RidingView: View {
     @EnvironmentObject var navigationManager: NavigationManager
@@ -138,7 +140,9 @@ struct RidingView: View {
                     VStack(spacing: 4){
                         Spacer()
                         
-                        GIFView(name: "searching-route-속도-2")
+                        AnimatedImage(name: "searching-route-속도-2.gif")
+                            .resizable()
+                            .scaledToFit()
                             .frame(width: 200, height: 200)
                         
                         Text("길 안내를 준비하고 있어요\n잠시만 기다려 주세요")
@@ -161,6 +165,18 @@ struct RidingView: View {
             // 위치 권한 확인 및 요청
             checkAndRequestLocationPermission()
             
+            // SpotAddView로부터 돌아올 때 flag 상태 확인 및 초기화
+            if ridingViewModel.flag && isNotNomal == nil && !isStart {
+                print("🔄 SpotAddView로부터 돌아옴 - flag 상태 확인")
+                print("  - 현재 flag: \(ridingViewModel.flag)")
+                print("  - isNotNomal: \(isNotNomal != nil)")
+                print("  - isStart: \(isStart)")
+                
+                // SpotAddView로부터 돌아온 경우 flag를 false로 초기화
+                ridingViewModel.flag = false
+                print("✅ flag를 false로 초기화")
+            }
+            
             if let isNotNomal = isNotNomal { // 비정상 종료일 때 바로 라이딩 중으로 이동
                 ridingViewModel.flag = isNotNomal
                 print("🔄 비정상 종료 감지 - 라이딩 모드로 복구")
@@ -171,8 +187,9 @@ struct RidingView: View {
                 startRidingWithLoading()
             }
             
-                // flag가 true일 때 카메라를 사용자 위치로 이동하고 위치 추적 시작
-            if ridingViewModel.flag {
+            // flag가 true일 때 카메라를 사용자 위치로 이동하고 위치 추적 시작
+            // (SpotAddView로부터 돌아온 경우가 아닐 때만)
+            if ridingViewModel.flag && !(isNotNomal == nil && !isStart) {
                 print("🎯 onAppear - 라이딩 중, startRidingProcess 로직 실행")
                 // startRidingProcess와 동일한 로직 실행
                 if let coordinate = locationManager.getCurrentLocationAsNMGLatLng(),
@@ -201,7 +218,9 @@ struct RidingView: View {
                             let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
                             mapViewController.updateUserLocation(clLocation)
                         }
-                        ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+                        Task {
+                            await ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+                        }
                     }
                     
                     // 콜백 설정
@@ -556,7 +575,9 @@ struct RidingView: View {
                 let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
                 mapViewController.updateUserLocation(clLocation)
             }
-            ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+            Task {
+                await ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+            }
         }
         
         // 기존 locationManager의 콜백 업데이트
