@@ -189,7 +189,7 @@ final class SpotAddViewModel: ObservableObject {
         
         isLoading = true
         do {
-            let response = try await routeRepository.getRoutesLocationName(userId: userId)
+            let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: false)
             routeLocation = response
             
 //            print("routeLocation: \(routeLocation)")
@@ -248,7 +248,8 @@ final class SpotAddViewModel: ObservableObject {
             goal: "\(end.lon),\(end.lat)",
             wayPoints: wayPoints,
             locateName: locateName,
-            typeCode: typeCode
+            typeCode: typeCode,
+            isUsed: false
         )
 
 //        print("requestBody: \(requestBody)")

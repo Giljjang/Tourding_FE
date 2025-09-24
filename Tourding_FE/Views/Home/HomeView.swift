@@ -65,8 +65,8 @@ struct HomeView: View {
             .padding(.horizontal, 16)
             .background(Color.gray1)
             
-            // 커스텀 모달 뷰
-            if modalManager.isPresented && modalManager.showView == .tabView {
+            // 커스텀 모달 뷰 - 비정상 종료
+            if modalManager.isPresented && modalManager.showView == .tabView && !viewModel.routeLocation.isEmpty {
                 Color.black.opacity(0.3)
                     .ignoresSafeArea()
                 
@@ -78,7 +78,7 @@ struct HomeView: View {
                 Color.white.opacity(0.5)
                     .ignoresSafeArea()
                 
-                VStack{
+                VStack {
                     Spacer()
                     
                     DotsLoadingView()

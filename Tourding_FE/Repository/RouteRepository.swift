@@ -32,30 +32,66 @@ final class RouteRepository: RouteRepositoryProtocol {
         }
     }
     
-    func getRoutesPath(userId: Int) async throws -> [RoutePathModel]{
+    func getRoutesPath(userId: Int, isUsed: Bool) async throws -> [RoutePathModel]{
         let routePaths: [RoutePathModel] = try await NetworkService.request(
             apiType: .main,
-            endpoint: "/routes/path", parameters: ["userId": String(userId)]
+            endpoint: "/routes/path",
+            parameters: ["userId": String(userId), "isUsed": String(isUsed)]
         )
         
         return routePaths
     }
     
-    func getRoutesLocationName(userId: Int) async throws  -> [LocationNameModel]{
+    func getRoutesLocationName(userId: Int , isUsed: Bool) async throws  -> [LocationNameModel]{
         let routeLocations: [LocationNameModel] = try await NetworkService.request(
             apiType: .main,
-            endpoint: "/routes/location-name", parameters: ["userId": String(userId)]
+            endpoint: "/routes/location-name",
+            parameters: ["userId": String(userId), "isUsed": String(isUsed)]
         )
         
         return routeLocations
     }
     
-    func getRoutesGuide(userId: Int) async throws  -> [GuideModel]{
+    func getRoutesGuide(userId: Int , isUsed: Bool) async throws  -> [GuideModel]{
         let routeGuides: [GuideModel] = try await NetworkService.request(
             apiType: .main,
-            endpoint: "/routes/guide", parameters: ["userId": String(userId)]
+            endpoint: "/routes/guide",
+            parameters: ["userId": String(userId), "isUsed": String(isUsed)]
         )
         
         return routeGuides
+    }
+    
+    // 경로 총시간, 거리
+    func getRoutes(userId: Int, isUsed: Bool) async throws  -> RoutesModel {
+        let routesTotal: RoutesModel = try await NetworkService.request(
+            apiType: .main,
+            endpoint: "/routes",
+            parameters: ["userId": String(userId), "isUsed": String(isUsed)]
+        )
+            
+        return routesTotal
+    }
+    
+    //추천코스
+    func getRoutesRidingRecommend(pageNum:Int) async throws -> [RouteRidingRecommendModel] {
+        let routesRecommendList: [RouteRidingRecommendModel] = try await NetworkService.request(
+            apiType: .main,
+            endpoint: "/routes/riding-recommend",
+            parameters: ["pageNum": String(pageNum)]
+        )
+        
+        return routesRecommendList
+    }
+    
+    func postRoutesByName(requestBody:ReqRoutesByNameModel) async throws -> RoutesModel {
+        let routesByName: RoutesModel = try await NetworkService.request(
+            apiType: .main,
+            endpoint: "/routes/by-name",
+            body: requestBody,
+            method: "POST"
+        )
+        
+        return routesByName
     }
 }

@@ -25,7 +25,7 @@ extension RidingViewModel {
         
         while retryCount < maxRetries {
             do {
-                let response = try await routeRepository.getRoutesLocationName(userId: userId)
+                let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: self.flag)
                 routeLocation = response
                 
                 markerCoordinates = routeLocation.compactMap { item in
@@ -84,7 +84,7 @@ extension RidingViewModel {
         
         while retryCount < maxRetries {
             do {
-                let response = try await routeRepository.getRoutesPath(userId: userId)
+                let response = try await routeRepository.getRoutesPath(userId: userId, isUsed: self.flag)
                 routeMapPaths = response
                 
                 pathCoordinates = routeMapPaths.compactMap { item in
@@ -152,7 +152,8 @@ extension RidingViewModel {
             goal: "\(end.lon),\(end.lat)",
             wayPoints: wayPoints,
             locateName: locateName,
-            typeCode: typeCode
+            typeCode: typeCode,
+            isUsed: self.flag
         )
         
         //        print("requestBody: \(requestBody)")
@@ -200,7 +201,8 @@ extension RidingViewModel {
             goal: "\(end.lon),\(end.lat)",
             wayPoints: wayPoints,
             locateName: locateName,
-            typeCode: typeCode
+            typeCode: typeCode,
+            isUsed: self.flag
         )
         
         //    print("requestBody: \(requestBody)")
@@ -218,6 +220,57 @@ extension RidingViewModel {
     }
     
     //MARK: - 라이딩 중 API 호출
+    
+    // 라이딩이 시작했으니 실제로 길찾기에 사용된 코스를 저장하기 위해 post
+    @MainActor
+    func postRidingStartAPI(locationData: [LocationNameModel]) async {
+        guard let userId = userId else {
+            print("❌ userId가 nil입니다")
+            return
+        }
+        
+        guard let start = locationData.first,
+              let end = locationData.last else {
+            print("❌ 경로 데이터가 부족합니다")
+            return
+        }
+        
+        isLoading = true
+        
+        // wayPoints (0, last 제외)
+        let middlePoints = locationData.dropFirst().dropLast()
+        let wayPointsArray = middlePoints.map { "\($0.lon),\($0.lat)" }
+        let wayPoints = wayPointsArray.joined(separator: "|")
+        
+        // locateName (모두 포함)
+        let locateNames = locationData.map { $0.name }
+        let locateName = locateNames.joined(separator: ",")
+        
+        // typeCode (0번, 마지막 제외)
+        let typeCodes = locationData.dropFirst().dropLast().map { $0.typeCode }
+        let typeCode = typeCodes.joined(separator: ",")
+        
+        let requestBody = RequestRouteModel(
+            userId: userId,
+            start: "\(start.lon),\(start.lat)",
+            goal: "\(end.lon),\(end.lat)",
+            wayPoints: wayPoints,
+            locateName: locateName,
+            typeCode: typeCode,
+            isUsed: true
+        )
+        
+        do {
+            let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
+            
+            isLoading = false
+        } catch {
+            print("로그 확인: \(requestBody)")
+            print("POST ERROR: /routes \(error)")
+        }
+    }
+    
+    // routes/guide & routes/path
     @MainActor
     func getRouteGuideAPI(isNotNomal: Bool?) async {
         guard let userId = userId else {
@@ -251,8 +304,16 @@ extension RidingViewModel {
                 backupOriginalData()
             }
         } else {
-            // 정상 시작 시에는 기존 데이터로 바로 백업
-            backupOriginalData()
+            
+            do {
+                try Task.checkCancellation()
+                await postRidingStartAPI(locationData: routeLocation)
+                
+                // 정상 시작 시에는 기존 데이터로 바로 백업
+                backupOriginalData()
+            } catch {
+                print("❌ 정상 라이딩 시작시 post 에러: \(error)")
+            }
         }
         
         // 재시도 메커니즘 (비정상 종료 시 안정성 강화)
@@ -261,7 +322,7 @@ extension RidingViewModel {
         
         while retryCount < maxRetries {
             do {
-                let response = try await routeRepository.getRoutesGuide(userId: userId)
+                let response = try await routeRepository.getRoutesGuide(userId: userId, isUsed: true)
                 guideList = response
                 
                 print("✅ 가이드 데이터 로드 완료: \(guideList.count)개")
