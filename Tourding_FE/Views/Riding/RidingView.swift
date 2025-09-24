@@ -234,6 +234,10 @@ struct RidingView: View {
             
             Task { [weak ridingViewModel] in
                 do {
+                    
+                    try Task.checkCancellation()
+                    await ridingViewModel?.getRoutesTotalAPI()
+                    
                     try Task.checkCancellation()
                     await ridingViewModel?.getRouteLocationAPI()
                     
@@ -312,6 +316,9 @@ struct RidingView: View {
                 
                 Task { [weak ridingViewModel] in
                     do {
+                        try Task.checkCancellation()
+                        await ridingViewModel?.getRoutesTotalAPI()
+                        
                         try Task.checkCancellation()
                         await ridingViewModel?.getRouteLocationAPI()
                         
@@ -499,6 +506,9 @@ struct RidingView: View {
     private func refreshRouteData() {
         Task { [weak ridingViewModel] in
             do {
+                try Task.checkCancellation()
+                await ridingViewModel?.getRoutesTotalAPI()
+                
                 try Task.checkCancellation()
                 await ridingViewModel?.getRouteLocationAPI()
                 

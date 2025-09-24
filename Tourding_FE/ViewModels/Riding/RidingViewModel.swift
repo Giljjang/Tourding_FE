@@ -17,6 +17,7 @@ final class RidingViewModel: ObservableObject {
     //라이딩 시작 전
     @Published var routeLocation: [LocationNameModel] = []
     @Published var routeMapPaths: [RoutePathModel] = []
+    @Published var routeTotal: RoutesModel? = nil
     
     @Published var nthLineHeight: Double = 0 // spotRow 왼쪽 라인 길이
     

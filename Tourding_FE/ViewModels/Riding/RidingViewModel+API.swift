@@ -11,6 +11,27 @@ import NMapsMap
 extension RidingViewModel {
     //MARK: - 라이딩 시작하기 전 API 호출
     @MainActor
+    func getRoutesTotalAPI() async {
+        guard let userId = userId else {
+            print("❌ userId가 nil입니다")
+            return
+        }
+        
+        isLoading = true
+        
+        do {
+            let response = try await routeRepository.getRoutes(userId: userId, isUsed: false)
+            routeTotal = response
+            
+        } catch {
+            print("ERRO: GET - \(error)")
+        }
+        
+        isLoading = false
+        
+    }
+    
+    @MainActor
     func getRouteLocationAPI() async {
         guard let userId = userId else {
             print("❌ userId가 nil입니다")
@@ -289,8 +310,8 @@ extension RidingViewModel {
             
             // 경로 데이터 재로드
             do {
-                try Task.checkCancellation()
-                await getRouteLocationAPI()
+//                try Task.checkCancellation()
+//                await getRouteLocationAPI()
                 
                 try Task.checkCancellation()
                 await getRoutePathAPI()
