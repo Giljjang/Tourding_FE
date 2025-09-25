@@ -131,7 +131,7 @@ final class DetailSpotViewModel: ObservableObject {
         }
         
         do {
-            let response = try await routeRepository.getRoutesLocationName(userId: userId)
+            let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: false)
             routeLocation = response
             
             print("🔹routeLocation: \(routeLocation)")
@@ -191,7 +191,8 @@ final class DetailSpotViewModel: ObservableObject {
             goal: "\(end.lon),\(end.lat)",
             wayPoints: wayPoints,
             locateName: locateName,
-            typeCode: typeCode
+            typeCode: typeCode,
+            isUsed: false
         )
         
         do {

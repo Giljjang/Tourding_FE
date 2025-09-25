@@ -531,22 +531,18 @@ struct RidingView: View {
     
     // 라이딩 시작하기 버튼 클릭 시 3초 로딩과 함께 시작
     func startRidingWithLoading() {
-        
-        wasLastRunNormal = false // 비정상 종료 감지 on
-        
-        // 라이딩 시작 로딩 상태 활성화
+        wasLastRunNormal = false // 비정상 종료
         ridingViewModel.isStartingRiding = true
         
-        self.startRidingAPIProcess()
-        
-        // 3초 후 라이딩 시작
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+        Task {
+            await self.startRidingAPIProcess() // 끝날 때까지 기다림
+            try? await Task.sleep(nanoseconds: 3_000_000_000) // 3초 대기
             self.ridingViewModel.isStartingRiding = false
         }
     }
     
     // 라이딩 중 API 호출 로직
-    func startRidingAPIProcess() {
+    func startRidingAPIProcess() async {
         // flag 설정
         ridingViewModel.flag = true
         

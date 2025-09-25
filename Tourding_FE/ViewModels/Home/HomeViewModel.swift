@@ -43,7 +43,8 @@ final class HomeViewModel: ObservableObject {
             goal: "\(end.longitude),\(end.latitude)",
             wayPoints: "",
             locateName: "\(start.name),\(end.name)",
-            typeCode: ""
+            typeCode: "",
+            isUsed: false
         )
         do {
             try await routeRepository.postRoutes(requestBody: requestBody)
@@ -63,7 +64,7 @@ final class HomeViewModel: ObservableObject {
         }
         print("여기는 getRouteLocationAPI \(uid)\(uid)\(uid)\(uid)\(uid)")
         do {
-            let response = try await routeRepository.getRoutesLocationName(userId: uid)
+            let response = try await routeRepository.getRoutesLocationName(userId: uid, isUsed: true)
             routeLocation = response
         } catch {
             print("GET ERROR:", error)
