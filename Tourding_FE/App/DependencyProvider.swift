@@ -9,8 +9,8 @@ import Foundation
 
 struct DependencyProvider {
     @MainActor static func makeTabViewModels() -> TabViewModelsContainer {
-        let RouteRepository = RouteRepository()
-        let Tourerepository = TourRepository()
+        let RouteRepository = RouteRepository.shared
+        let Tourerepository = TourRepository.shared
         
         let homeViewModel = HomeViewModel(routeRepository: RouteRepository)
         let myPageViewModel = MyPageViewModel()
@@ -28,8 +28,8 @@ struct DependencyProvider {
     }
     
     @MainActor static func makeRidingViewModel() -> RidingViewModel {
-        let RouteRepository = RouteRepository()
-        let KakaoRepository = KakaoRepository()
+        let RouteRepository = RouteRepository.shared
+        let KakaoRepository = KakaoRepository.shared
         let ridingViewModel = RidingViewModel(
             routeRepository: RouteRepository,
             kakaoRepository: KakaoRepository
@@ -42,8 +42,8 @@ struct DependencyProvider {
     }
     
     @MainActor static func makespotAddViewModel() -> SpotAddViewModel {
-        let Tourerepository = TourRepository()
-        let RouteRepository = RouteRepository()
+        let Tourerepository = TourRepository.shared
+        let RouteRepository = RouteRepository.shared
         
         let spotAddViewModel = SpotAddViewModel(
             tourRepository: Tourerepository,
@@ -57,16 +57,22 @@ struct DependencyProvider {
     }
     
     @MainActor static func makesFilterBarViewModel() -> FilterBarViewModel {
-        let FilterBarViewModel = FilterBarViewModel(tourRepository: TourRepository())
+        let FilterBarViewModel = FilterBarViewModel(tourRepository: TourRepository.shared)
         return FilterBarViewModel
     }
     
     @MainActor static func makeDetailViewModel() -> DetailSpotViewModel {
-        let Tourerepository = TourRepository()
-        let RouteRepository = RouteRepository()
+        let Tourerepository = TourRepository.shared
+        let RouteRepository = RouteRepository.shared
         
         return DetailSpotViewModel(
             tourRepository: Tourerepository,
             routeRepository: RouteRepository)
+    }
+    
+    static func makeRecommendViewModel() -> RecommendRouteViewModel {
+        let Tourerepository = TourRepository.shared
+        
+        return RecommendRouteViewModel(tourRepository: Tourerepository)
     }
 }

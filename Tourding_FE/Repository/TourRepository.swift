@@ -8,6 +8,11 @@
 import Foundation
 
 class TourRepository: TourRepositoryProtocol {
+    
+    static let shared = TourRepository()
+    
+    private init() {}
+    
     func searchLocationSpots(pageNum: Int, mapX: String, mapY: String, radius: String, typeCode: String) async throws -> [SpotData] {
         let requestBody = SpotSearchRequest(
             pageNum: pageNum,

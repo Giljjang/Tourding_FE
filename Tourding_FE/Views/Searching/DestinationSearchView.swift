@@ -403,21 +403,3 @@ struct DestinationSearchView: View {
         }
     }
 }
-
-// MARK: - 미리보기
-#Preview {
-    let filterViewModel = FilterBarViewModel(tourRepository: TourRepository())
-    let recentSearchViewModel = RecentSearchViewModel()
-    
-    return NavigationView {
-        DestinationSearchView(
-            isFromHome: false,
-            filterViewModel: filterViewModel,
-            RecentSearchViewModel: recentSearchViewModel,
-            isAddSpot: false
-        )
-        .environmentObject(NavigationManager())
-        .environmentObject(RouteSharedManager())
-        .environmentObject(HomeViewModel(routeRepository: RouteRepository()))
-    }
-}

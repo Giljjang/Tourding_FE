@@ -30,7 +30,7 @@ final class RidingViewModel: ObservableObject {
     
     // MARK: - 지도 관련 프로퍼티
     var locationManager: LocationManager?
-    var userLocationManager: UserLocationManager?
+    var userLocationManager: LocationManager?
     var mapView: NMFMapView?
     var markerManager: MarkerManager?
     var pathManager: PathManager?
@@ -117,7 +117,6 @@ final class RidingViewModel: ObservableObject {
         if let pathManager = pathManager {
             pathManager.clearPath()
             pathManager.setCoordinates(pathCoordinates)
-//            print("✅ 경로선 새로고침 완료: \(pathCoordinates.count)개")
         }
         
         print("🔄 지도 표시 새로고침 완료")
@@ -129,6 +128,7 @@ final class RidingViewModel: ObservableObject {
         originalPathCoordinates = pathCoordinates
         originalMarkerCoordinates = markerCoordinates
         originalMarkerIcons = markerIcons
+        
         print("💾 원본 경로 데이터 백업 완료: 경로선 \(originalPathCoordinates.count)개, 마커 \(originalMarkerCoordinates.count)개")
     }
     

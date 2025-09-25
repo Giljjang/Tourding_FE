@@ -113,8 +113,11 @@ struct DetailSpotView: View {
                 .onEnded { value in
                     // 왼쪽에서 오른쪽으로 스와이프 감지
                     if value.translation.width > 100 && abs(value.translation.height) < 50 {
-                        print("👈 스와이프 뒤로가기 감지")
-                        navigationManager.pop()
+                        if modalManager.isImageZoomPresented {
+                            modalManager.isImageZoomPresented = false
+                        } else {
+                            navigationManager.pop()
+                        }
                     }
                 }
         ) // :gesture

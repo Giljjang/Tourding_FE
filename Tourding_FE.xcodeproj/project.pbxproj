@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		149C0F082E811F2A00D44968 /* SDWebImageSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = 149C0F072E811F2A00D44968 /* SDWebImageSwiftUI */; };
 		14A68D452E32621B0005F2E9 /* NMapsMap in Frameworks */ = {isa = PBXBuildFile; productRef = 14A68D442E32621B0005F2E9 /* NMapsMap */; };
 		81D990D22E36AB7D000A622B /* KakaoSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 81D990D12E36AB7D000A622B /* KakaoSDK */; };
 		81D990D42E36AB7D000A622B /* KakaoSDKAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 81D990D32E36AB7D000A622B /* KakaoSDKAuth */; };
@@ -84,6 +85,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				149C0F082E811F2A00D44968 /* SDWebImageSwiftUI in Frameworks */,
 				14A68D452E32621B0005F2E9 /* NMapsMap in Frameworks */,
 				81D990D22E36AB7D000A622B /* KakaoSDK in Frameworks */,
 				81D990D82E36AB7D000A622B /* KakaoSDKCertCore in Frameworks */,
@@ -157,6 +159,7 @@
 				81D990D52E36AB7D000A622B /* KakaoSDKCert */,
 				81D990D72E36AB7D000A622B /* KakaoSDKCertCore */,
 				81D990D92E36AB7D000A622B /* KakaoSDKCommon */,
+				149C0F072E811F2A00D44968 /* SDWebImageSwiftUI */,
 			);
 			productName = Tourding_FE;
 			productReference = 146757592E3244E30009354E /* Tourding_FE.app */;
@@ -243,6 +246,7 @@
 			packageReferences = (
 				14A68D432E32621B0005F2E9 /* XCRemoteSwiftPackageReference "SPM-NMapsMap" */,
 				81D990D02E36AB7D000A622B /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */,
+				149C0F062E811F2A00D44968 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1467575A2E3244E30009354E /* Products */;
@@ -638,6 +642,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		149C0F062E811F2A00D44968 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SDWebImage/SDWebImageSwiftUI";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.1.3;
+			};
+		};
 		14A68D432E32621B0005F2E9 /* XCRemoteSwiftPackageReference "SPM-NMapsMap" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/navermaps/SPM-NMapsMap";
@@ -657,6 +669,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		149C0F072E811F2A00D44968 /* SDWebImageSwiftUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 149C0F062E811F2A00D44968 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */;
+			productName = SDWebImageSwiftUI;
+		};
 		14A68D442E32621B0005F2E9 /* NMapsMap */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 14A68D432E32621B0005F2E9 /* XCRemoteSwiftPackageReference "SPM-NMapsMap" */;

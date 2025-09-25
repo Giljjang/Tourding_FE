@@ -14,11 +14,13 @@ enum ViewType : Hashable {
     case MyPageView
     
     case LoginView
-    case RidingView(isNotNomal: Bool? = nil) //비정상 종료일 때 true
+    case RidingView(isNotNomal: Bool? = nil, // 비정상 종료일 때 true
+                    isStart: Bool = false) // 바로 라이딩 시작하면 true
     case SpotAddView(lat: String, lon: String)
     case ServiceView
     case DestinationSearchView(isFromHome: Bool, isAddSpot: Bool)
     case DetailSpotView(isSpotAdd: Bool, detailId: ReqDetailModel)
+    case RecommendRouteView
 }
 
 final class NavigationManager: ObservableObject {
