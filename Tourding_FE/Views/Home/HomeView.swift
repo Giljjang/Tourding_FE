@@ -25,12 +25,14 @@ struct HomeView: View {
         case headerText
         case routeMaking
         case routeContinue
+        case recommendRoute
     }
     
     private let menus: [HomeMenu] = [
         .headerText,
         .routeMaking,
-        .routeContinue
+        .routeContinue,
+        .recommendRoute
     ]
     
     var body: some View {
@@ -51,6 +53,8 @@ struct HomeView: View {
                                 if !viewModel.routeLocation.isEmpty{
                                     routeContinue
                                 }
+                            case .recommendRoute:
+                                recommendRoute
                             }
                         }//ForEach
                     }//: VStack
@@ -106,6 +110,9 @@ struct HomeView: View {
                 do {
                     try Task.checkCancellation()
                     await viewModel?.getRouteLocationAPI()
+                    
+                    try Task.checkCancellation()
+                    await viewModel?.getRouteRecommendAPI()
                 } catch is CancellationError {
                     print("🚫 HomeView 초기화 Task 취소됨")
                 } catch {
@@ -287,7 +294,6 @@ struct HomeView: View {
     
     private var routeContinue: some View {
         Button(action: {
-            //modal test code
             navigationManager.push(.RidingView())
         }) {
             HStack(alignment: .top, spacing: 0) {
@@ -336,4 +342,89 @@ struct HomeView: View {
         Color.black.opacity(0.3)
             .ignoresSafeArea()
     }
+    
+    private var recommendRoute: some View {
+        VStack(alignment: .leading, spacing: 0) {
+           Text("지금 달리기 좋은 코스")
+                .foregroundColor(.gray6)
+                .font(.pretendardSemiBold(size: 22))
+                .padding(.bottom, 19)
+            
+            // repeat
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(viewModel.routeRecommendList.prefix(5), id:\.self) { item in
+                    //row
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("\(item.courseName) \(item.courseType)")
+                            .foregroundColor(.gray5)
+                            .font(.pretendardSemiBold(size: 18))
+                            .frame(minHeight: 29)
+                        
+                        HStack(spacing: 2) {
+                            Text(item.departure)
+                                .foregroundColor(.gray4)
+                                .font(.pretendardMedium(size: 14))
+                            
+                            Image("icon_right_color")
+                            
+                            Text(item.arrival)
+                                .foregroundColor(.gray4)
+                                .font(.pretendardMedium(size: 14))
+                            
+                            Spacer()
+                        } // : HStack
+                        .frame(minHeight: 22)
+                        .padding(.bottom, 10)
+                        
+                        HStack(alignment: .top, spacing: 8) {
+                            HStack(spacing: 2){
+                                Image("icon_time-required (1)")
+                                
+                                if item.hours != "0" {
+                                    Text("\(item.hours)시간 \(item.minutes)분")
+                                        .foregroundColor(.gray4)
+                                        .font(.pretendardMedium(size: 14))
+                                        .frame(minHeight: 22)
+                                } else {
+                                    Text("\(item.minutes)분")
+                                        .foregroundColor(.gray4)
+                                        .font(.pretendardMedium(size: 14))
+                                        .frame(minHeight: 22)
+                                }
+                            } // : HStack
+                            .padding(.vertical, 6)
+                            .padding(.leading, 6.5)
+                            .padding(.trailing, 8.5)
+                            .background(Color.gray1)
+                            .cornerRadius(8)
+                            
+                        } // : HStack
+                    } // : VStack row
+                    .padding(.horizontal, 20)
+                    .padding(.top, 18)
+                    .padding(.bottom, 20)
+                    .onTapGesture {
+                        Task { [weak viewModel] in
+                            do {
+                                try Task.checkCancellation()
+                                await viewModel?.postRouteByNameAPI(start: item.departure, goal: item.arrival)
+                                
+                                await MainActor.run {
+                                    navigationManager.push(.RecommendRouteView)
+                                }
+                            } catch is CancellationError {
+                                print("🚫 HomeView 라이딩 시작 Task 취소됨")
+                            } catch {
+                                print("❌ HomeView 라이딩 시작 에러: \(error)")
+                            }
+                        }
+                    } // :onTapGesture
+                } // : ForEach
+            } // : VStack
+            .background(.white)
+            .cornerRadius(20)
+            
+        } // : VStack
+        .padding(.top, 32)
+    }//: recommendRoute
 }

@@ -128,24 +128,18 @@ final class SpotAddViewModel: ObservableObject {
                 radius: "20000",
                 typeCode: typeCode
             )
-            
-            print("fetchNearbySpots typeCode : \(typeCode), pageNum: \(pageNum)")
-            print("📊 받은 데이터 개수: \(results.count)")
-            
+
             //추천 코스 제외
             let filteredResults = results.filter { $0.typeCode != "C01" }
-            print("🔍 필터링 후 데이터 개수: \(filteredResults.count)")
             
             if pageNum == 0 {
                 // 첫 페이지 → 기존 데이터 리셋
                 spots = filteredResults
                 currentPage = 0
-                print("🔄 첫 페이지 로드 완료 - 총 \(spots.count)개")
             } else {
                 // 다음 페이지 → 기존 데이터 뒤에 추가
                 spots.append(contentsOf: filteredResults)
                 currentPage = pageNum
-                print("➕ 다음 페이지 추가 완료 - 총 \(spots.count)개")
             }
             
             // 더 이상 데이터가 없는지 확인 (빈 배열이면 마지막 페이지)
