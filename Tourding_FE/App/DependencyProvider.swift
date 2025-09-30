@@ -72,7 +72,10 @@ struct DependencyProvider {
     
     static func makeRecommendViewModel() -> RecommendRouteViewModel {
         let Tourerepository = TourRepository.shared
+        let RouteRepository = RouteRepository.shared
         
-        return RecommendRouteViewModel(tourRepository: Tourerepository)
+        return RecommendRouteViewModel(
+            tourRepository: Tourerepository,
+            routeRepository: RouteRepository)
     }
 }

@@ -17,7 +17,7 @@ enum RecommendBottomSheetPosition: CaseIterable {
     func height(screenHeight: CGFloat) -> CGFloat {
         switch self {
         case .small:
-            return 0.3
+            return screenHeight * 0.28
         case .medium:
             return screenHeight * 0.5
         case .large:

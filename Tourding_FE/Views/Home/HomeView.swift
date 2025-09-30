@@ -410,7 +410,10 @@ struct HomeView: View {
                                 await viewModel?.postRouteByNameAPI(start: item.departure, goal: item.arrival)
                                 
                                 await MainActor.run {
-                                    navigationManager.push(.RecommendRouteView)
+                                    navigationManager.push(.RecommendRouteView(
+                                        routeName: "\(item.courseName) \(item.courseType)",
+                                        description: item.description)
+                                    )
                                 }
                             } catch is CancellationError {
                                 print("🚫 HomeView 라이딩 시작 Task 취소됨")
