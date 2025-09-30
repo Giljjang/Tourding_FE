@@ -33,7 +33,7 @@ final class LocationManager: NSObject, ObservableObject {
     private var lastHeadingUpdate: Date = Date()
     private let headingUpdateThreshold: TimeInterval = 0.5 // 0.5초마다 업데이트
     // 바텀시트 높이에 따라 동적으로 조정할 카메라 pivot Y 값
-    @Published var cameraPivotY: CGFloat = 0.5
+    @Published var cameraPivotY: CGFloat = 0.3
     
     // MARK: - Initialization
     override init() {
@@ -314,11 +314,21 @@ final class LocationManager: NSObject, ObservableObject {
 extension LocationManager {
     // 바텀시트 위치 변화에 따라 카메라 pivot만 재조정
     func updateCameraPivot(on mapView: NMFMapView, yPivot: CGFloat) {
-        let currentCamera = mapView.cameraPosition
-        let cameraUpdate = NMFCameraUpdate(position: currentCamera)
-        cameraUpdate.pivot = CGPoint(x: 0.5, y: yPivot)
-        cameraUpdate.animation = .easeIn
-        mapView.moveCamera(cameraUpdate)
+        // 네비게이션 모드에서는 현재 위치 기반으로 카메라 업데이트
+        if isNavigationMode, let location = currentLocation {
+            let coordinate = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
+            let cameraUpdate = NMFCameraUpdate(scrollTo: coordinate)
+            cameraUpdate.pivot = CGPoint(x: 0.5, y: yPivot)
+            cameraUpdate.animation = .easeIn
+            mapView.moveCamera(cameraUpdate)
+        } else {
+            // 일반 모드에서는 현재 카메라 위치 유지하면서 pivot만 변경
+            let currentCamera = mapView.cameraPosition
+            let cameraUpdate = NMFCameraUpdate(position: currentCamera)
+            cameraUpdate.pivot = CGPoint(x: 0.5, y: yPivot)
+            cameraUpdate.animation = .easeIn
+            mapView.moveCamera(cameraUpdate)
+        }
     }
 }
 
