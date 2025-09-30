@@ -66,6 +66,19 @@ struct RecommendRouteView: View {
                 
                 recommendButtons
                 
+                if recommendRouteViewModel.isLoading {
+                    Color.white.opacity(0.5)
+                        .ignoresSafeArea()
+                    
+                    VStack{
+                        Spacer()
+                        
+                        DotsLoadingView()
+                        
+                        Spacer()
+                    }
+                }// if 로딩 상태(일반)
+                
             } // : ZStack
         } // : GeometryReader
         .ignoresSafeArea()

@@ -282,6 +282,14 @@ struct RidingView: View {
             print("🔄 앱이 포그라운드로 돌아옴 - 지도 상태 확인")
             checkAndRefreshMapData()
         }
+        .onChange(of: currentPosition) { newValue in
+            guard let mapView = ridingViewModel.mapView else { return }
+            let yPivot: CGFloat = (newValue == .small) ? 0.5 : 0.3
+            // pivot 상태 저장 (네비게이션 모드에서도 참조)
+            ridingViewModel.locationManager?.cameraPivotY = yPivot
+            // 즉시 적용 (네비게이션/비네비 모두 안전 적용: 헤딩 포함 업데이트는 기존 로직이 계속 수행)
+            ridingViewModel.locationManager?.updateCameraPivot(on: mapView, yPivot: yPivot)
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
             // 앱이 백그라운드로 갈 때
             print("⏸️ 앱이 백그라운드로 이동")
