@@ -314,12 +314,16 @@ final class LocationManager: NSObject, ObservableObject {
 extension LocationManager {
     // 바텀시트 위치 변화에 따라 카메라 pivot만 재조정
     func updateCameraPivot(on mapView: NMFMapView, yPivot: CGFloat) {
+        // 기존 애니메이션 취소
+        mapView.cancelTransitions()
+        
         // 네비게이션 모드에서는 현재 위치 기반으로 카메라 업데이트
         if isNavigationMode, let location = currentLocation {
             let coordinate = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
             let cameraUpdate = NMFCameraUpdate(scrollTo: coordinate)
             cameraUpdate.pivot = CGPoint(x: 0.5, y: yPivot)
             cameraUpdate.animation = .easeIn
+            cameraUpdate.animationDuration = 0.2
             mapView.moveCamera(cameraUpdate)
         } else {
             // 일반 모드에서는 현재 카메라 위치 유지하면서 pivot만 변경
@@ -327,6 +331,7 @@ extension LocationManager {
             let cameraUpdate = NMFCameraUpdate(position: currentCamera)
             cameraUpdate.pivot = CGPoint(x: 0.5, y: yPivot)
             cameraUpdate.animation = .easeIn
+            cameraUpdate.animationDuration = 0.2
             mapView.moveCamera(cameraUpdate)
         }
     }
