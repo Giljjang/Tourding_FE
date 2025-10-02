@@ -283,36 +283,25 @@ struct RidingView: View {
             checkAndRefreshMapData()
         }
         .onChange(of: currentPosition) { oldValue, newValue in
-            guard let mapView = ridingViewModel.mapView else { return }
+            guard let mapView = ridingViewModel.mapView,
+                  let locationManager = ridingViewModel.locationManager else { return }
             
-            // large로 갈 때나 large에서 medium으로 갈 때만 카메라 시점 변경하지 않음
-            if newValue == .large {
-                return
-            }
-            
-            // large에서 medium으로 갈 때도 카메라 시점 변경하지 않음
-            if oldValue == .large && newValue == .medium {
-                return
-            }
-            
-            // 바텀시트 위치에 따른 카메라 피봇 조정
+            // 바텀시트 위치에 따른 카메라 피봇 설정
             let yPivot: CGFloat
             switch newValue {
             case .small:
-                yPivot = 0.6  // 바텀시트가 작을 때 카메라 시점을 더 위로
+                yPivot = 0.5  // small일 때 피봇 0.5
             case .medium:
-                yPivot = 0.4  // 중간 크기일 때 적당한 위치
+                yPivot = 0.3  // medium일 때 피봇 0.3
             case .large:
-                return  // large일 때는 아무것도 하지 않음
+                yPivot = 0.3  // large일 때 피봇 0.3
             }
             
-            // pivot 상태 저장 (네비게이션 모드에서도 참조)
-            ridingViewModel.locationManager?.cameraPivotY = yPivot
+            // pivot 상태 저장
+            locationManager.cameraPivotY = yPivot
             
-            // 애니메이션 충돌 방지를 위해 약간의 지연 후 실행
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                ridingViewModel.locationManager?.updateCameraPivot(on: mapView, yPivot: yPivot)
-            }
+            // moveToCurrentLocation 호출하여 현재 위치로 카메라 이동
+            locationManager.moveToCurrentLocation(on: mapView)
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
             // 앱이 백그라운드로 갈 때
