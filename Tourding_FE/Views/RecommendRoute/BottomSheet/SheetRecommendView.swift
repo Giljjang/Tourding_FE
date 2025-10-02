@@ -26,7 +26,8 @@ struct SheetRecommendView: View {
             
             Rectangle()
                 .foregroundColor(.clear)
-                .frame(width: 390, height: 8)
+                .frame(maxWidth: .infinity)
+                .frame(height: 8)
                 .background(Color.gray1)
             
             // 컨텐츠
@@ -166,7 +167,7 @@ struct SheetRecommendView: View {
                         .padding(.bottom, 3.5)
                 }
             } // : VStack
-            .frame(minWidth: 98)
+            .frame(maxWidth: 98)
             
             Rectangle()
                 .foregroundColor(.clear)
@@ -192,7 +193,7 @@ struct SheetRecommendView: View {
                         .padding(.bottom, 3.5)
                 }
             } // : VStack
-            .frame(minWidth: 98)
+            .frame(maxWidth: 98)
         } // : HStack
         .padding(.horizontal, 39)
         .padding(.bottom, 18)

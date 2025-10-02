@@ -157,12 +157,19 @@ struct RecommendRouteView: View {
             Button(action:{
                 navigationManager.push(.RidingView())
             }){
-                Text("코스 편집")
-                    .foregroundColor(.gray5)
-                    .font(.pretendardSemiBold(size: 16))
-                    .frame(minHeight: 22)
+                HStack(spacing: 0){
+                    
+                    Spacer()
+                    
+                    Text("코스 편집")
+                        .foregroundColor(.gray5)
+                        .font(.pretendardSemiBold(size: 16))
+                        .frame(minHeight: 22)
+                    
+                    Spacer()
+                }
             } // : Button
-            .frame(width: 175, height: 54)
+            .frame(height: 54)
             .background(.white)
             .cornerRadius(10)
             .overlay(
@@ -173,13 +180,19 @@ struct RecommendRouteView: View {
             Button(action:{
                 navigationManager.push(.RidingView(isNotNomal: false, isStart: true))
             }){
-                Text("라이딩 시작")
-                    .foregroundColor(.white)
-                    .font(.pretendardSemiBold(size: 16))
-                    .frame(minHeight: 22)
+                HStack(spacing: 0){
                     
+                    Spacer()
+                    
+                    Text("라이딩 시작")
+                        .foregroundColor(.white)
+                        .font(.pretendardSemiBold(size: 16))
+                        .frame(minHeight: 22)
+                
+                    Spacer()
+                }
             } // : Button
-            .frame(width: 175, height: 54)
+            .frame(height: 54)
             .background(Color.gray5)
             .cornerRadius(10)
             
