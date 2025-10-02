@@ -390,7 +390,7 @@ struct RidingView: View {
                             ridingViewModel.showToilet = false
                             
                             // 라이딩 종료 시 원본 데이터로 복원
-                            ridingViewModel.restoreOriginalData()
+                            ridingViewModel.restoreOriginalData(isStart: isStart)
                             
                             // flag를 false로 설정 (마지막에 실행)
                             ridingViewModel.flag = false
