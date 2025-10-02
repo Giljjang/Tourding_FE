@@ -9,6 +9,6 @@ import Foundation
 
 struct RoutesModel : Codable {
     let isUsed: Bool
-    let duration: Int // 초 단위
-    let distance: Int // 미터 단위
+    let duration: Double // 초 단위
+    let distance: Double // 미터 단위
 }

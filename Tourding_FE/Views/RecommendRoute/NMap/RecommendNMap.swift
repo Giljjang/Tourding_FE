@@ -35,7 +35,7 @@ struct RecommendNMap: View {
                 pathCoordinates: $recommendRouteViewModel.pathCoordinates,
                 markerCoordinates: $recommendRouteViewModel.markerCoordinates,
                 markerIcons: $recommendRouteViewModel.markerIcons,
-                
+                recommendRouteViewModel: recommendRouteViewModel,
                 userLocationManager: userLocationManager,
                 onLocationUpdate: { location in
                     currentLocation = location

@@ -234,6 +234,10 @@ struct RidingView: View {
             
             Task { [weak ridingViewModel] in
                 do {
+                    
+                    try Task.checkCancellation()
+                    await ridingViewModel?.getRoutesTotalAPI()
+                    
                     try Task.checkCancellation()
                     await ridingViewModel?.getRouteLocationAPI()
                     
@@ -278,6 +282,27 @@ struct RidingView: View {
             print("🔄 앱이 포그라운드로 돌아옴 - 지도 상태 확인")
             checkAndRefreshMapData()
         }
+        .onChange(of: currentPosition) { oldValue, newValue in
+            guard let mapView = ridingViewModel.mapView,
+                  let locationManager = ridingViewModel.locationManager else { return }
+            
+            // 바텀시트 위치에 따른 카메라 피봇 설정
+            let yPivot: CGFloat
+            switch newValue {
+            case .small:
+                yPivot = 0.5  // small일 때 피봇 0.5
+            case .medium:
+                yPivot = 0.3  // medium일 때 피봇 0.3
+            case .large:
+                yPivot = 0.3  // large일 때 피봇 0.3
+            }
+            
+            // pivot 상태 저장
+            locationManager.cameraPivotY = yPivot
+            
+            // moveToCurrentLocation 호출하여 현재 위치로 카메라 이동
+            locationManager.moveToCurrentLocation(on: mapView)
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
             // 앱이 백그라운드로 갈 때
             print("⏸️ 앱이 백그라운드로 이동")
@@ -312,6 +337,9 @@ struct RidingView: View {
                 
                 Task { [weak ridingViewModel] in
                     do {
+                        try Task.checkCancellation()
+                        await ridingViewModel?.getRoutesTotalAPI()
+                        
                         try Task.checkCancellation()
                         await ridingViewModel?.getRouteLocationAPI()
                         
@@ -499,6 +527,9 @@ struct RidingView: View {
     private func refreshRouteData() {
         Task { [weak ridingViewModel] in
             do {
+                try Task.checkCancellation()
+                await ridingViewModel?.getRoutesTotalAPI()
+                
                 try Task.checkCancellation()
                 await ridingViewModel?.getRouteLocationAPI()
                 

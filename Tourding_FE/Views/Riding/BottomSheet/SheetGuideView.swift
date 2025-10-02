@@ -156,7 +156,7 @@ struct guideRowView: View {
             Spacer()
             
             if let distance = distance {
-                Text(RidingViewModel.formatDistance(distance))
+                Text(RidingViewModel.formatDistance(Double(distance)))
                     .font(.pretendardRegular(size: 14))
                     .foregroundColor(.gray4)
                     .padding(.trailing, 28)

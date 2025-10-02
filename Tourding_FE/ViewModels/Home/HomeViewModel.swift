@@ -11,6 +11,7 @@ final class HomeViewModel: ObservableObject {
     //MARK: - 서버 데이터 저장
     @Published var userId: Int?
     @Published var routeLocation: [LocationNameModel] = []
+    @Published var routeRecommendList: [RouteRidingRecommendModel] = []
     
     // MARK: - Home 화면 전용 상태들
     @Published var isLoading: Bool = false
@@ -57,17 +58,51 @@ final class HomeViewModel: ObservableObject {
     @MainActor
     func getRouteLocationAPI() async {
         
-        
         guard let uid = KeychainHelper.loadUid() else {
             print("⏭️ getRouteLocationAPI skipped: userId is nil")
             return
         }
-        print("여기는 getRouteLocationAPI \(uid)\(uid)\(uid)\(uid)\(uid)")
+        
         do {
             let response = try await routeRepository.getRoutesLocationName(userId: uid, isUsed: true)
             routeLocation = response
         } catch {
             print("GET ERROR:", error)
         }
+    }
+    
+    // 추천코스
+    @MainActor
+    func getRouteRecommendAPI() async {
+        guard let uid = KeychainHelper.loadUid() else {
+            print("⏭️ getRouteRecommendAPI skipped: userId is nil")
+            return
+        }
+        
+        do{
+            let response = try await routeRepository.getRoutesRidingRecommend(pageNum: 0)
+            routeRecommendList = response
+            
+        } catch {
+            print("GET getRouteRecommendAPI ERROR: ", error)
+        }
+    }
+    
+    @MainActor
+    func postRouteByNameAPI(start: String, goal: String) async {
+        guard let uid = KeychainHelper.loadUid() else {
+            print("⏭️ getRouteRecommendAPI skipped: userId is nil")
+            return
+        }
+        
+        isLoading = true
+        let requestBody = ReqRoutesByNameModel(userId: uid, start: start, goal: goal)
+        do {
+            try await routeRepository.postRoutesByName(requestBody: requestBody)
+        } catch {
+            print("POST postRouteByNameAPI ERROR: ", error)
+            print("requestBody: ", requestBody)
+        }
+        isLoading = false
     }
 }

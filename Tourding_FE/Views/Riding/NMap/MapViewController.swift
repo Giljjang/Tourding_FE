@@ -218,7 +218,8 @@ final class MapViewController: UIViewController {
         
         // 초기 카메라 위치를 사용자 현재 위치로 설정
         let cameraUpdate = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng))
-        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.3) // moveToCurrentLocation과 동일한 pivot 설정
+        let pivotY = userLocationManager?.cameraPivotY ?? 0.5
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: pivotY)
         cameraUpdate.animation = .easeIn
         mapView.mapView.moveCamera(cameraUpdate)
     }
@@ -246,7 +247,8 @@ final class MapViewController: UIViewController {
         
         // moveToCurrentLocation과 동일한 카메라 설정
         let cameraUpdate = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng))
-        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.3) // 카메라 중심점을 위쪽으로 조정
+        let pivotY = userLocationManager?.cameraPivotY ?? 0.5
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: pivotY)
         cameraUpdate.animation = .easeIn
         
         mapView.mapView.moveCamera(cameraUpdate)

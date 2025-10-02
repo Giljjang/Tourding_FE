@@ -21,7 +21,7 @@ enum BottomSheetPosition: CaseIterable {
         case .medium:
             return screenHeight * 0.5
         case .large:
-            return screenHeight * 0.8
+            return screenHeight * 0.85
         }
     }
 }

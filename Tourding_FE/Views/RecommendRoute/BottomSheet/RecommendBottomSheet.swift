@@ -17,11 +17,11 @@ enum RecommendBottomSheetPosition: CaseIterable {
     func height(screenHeight: CGFloat) -> CGFloat {
         switch self {
         case .small:
-            return 0.3
+            return screenHeight * 0.3
         case .medium:
-            return screenHeight * 0.5
+            return screenHeight * 0.6
         case .large:
-            return screenHeight * 0.8
+            return screenHeight * 0.85
         }
     }
 }
@@ -95,40 +95,6 @@ struct RecommendBottomSheet<Content: View>: View {
     }
     
     //MARK: - View
-    private var moveToLocationButton: some View {
-        Button(action: {
-            // 위치 권한 확인 및 요청
-            if let locationManager = locationManager {
-                let authStatus = locationManager.checkLocationAuthorizationStatus()
-                
-                switch authStatus {
-                case .denied, .restricted:
-                    // 권한이 거부된 경우 설정으로 이동하도록 안내
-                    if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(settingsUrl)
-                    }
-                case .notDetermined:
-                    // 권한을 아직 결정하지 않은 경우 권한 요청
-                    locationManager.requestLocationPermission()
-                case .authorizedWhenInUse, .authorizedAlways:
-                    // 권한이 허용된 경우 현재 위치로 이동
-                    if let mapView = mapView {
-                        locationManager.moveToCurrentLocation(on: mapView)
-                    }
-                @unknown default:
-                    break
-                }
-            }
-        }) {
-            VStack(spacing: 0) {
-                Image("myPosition")
-            }
-            .frame(width: 40, height: 40)
-            .background(.white)
-            .clipShape(Circle())
-            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-        }
-    }
     
     // MARK: - Drag Handle
     private var dragHandle: some View {

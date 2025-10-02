@@ -80,7 +80,7 @@ struct RecommendMapViewRepresentable: UIViewRepresentable {
         mapViewController.onLocationUpdate = onLocationUpdate
         mapViewController.onMapTap = onMapTap
         
-        // RidingViewModel에 LocationManager, NMFMapView, MarkerManager 설정 (viewDidLoad 완료 후)
+        // RecommendRouteViewModel에 LocationManager, NMFMapView, MarkerManager, PathManager 설정 (viewDidLoad 완료 후)
         if let recommendRouteViewModel = recommendRouteViewModel {
             recommendRouteViewModel.locationManager = mapViewController.locationManager
             if let nmfMapView = mapViewController.nmfMapView {
@@ -88,6 +88,8 @@ struct RecommendMapViewRepresentable: UIViewRepresentable {
             }
             // MarkerManager 연결
             recommendRouteViewModel.markerManager = mapViewController.markerManager
+            // PathManager 연결
+            recommendRouteViewModel.pathManager = mapViewController.pathManager
             // MapViewController 연결
             recommendRouteViewModel.mapViewController = mapViewController
         }

@@ -72,23 +72,30 @@ extension RidingViewModel {
         return firstPart + "\n" + secondPart
     }
     
-//    static func formatMillisecondsToMinutes(_ milliseconds: Double) -> String {
-//        let minutes = Int((milliseconds / 1000 / 60).rounded()) // 밀리초 → 분, 정수 반올림
-//        if minutes == 0 {
-//            return "" // 0분이면 빈 문자열
-//        } else {
-//            return "약 \(minutes)분"
-//        }
-//    }
-    
-    static func formatDistance(_ distance: Int) -> String {
-        if distance >= 1000 {
-            let km = Double(distance) / 1000
-            return String(format: "%.1fkm", km) // 1.2km
+    static func formatSecondsToHoursMinutes(_ seconds: Double) -> String {
+        let hours = Int(seconds / 3600)
+        let minutes = Int((seconds.truncatingRemainder(dividingBy: 3600)) / 60)
+        
+        if hours > 0 && minutes > 0 {
+            return "\(hours)시간 \(minutes)분"
+        } else if hours > 0 {
+            return "\(hours)시간"
+        } else if minutes > 0 {
+            return "\(minutes)분"
         } else {
-            return "\(distance)m" // 69m
+            return "" // 1분 미만일 경우 빈 문자열
         }
     }
+
+    static func formatDistance(_ distance: Double) -> String {
+        if distance >= 1000 {
+            let km = distance / 1000
+            return String(format: "%.1fkm", km) // 1.2km
+        } else {
+            return String(format: "%.0fm", distance) // 69m
+        }
+    }
+
     
     func resolvedGuideType(for item: GuideModel, index: Int, count: Int) -> GuideModel.GuideType {
         if item.guideType == .end, index != count - 1 {

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import NMapsMap
 
 struct RecommendRouteView: View {
     
@@ -17,14 +18,21 @@ struct RecommendRouteView: View {
     
     @State private var currentPosition: RecommendBottomSheetPosition = .medium
     
+    let routeName: String
+    let description: String
+    
     let topSafeArea = UIApplication.shared.connectedScenes
         .compactMap { $0 as? UIWindowScene }
         .first?.windows.first?.safeAreaInsets.top ?? 0
     
     
-    init(recommendRouteViewModel: RecommendRouteViewModel
+    init(recommendRouteViewModel: RecommendRouteViewModel,
+         routeName: String,
+         description: String
     ) {
         self._recommendRouteViewModel = StateObject(wrappedValue: recommendRouteViewModel)
+        self.routeName = routeName
+        self.description = description
     }
     
     var body: some View {
@@ -32,7 +40,9 @@ struct RecommendRouteView: View {
             ZStack(alignment: .bottom) {
                 
                 //네이버 맵
-                RecommendNMap(recommendRouteViewModel: recommendRouteViewModel, userLocationManager: locationManager)
+                RecommendNMap(
+                    recommendRouteViewModel: recommendRouteViewModel,
+                    userLocationManager: locationManager)
                     .ignoresSafeArea(edges: .top)
                 
                 if currentPosition == .large {
@@ -46,12 +56,28 @@ struct RecommendRouteView: View {
                 // 바텀시트
                 RecommendBottomSheet(
                     content: SheetRecommendView(
-                        recommendRouteViewModel: recommendRouteViewModel),
+                        recommendRouteViewModel: recommendRouteViewModel,
+                        currentPosition: currentPosition),
                     screenHeight: geometry.size.height,
                     currentPosition: $currentPosition,
                     locationManager: recommendRouteViewModel.locationManager,
                     mapView: recommendRouteViewModel.mapView
                 )
+                
+                recommendButtons
+                
+                if recommendRouteViewModel.isLoading {
+                    Color.white.opacity(0.5)
+                        .ignoresSafeArea()
+                    
+                    VStack{
+                        Spacer()
+                        
+                        DotsLoadingView()
+                        
+                        Spacer()
+                    }
+                }// if 로딩 상태(일반)
                 
             } // : ZStack
         } // : GeometryReader
@@ -70,7 +96,40 @@ struct RecommendRouteView: View {
             // 1. LocationManager 인스턴스를 recommendRouteViewModel에 전달
             recommendRouteViewModel.userLocationManager = locationManager
             
-            // 2. API 호출 완료 후 초기 카메라 위치 설정
+            // 2. API 호출 후 초기 카메라 위치 설정
+            Task { [weak recommendRouteViewModel] in
+                do {
+                    
+                    try Task.checkCancellation()
+                    await recommendRouteViewModel?.getRoutesTotalAPI()
+                    
+                    try Task.checkCancellation()
+                    await recommendRouteViewModel?.getRouteLocationAPI()
+                    
+                    try Task.checkCancellation()
+                    await recommendRouteViewModel?.getRoutePathAPI()
+                    
+                    try Task.checkCancellation()
+                    await MainActor.run {
+                        guard let recommendRouteViewModel = recommendRouteViewModel,
+                              let firstLocation = recommendRouteViewModel.routeLocation.first,
+                              let lat = Double(firstLocation.lat),
+                              let lon = Double(firstLocation.lon),
+                              let mapView = recommendRouteViewModel.mapView else {
+                            print("❌ 초기 카메라 위치 설정 실패: mapView 또는 경로 데이터가 없습니다")
+                            return
+                        }
+                        
+                        // 출발지로 카메라 위치 설정
+                        let coordinate = NMGLatLng(lat: lat, lng: lon)
+                        recommendRouteViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
+                    }
+                } catch is CancellationError {
+                    print("🚫 RidingView 초기화 Task 취소됨")
+                } catch {
+                    print("❌ RidingView 초기화 에러: \(error)")
+                }
+            } // : Task
         }
         .onDisappear {
             // 뷰가 사라질 때 메모리 정리
@@ -92,4 +151,55 @@ struct RecommendRouteView: View {
         }
         .position(x: 36, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : backButton
+    
+    private var recommendButtons: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Button(action:{
+                navigationManager.push(.RidingView())
+            }){
+                HStack(spacing: 0){
+                    
+                    Spacer()
+                    
+                    Text("코스 편집")
+                        .foregroundColor(.gray5)
+                        .font(.pretendardSemiBold(size: 16))
+                        .frame(minHeight: 22)
+                    
+                    Spacer()
+                }
+            } // : Button
+            .frame(height: 54)
+            .background(.white)
+            .cornerRadius(10)
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.gray2, lineWidth: 1)
+            )
+            
+            Button(action:{
+                navigationManager.push(.RidingView(isNotNomal: false, isStart: true))
+            }){
+                HStack(spacing: 0){
+                    
+                    Spacer()
+                    
+                    Text("라이딩 시작")
+                        .foregroundColor(.white)
+                        .font(.pretendardSemiBold(size: 16))
+                        .frame(minHeight: 22)
+                
+                    Spacer()
+                }
+            } // : Button
+            .frame(height: 54)
+            .background(Color.gray5)
+            .cornerRadius(10)
+            
+        } // : HStack
+        .padding(.horizontal, 16)
+        .padding(.top, 28)
+        .padding(.bottom, 18+34)
+        .background(.white)
+    }
 }
