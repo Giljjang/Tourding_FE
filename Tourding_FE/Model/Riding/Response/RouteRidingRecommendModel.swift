@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct RouteRidingRecommendModel: Codable {
+struct RouteRidingRecommendModel: Codable, Hashable {
     let arrival: String
     let description: String
     let minutes: String
