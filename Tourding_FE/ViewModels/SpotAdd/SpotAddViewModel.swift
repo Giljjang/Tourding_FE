@@ -135,7 +135,7 @@ final class SpotAddViewModel: ObservableObject {
             if pageNum == 0 {
                 // 첫 페이지 → 기존 데이터 리셋
                 spots = filteredResults
-                currentPage = 0
+                currentPage = 1
             } else {
                 // 다음 페이지 → 기존 데이터 뒤에 추가
                 spots.append(contentsOf: filteredResults)
