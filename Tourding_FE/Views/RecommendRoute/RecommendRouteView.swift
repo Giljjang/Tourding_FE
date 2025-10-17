@@ -93,6 +93,10 @@ struct RecommendRouteView: View {
             
         } // : onChange
         .onAppear{
+            // 0. 홈에서 받아온 이름, 코스 설명을 뷰모델에 주입
+            recommendRouteViewModel.routeName = routeName
+            recommendRouteViewModel.description = description
+            
             // 1. LocationManager 인스턴스를 recommendRouteViewModel에 전달
             recommendRouteViewModel.userLocationManager = locationManager
             

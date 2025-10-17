@@ -76,10 +76,15 @@ struct ExpandableTextView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .background(
                         GeometryReader { geometry in
-                            Color.clear.onAppear {
-                                fullHeight = geometry.size.height
-                                checkTruncation()
-                            }
+                            Color.clear
+                                .onAppear {
+                                    fullHeight = geometry.size.height
+                                    checkTruncation()
+                                }
+                                .onChange(of: geometry.size.height) { newHeight in
+                                    fullHeight = newHeight
+                                    checkTruncation()
+                                }
                         }
                     )
                     .hidden()
@@ -93,10 +98,15 @@ struct ExpandableTextView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .background(
                         GeometryReader { geometry in
-                            Color.clear.onAppear {
-                                truncatedHeight = geometry.size.height
-                                checkTruncation()
-                            }
+                            Color.clear
+                                .onAppear {
+                                    truncatedHeight = geometry.size.height
+                                    checkTruncation()
+                                }
+                                .onChange(of: geometry.size.height) { newHeight in
+                                    truncatedHeight = newHeight
+                                    checkTruncation()
+                                }
                         }
                     )
                     .hidden()
@@ -107,9 +117,9 @@ struct ExpandableTextView: View {
     private func checkTruncation() {
         // 두 높이가 모두 측정된 후에 비교
         if fullHeight > 0 && truncatedHeight > 0 {
-            DispatchQueue.main.async {
-                self.isTruncated = self.fullHeight > self.truncatedHeight
-            }
+            // 즉시 상태 업데이트 (비동기 처리 제거)
+            isTruncated = fullHeight > truncatedHeight
+            print("🔍 텍스트 높이 비교: 전체=\(fullHeight), 제한=\(truncatedHeight), 잘림=\(isTruncated)")
         }
     }
 }

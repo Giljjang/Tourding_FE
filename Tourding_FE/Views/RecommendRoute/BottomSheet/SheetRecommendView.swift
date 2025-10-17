@@ -40,12 +40,13 @@ struct SheetRecommendView: View {
                         .frame(minHeight: 28)
                         .padding(.bottom, 10)
                     
-                    if let name1 = recommendRouteViewModel.routeLocation.first?.name {
+                    ForEach(recommendRouteViewModel.routeLocation, id: \.self) { item in
+                        
                         HStack(spacing: 6) {
                             Image("icon_point of departure")
                                 .padding(.leading, 17)
                             
-                            Text(name1)
+                            Text(item.name)
                                 .foregroundColor(.gray5)
                                 .font(.pretendardMedium(size: 16))
                             
@@ -55,30 +56,15 @@ struct SheetRecommendView: View {
                         .background(Color.gray1)
                         .cornerRadius(10)
                         .padding(.bottom, 10)
-                    }
-                    
-                    if let name2 = recommendRouteViewModel.routeLocation.last?.name {
-                        HStack(spacing: 6) {
-                            Image("icon_point of departure")
-                                .padding(.leading, 17)
-                            
-                            Text(name2)
-                                .foregroundColor(.gray5)
-                                .font(.pretendardMedium(size: 16))
-                            
-                            Spacer()
-                        } // : HStack
-                        .frame(height: 56)
-                        .background(Color.gray1)
-                        .cornerRadius(10)
-                        .padding(.bottom, 24)
-                    }
+                        
+                    } // foreach
                     
                     Text("코스 설명")
                         .foregroundColor(.gray5)
                         .font(.pretendardMedium(size: 20))
                         .frame(minHeight: 28)
                         .padding(.bottom, 8)
+                        .padding(.top, 14)
                     
                 } // : VStack
                 .padding(.top, 24)
