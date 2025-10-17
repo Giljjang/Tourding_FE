@@ -165,6 +165,11 @@ struct SpotAddView: View {
         title: String
     ) -> some View {
         Button(action:{
+            // 현재 토글과 같은거 클릭시 데이터 재로딩 X
+            if title == spotAddViewModel.clickFliter {
+                    return
+            }
+            
             spotAddViewModel.clickFliter = title
             
             //토글 필터 변경시 초기화
