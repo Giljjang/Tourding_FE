@@ -535,7 +535,9 @@ struct SheetDetailView: View {
             // 예약안내 홈페이지 reservationurl
             if let reservationurl = detailViewModel.detailData?.reservationurl,
                reservationurl != "" {
-                DetailInfoLine(image: "icon_reservation", text: detailViewModel.formatOverview(reservationurl), type: "link")
+                let text = detailViewModel.extractURL(from: reservationurl)
+                
+                DetailInfoLine(image: "icon_reservation", text: detailViewModel.formatOverview(text), type: "link")
             }
             
             // 바비큐장 여부 barbecue

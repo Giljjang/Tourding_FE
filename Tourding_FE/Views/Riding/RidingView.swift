@@ -47,6 +47,17 @@ struct RidingView: View {
                 NMapView(ridingViewModel: ridingViewModel, userLocationManager: locationManager)
                     .ignoresSafeArea(edges: .top)
                 
+                // 라이딩 중일 때 터치 감지 레이어
+                if ridingViewModel.flag && locationManager.isLocationTrackingEnabled {
+                    Color.clear
+                        .ignoresSafeArea(edges: .top)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            print("지도 터치 감지 (SwiftUI)")
+                            locationManager.handleScreenTouch()
+                        }
+                }
+                
                 if currentPosition == .large {
                     Color.black.opacity(0.3)
                         .ignoresSafeArea()
@@ -72,7 +83,7 @@ struct RidingView: View {
                         screenHeight: geometry.size.height,
                         currentPosition: $currentPosition,
                         isRiding: false,
-                        locationManager: ridingViewModel.locationManager,
+                        locationManager: locationManager,
                         mapView: ridingViewModel.mapView
                     )
                     
@@ -88,7 +99,7 @@ struct RidingView: View {
                         screenHeight: geometry.size.height,
                         currentPosition: $currentPosition,
                         isRiding: true,
-                        locationManager: ridingViewModel.locationManager,
+                        locationManager: locationManager,
                         mapView: ridingViewModel.mapView
                     )
                 } // : if-else
@@ -161,6 +172,11 @@ struct RidingView: View {
         .onAppear{
             // LocationManager 인스턴스를 RidingViewModel에 전달
             ridingViewModel.userLocationManager = locationManager
+            
+            // 맵뷰 참조 설정
+            if let mapView = ridingViewModel.mapView {
+                locationManager.setMapView(mapView)
+            }
             
             // 위치 권한 확인 및 요청
             checkAndRequestLocationPermission()
@@ -350,6 +366,7 @@ struct RidingView: View {
                 // 위치 추적 중지 및 네비게이션 모드 종료
                 locationManager.stopLocationUpdates()
                 locationManager.stopNavigationMode()
+                locationManager.cancelAutoTrackingTimer() // 자동 위치추적 타이머 정리
                 
                 if let firstLocation = ridingViewModel.routeLocation.first,
                    let lat = Double(firstLocation.lat),

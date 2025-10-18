@@ -271,12 +271,16 @@ struct HomeView: View {
                     routeSharedManager.clearRoute()
                 } // if-else
             }){
-                Text("코스 만들기")
-                    .foregroundColor(routeSharedManager.hasValidPoints ? .white : .gray3)
-                    .font(.pretendardSemiBold(size: 16))
-                    .padding(.vertical, 15)
-                    .frame(width: 318)
-//                    .padding(.horizontal, 124)
+                HStack(spacing: 0) {
+                    Spacer()
+                    
+                    Text("코스 만들기")
+                        .foregroundColor(routeSharedManager.hasValidPoints ? .white : .gray3)
+                        .font(.pretendardSemiBold(size: 16))
+                        .padding(.vertical, 15)
+                    
+                    Spacer()
+                }
                     .background(routeSharedManager.hasValidPoints ? .gray5 : Color.gray2)
                     .cornerRadius(10)
             } // :Button

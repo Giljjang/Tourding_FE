@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct LocationNameModel: Codable {
+struct LocationNameModel: Codable, Hashable {
     let sequenceNum: Int
     let name: String
     let type: String
