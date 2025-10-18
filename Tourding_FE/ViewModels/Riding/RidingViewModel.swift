@@ -17,6 +17,7 @@ final class RidingViewModel: ObservableObject {
     //라이딩 시작 전
     @Published var routeLocation: [LocationNameModel] = []
     @Published var routeMapPaths: [RoutePathModel] = []
+    @Published var routeTotal: RoutesModel? = nil
     
     @Published var nthLineHeight: Double = 0 // spotRow 왼쪽 라인 길이
     
@@ -150,10 +151,13 @@ final class RidingViewModel: ObservableObject {
     
     // 라이딩 종료 시 원본 데이터로 완전 복원
     @MainActor
-    func restoreOriginalData() {
+    func restoreOriginalData(isStart: Bool) {
         pathCoordinates = originalPathCoordinates
-        markerCoordinates = originalMarkerCoordinates
-        markerIcons = originalMarkerIcons
+        
+        if !isStart {
+            markerCoordinates = originalMarkerCoordinates
+            markerIcons = originalMarkerIcons
+        }
         
         // 지도에 복원된 데이터 적용
         if let pathManager = pathManager {

@@ -32,7 +32,7 @@ final class RecommendMapViewController: UIViewController {
     
     // MARK: - Managers
     var markerManager: MarkerManager?
-    private var pathManager: PathManager?
+    var pathManager: PathManager?
     
     // MARK: - Lifecycle
     override func viewDidLoad() {

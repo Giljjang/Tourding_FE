@@ -31,7 +31,7 @@ struct SheetContentView: View {
                 .frame(height:1)
                 .foregroundColor(.gray1)
                 .padding(.horizontal, 16)
-//                .padding(.bottom, 20)
+            //                .padding(.bottom, 20)
             
             // 컨텐츠
             ScrollView(showsIndicators: false) {
@@ -70,11 +70,11 @@ struct SheetContentView: View {
                             let lineHeight = Double((middleCount * 66) + (middleCount + 1) * 8)
                             Divider()
                                 .frame(
-                                    width: 1, 
+                                    width: 1,
                                     height: lineHeight)
                                 .background(Color(hex: "#EDF0F6"))
                                 .position(x: 32, y: 6 + (lineHeight/2))
-
+                            
                         } // : overlay
                         .overlay {
                             let middleCount = max(0, ridingViewModel.routeLocation.count - 2)
@@ -115,36 +115,80 @@ struct SheetContentView: View {
     //MARK: - View
     
     private var header: some View {
-        HStack(alignment: .top , spacing: 0) {
-            Text("라이딩 코스")
-                .foregroundColor(.gray6)
-                .font(.pretendardSemiBold(size: 20))
-                .padding(.leading, 17)
+        VStack(alignment: .leading, spacing: 0) {
             
-            Spacer()
-            
-            Button(action:{
-                if let lastLocation = ridingViewModel.routeLocation.last {
-                    
-                    // 스팟 추가 토글 필터를 전체로 초기화
-                    UserDefaults.standard.set("전체", forKey: "SpotAddClickFilter")
-                    
-                    navigationManager.push(.SpotAddView(
-                        lat: lastLocation.lat,
-                        lon: lastLocation.lon
-                    ))
-                }
-            }){
-                Image("icon_plus")
-                Text("스팟 추가")
+            HStack(alignment: .top , spacing: 0) {
+                Text("라이딩 코스")
                     .foregroundColor(.gray6)
-                    .font(.pretendardSemiBold(size: 16))
-            }
-            .padding(.top, 1)
-            .padding(.trailing, 16)
-        } // : HStack
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.bottom, 19)
+                    .font(.pretendardSemiBold(size: 20))
+                    .padding(.leading, 17)
+                
+                Spacer()
+                
+                Button(action:{
+                    if let lastLocation = ridingViewModel.routeLocation.last {
+                        
+                        // 스팟 추가 토글 필터를 전체로 초기화
+                        UserDefaults.standard.set("전체", forKey: "SpotAddClickFilter")
+                        
+                        navigationManager.push(.SpotAddView(
+                            lat: lastLocation.lat,
+                            lon: lastLocation.lon
+                        ))
+                    }
+                }){
+                    Image("icon_plus")
+                    Text("스팟 추가")
+                        .foregroundColor(.gray6)
+                        .font(.pretendardSemiBold(size: 16))
+                }
+                .padding(.top, 1)
+                .padding(.trailing, 16)
+            } // : HStack
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.bottom, 17)
+            
+            // 소요시간
+            HStack {
+                Image("icon_time-required")
+                    .padding(.trailing, 3)
+                
+                Text("소요 시간")
+                    .foregroundColor(.gray4)
+                    .font(.pretendardMedium(size: 16))
+                    .padding(.trailing, 8)
+                
+                if let time =  ridingViewModel.routeTotal?.duration {
+                    Text(RidingViewModel.formatSecondsToHoursMinutes(time))
+                        .foregroundColor(.main)
+                        .font(.pretendardMedium(size: 16))
+                }
+                
+            } // : HStack
+            .padding(.leading, 16)
+            .padding(.bottom, 6)
+            
+            // 코스 길이
+            HStack {
+                Image("icon_total-distance")
+                    .padding(.trailing, 3)
+                
+                Text("코스 길이")
+                    .foregroundColor(.gray4)
+                    .font(.pretendardMedium(size: 16))
+                    .padding(.trailing, 8)
+                
+                if let distance =  ridingViewModel.routeTotal?.distance {
+                    Text(RidingViewModel.formatDistance(distance))
+                        .foregroundColor(.main)
+                        .font(.pretendardMedium(size: 16))
+                }
+                
+            } // : HStack
+            .padding(.leading, 16)
+            
+        } // : VStack
+        .padding(.bottom, 18)
     } // : header
     
     private var startPointView: some View {

@@ -234,6 +234,10 @@ struct RidingView: View {
             
             Task { [weak ridingViewModel] in
                 do {
+                    
+                    try Task.checkCancellation()
+                    await ridingViewModel?.getRoutesTotalAPI()
+                    
                     try Task.checkCancellation()
                     await ridingViewModel?.getRouteLocationAPI()
                     
@@ -278,6 +282,56 @@ struct RidingView: View {
             print("🔄 앱이 포그라운드로 돌아옴 - 지도 상태 확인")
             checkAndRefreshMapData()
         }
+        .onChange(of: currentPosition) { oldValue, newValue in
+            guard let mapView = ridingViewModel.mapView else { return }
+            
+            // large로 갈 때나 large에서 medium으로 갈 때만 카메라 시점 변경하지 않음
+            if newValue == .large {
+                return
+            }
+            
+            // large에서 medium으로 갈 때도 카메라 시점 변경하지 않음
+            if oldValue == .large && newValue == .medium {
+                return
+            }
+            
+            // 바텀시트 위치에 따른 카메라 피봇 조정
+            let yPivot: CGFloat
+            switch newValue {
+            case .small:
+                yPivot = 0.6  // 바텀시트가 작을 때 카메라 시점을 더 위로
+            case .medium:
+                yPivot = 0.4  // 중간 크기일 때 적당한 위치
+            case .large:
+                return  // large일 때는 아무것도 하지 않음
+            }
+            
+            // flag가 false일 때는 pivot만 조정 (현재 보고 있는 화면 위치 유지)
+            // flag가 true일 때는 사용자 위치로 카메라 이동
+            if !ridingViewModel.flag {
+                // 현재 카메라가 보고 있는 중심 좌표를 기준으로 pivot만 조정
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    let currentCameraPosition = mapView.cameraPosition
+                    let cameraUpdate = NMFCameraUpdate(scrollTo: currentCameraPosition.target)
+                    cameraUpdate.pivot = CGPoint(x: 0.5, y: yPivot)
+                    cameraUpdate.animation = .easeOut
+                    cameraUpdate.animationDuration = 0.3
+                    mapView.moveCamera(cameraUpdate)
+                }
+            } else {
+                // 라이딩 중일 때는 사용자 위치로 카메라 이동
+                guard let locationManager = ridingViewModel.locationManager else { return }
+                
+                // pivot 상태 저장
+                locationManager.cameraPivotY = yPivot
+                
+                // 애니메이션 충돌 방지를 위해 약간의 지연 후 실행
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    // moveToCurrentLocation 호출하여 현재 위치로 카메라 이동
+                    locationManager.moveToCurrentLocation(on: mapView)
+                }
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
             // 앱이 백그라운드로 갈 때
             print("⏸️ 앱이 백그라운드로 이동")
@@ -313,9 +367,14 @@ struct RidingView: View {
                 Task { [weak ridingViewModel] in
                     do {
                         try Task.checkCancellation()
+                        await ridingViewModel?.getRoutesTotalAPI()
+                        
+                        try Task.checkCancellation()
                         await ridingViewModel?.getRouteLocationAPI()
                         
                         try Task.checkCancellation()
+                        await ridingViewModel?.getRoutePathAPI()
+                        
                         await MainActor.run {
                             guard let ridingViewModel = ridingViewModel else { return }
                             
@@ -331,9 +390,11 @@ struct RidingView: View {
                             ridingViewModel.showToilet = false
                             
                             // 라이딩 종료 시 원본 데이터로 복원
-                            ridingViewModel.restoreOriginalData()
+                            ridingViewModel.restoreOriginalData(isStart: isStart)
+                            
+                            // flag를 false로 설정 (마지막에 실행)
+                            ridingViewModel.flag = false
                         }
-                        ridingViewModel?.flag = false
                     } catch is CancellationError {
                         print("🚫 라이딩 종료 Task 취소됨")
                     } catch {
@@ -489,7 +550,7 @@ struct RidingView: View {
             print("🔄 경로 데이터가 비어있음 - API 재호출 시작")
             refreshRouteData()
         } else {
-//            print("✅ 경로 데이터가 정상적으로 로드됨")
+            //            print("✅ 경로 데이터가 정상적으로 로드됨")
             // 지도 마커와 경로선 다시 그리기
             ridingViewModel.refreshMapDisplay()
         }
@@ -499,6 +560,9 @@ struct RidingView: View {
     private func refreshRouteData() {
         Task { [weak ridingViewModel] in
             do {
+                try Task.checkCancellation()
+                await ridingViewModel?.getRoutesTotalAPI()
+                
                 try Task.checkCancellation()
                 await ridingViewModel?.getRouteLocationAPI()
                 
@@ -592,5 +656,5 @@ struct RidingView: View {
             }
         }
     }
-
+    
 }
