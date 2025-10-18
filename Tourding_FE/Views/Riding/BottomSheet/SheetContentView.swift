@@ -59,6 +59,9 @@ struct SheetContentView: View {
                                             draggedItem: $draggedItem
                                         )
                                     ) // : onDrop
+                                    .onTapGesture {
+                                        handleSpotTap(item: item)
+                                    } // : onTapGesture
                             } // : ForEach
                             
                         } // : VStack
@@ -291,5 +294,14 @@ struct SheetContentView: View {
         .shadow(color: Color(red: 0.84, green: 0.87, blue: 0.92).opacity(0.4),
                 radius: 3.5, x: 1, y: 1)
     } // : spotRow
+    
+    //MARK: - Functions
+    
+    private func handleSpotTap(item: LocationNameModel) {
+        // 상세보기 뷰로 이동
+        let req = ReqDetailModel(contentid: item.contentId, contenttypeid: item.contentTypeId)
+        
+        navigationManager.push(.DetailSpotView(isSpotAdd: false, detailId: req))
+    }
     
 }

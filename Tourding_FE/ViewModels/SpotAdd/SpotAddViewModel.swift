@@ -236,6 +236,22 @@ final class SpotAddViewModel: ObservableObject {
         }
         let typeCode = typeCodes.joined(separator: ",")
 
+        // contentId (0, last 제외 + updatedData 마지막에 추가)
+        let contentIds = originalData.dropFirst().dropLast()
+        let contentIdList = contentIds.map {
+            "\($0.contentId)"
+        }
+        let updatedContentId = "\(updatedData.contentid)"
+        let contents = (contentIdList + [updatedContentId]).joined(separator: ",")
+        
+        // contentTypeId (0, last 제외 + updatedData 마지막에 추가)
+        let contentTypeIds = originalData.dropFirst().dropLast()
+        let contentTypeIdList = contentTypeIds.map {
+            "\($0.contentTypeId)"
+        }
+        let updatedContentTypeId = "\(updatedData.contenttypeid)"
+        let contentTypes = (contentTypeIdList + [updatedContentTypeId]).joined(separator: ",")
+        
         let requestBody = RequestRouteModel(
             userId: userId,
             start: "\(start.lon),\(start.lat)",
@@ -243,10 +259,12 @@ final class SpotAddViewModel: ObservableObject {
             wayPoints: wayPoints,
             locateName: locateName,
             typeCode: typeCode,
+            contentId: contents,
+            contentTypeId: contentTypes,
             isUsed: false
         )
 
-//        print("requestBody: \(requestBody)")
+        print("requestBody.contentId: \(requestBody.contentId)")
         
         do {
             let response: () = try await routeRepository.postRoutes(requestBody: requestBody)

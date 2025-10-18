@@ -167,6 +167,16 @@ extension RidingViewModel {
             .map { $0.typeCode }
         let typeCode = typeCodes.joined(separator: ",")
         
+        // contentIds (0, last 제외 + 선택된 데이터 삭제)
+        let middleContentsid = originalData.dropFirst().dropLast().filter { $0.contentId != selectedData.contentId }
+        let contentIdArray = middleContentsid.map { "\($0.contentId)" }
+        let contentids = contentIdArray.joined(separator: ",")
+        
+        // contentTypeId (0, last 제외 + 선택된 데이터 삭제)
+        let middleContentTypeid = originalData.dropFirst().dropLast().filter { $0.contentTypeId != selectedData.contentTypeId }
+        let contentTypeIdArray = middleContentTypeid.map { "\($0.contentTypeId)" }
+        let contentTypeids = contentTypeIdArray.joined(separator: ",")
+        
         let requestBody = RequestRouteModel(
             userId: userId,
             start: "\(start.lon),\(start.lat)",
@@ -174,10 +184,12 @@ extension RidingViewModel {
             wayPoints: wayPoints,
             locateName: locateName,
             typeCode: typeCode,
+            contentId: contentids,
+            contentTypeId: contentTypeids,
             isUsed: self.flag
         )
         
-        //        print("requestBody: \(requestBody)")
+        print("requestBody.contentId: \(requestBody.contentId)")
         
         do {
             let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
@@ -216,6 +228,16 @@ extension RidingViewModel {
         let typeCodes = locationData.dropFirst().dropLast().map { $0.typeCode }
         let typeCode = typeCodes.joined(separator: ",")
         
+        // contentIds (0, last 제외)
+        let middleIds = locationData.dropFirst().dropLast()
+        let contentIdsArray = middleIds.map { "\($0.contentId)" }
+        let contentsIds = contentIdsArray.joined(separator: ",")
+        
+        // contentTypeId (0, last 제외)
+        let middleTypeIds = locationData.dropFirst().dropLast()
+        let contentTypeIdsArray = middleTypeIds.map { "\($0.contentTypeId)" }
+        let contentsTypeIds = contentTypeIdsArray.joined(separator: ",")
+        
         let requestBody = RequestRouteModel(
             userId: userId,
             start: "\(start.lon),\(start.lat)",
@@ -223,10 +245,12 @@ extension RidingViewModel {
             wayPoints: wayPoints,
             locateName: locateName,
             typeCode: typeCode,
+            contentId: contentsIds,
+            contentTypeId: contentsTypeIds,
             isUsed: self.flag
         )
         
-        //    print("requestBody: \(requestBody)")
+        print("requestBody.contentId: \(requestBody.contentId)")
         
         do {
             let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
@@ -271,6 +295,16 @@ extension RidingViewModel {
         let typeCodes = locationData.dropFirst().dropLast().map { $0.typeCode }
         let typeCode = typeCodes.joined(separator: ",")
         
+        // contentIds (0, last 제외)
+        let middleIds = locationData.dropFirst().dropLast()
+        let contentIdsArray = middleIds.map { "\($0.contentId)" }
+        let contentsIds = contentIdsArray.joined(separator: ",")
+        
+        // contentTypeId (0, last 제외)
+        let middleTypeIds = locationData.dropFirst().dropLast()
+        let contentTypeIdsArray = middleTypeIds.map { "\($0.contentTypeId)" }
+        let contentsTypeIds = contentTypeIdsArray.joined(separator: ",")
+        
         let requestBody = RequestRouteModel(
             userId: userId,
             start: "\(start.lon),\(start.lat)",
@@ -278,8 +312,12 @@ extension RidingViewModel {
             wayPoints: wayPoints,
             locateName: locateName,
             typeCode: typeCode,
+            contentId: contentsIds,
+            contentTypeId: contentsTypeIds,
             isUsed: true
         )
+        
+        print("requestBody.contentId: \(requestBody.contentId)")
         
         do {
             let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
