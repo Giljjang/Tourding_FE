@@ -14,11 +14,11 @@ struct SpotSearchView: View {
     //    @EnvironmentObject var destinationVM: DestinationSearchViewModel
     
     @State private var regionTitle: String = ""     // 주소값 받아오기
+    @State private var selectedCategoryID: Int = 0  // tag 선택한 Index
     
     @ObservedObject private var spotviewModel: SpotSearchViewModel
     @ObservedObject private var dsviewModel: DestinationSearchViewModel
-    
-    
+        
     init(spotviewModel: SpotSearchViewModel, dsviewModel: DestinationSearchViewModel) {
         self.spotviewModel = spotviewModel
         self.dsviewModel = dsviewModel
@@ -36,7 +36,7 @@ struct SpotSearchView: View {
                         .padding(.leading, 16)
                     
                     searchBar
-                        .padding(.bottom, 20)
+                        .padding(.bottom, 10)
                         .padding(.leading, 16)
                 } //:VStack
                 .background(Color(hex: "#F7F9FC").opacity(0.8))
@@ -45,9 +45,11 @@ struct SpotSearchView: View {
                 
                 ScrollView(showsIndicators: false) {
                     myPosition
-                        .padding(.top, 19)
-                        .padding(.bottom, 17)
+                        .padding(.top, 13)
+                        .padding(.bottom, 0)
                         .padding(.leading, 16)
+                    
+                    searchTagView
                     
                     if spotviewModel.spots.isEmpty {
                         spotEmptyStateView
@@ -55,19 +57,23 @@ struct SpotSearchView: View {
                             .frame(maxWidth: .infinity, alignment: .center)
                     } else {
                         // 목록 상태: 가로 스크롤
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            CustomSpotView(
-                                spots: spotviewModel.spots,
-                                errorMessage: nil, navigationDetail: { contentid, contenttypeid in
-                                    let data = ReqDetailModel(contentid: contentid, contenttypeid: contenttypeid)
-                                    
-                                    print("스팟탐색: contentid: \(contentid), contenttypeid: \(contenttypeid)")
-                                    navigationManager.push(.DetailSpotView(isSpotAdd: false, detailId: data))
-                                    
-                                }
-                            ) // : CustomSpotView
-                            .padding(.horizontal, 16)
-                        }
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                CustomSpotView(
+                                    spots: spotviewModel.spots,
+                                    errorMessage: nil,
+                                    navigationDetail: { contentid, contenttypeid in
+                                        let data = ReqDetailModel(contentid: contentid, contenttypeid: contenttypeid)
+                                        
+                                        print("스팟탐색: contentid: \(contentid), contenttypeid: \(contenttypeid)")
+                                        navigationManager.push(.DetailSpotView(isSpotAdd: false, detailId: data))
+                                        
+                                    },
+                                    isVertical: false
+                                ) // : CustomSpotView
+                                .padding(.horizontal, 16)
+                            }
+                        .scrollContentBackground(.hidden)
+                        .background(Color.clear)
                     }
                     
                     Spacer()
@@ -92,9 +98,12 @@ struct SpotSearchView: View {
                     // 필요 시 에러 토스트/라벨
                 }
                 // TODO: 여기서 우리 서버 카드 리스트 호출 붙이면 됨
-                await spotviewModel.fetchNearbySpots(lat: coord.latitude, lng: coord.longitude)
-                
+                requestSpots(for: coord)
             }
+        }
+        .onChange(of: selectedCategoryID) { _ in
+            guard let coord = dsviewModel.currentLocation else { return }
+            requestSpots(for: coord)
         }
     }
     
@@ -108,7 +117,7 @@ struct SpotSearchView: View {
                 Text("스팟 탐색")
                     .font(.pretendardSemiBold(size: 26))
                     .foregroundColor(Color.gray6)
-                    
+                
                 Text("나에게 맞는 여행지를 탐색해요")
                     .font(.pretendardMedium(size: 16))
                     .foregroundColor(Color.gray4)
@@ -151,13 +160,23 @@ struct SpotSearchView: View {
     private var myPosition: some View {
         HStack(alignment: .bottom, spacing: 12) {
             VStack(alignment: .leading, spacing: 7){
-                Text(regionTitle.isEmpty ? "내 위치를 선택해보세요" : regionTitle)
-                    .font(.pretendardSemiBold(size: 16))
-                    .foregroundColor(.white)
+                Button {
+                    Task {
+                        await spotviewModel.refreshLocationAndFetchSpots()
+                        dsviewModel.refreshLocation()
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image("gps")
+                        Text(regionTitle.isEmpty ? "내 위치를 선택해보세요" : regionTitle)
+                            .font(.pretendardSemiBold(size: 16))
+                            .foregroundColor(.white)
+                    }
                     .padding(.horizontal, 9).padding(.vertical, 6)
                     .background(Color.main)
                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                
+                }
+
                 Text("근처에 이런곳은 어때요?")
                     .font(.pretendardSemiBold(size: 20))
                     .foregroundColor(.gray5)
@@ -167,13 +186,15 @@ struct SpotSearchView: View {
             
             Button {
                 Task {
-                    await spotviewModel.refreshLocationAndFetchSpots()
-                    dsviewModel.refreshLocation()
+                    navigationManager.push(.SpotAdditionalView)
                 }
             } label: {
-                HStack(spacing: 4.5) {
-                    Image("gps")
-                    Text("내 위치")
+                HStack(spacing: 4) {
+                    Text("더보기")
+                    Image("chevron-right")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 16)
                 }
                 .font(.pretendardMedium(size: 14))
                 .foregroundColor(Color.gray4)
@@ -182,11 +203,15 @@ struct SpotSearchView: View {
         .padding(.trailing, 16)
     } // : headerText
     
+    private var searchTagView: some View {
+        SearchTagView(selectedCategoryID: $selectedCategoryID, fromeHome: true)
+    }
+    
     // MARK: - 빈 상태 뷰
     private var spotEmptyStateView: some View {
         HStack{
             VStack(spacing: 24) {
-                // 표지판 아이콘 (피그마 디자인과 유사한 이미지)
+                // 표지판 아이콘
                 Image("spotempty")
                     .scaledToFit()
                     .frame(width: 172)
@@ -206,6 +231,16 @@ struct SpotSearchView: View {
         }
     }
     
+    //MARK: - 서버 통신 공통 코드
+    private func requestSpots(for coord: CLLocationCoordinate2D) {
+        Task {
+            await spotviewModel.fetchNearbySpots(
+                lat: coord.latitude,
+                lng: coord.longitude,
+                selected: selectedCategoryID
+            )
+        }
+    }
 }
 
 //#Preview {

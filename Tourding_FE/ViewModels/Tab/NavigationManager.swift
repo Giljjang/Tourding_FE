@@ -21,6 +21,7 @@ enum ViewType : Hashable {
     case DestinationSearchView(isFromHome: Bool, isAddSpot: Bool)
     case DetailSpotView(isSpotAdd: Bool, detailId: ReqDetailModel)
     case RecommendRouteView(routeName: String, description: String)
+    case SpotAdditionalView
 }
 
 final class NavigationManager: ObservableObject {

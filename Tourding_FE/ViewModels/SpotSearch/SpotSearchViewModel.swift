@@ -17,21 +17,33 @@ final class SpotSearchViewModel: ObservableObject {
     
     private let tourRepository: TourRepositoryProtocol
     
+    private static let typeMap: [Int: String] = [
+        0: "",
+        1: "A01",
+        2: "A02",
+        3: "A03",
+        4: "A04",
+        5: "A05",
+        6: "B02"
+    ]
+    
     init(tourRepository: TourRepositoryProtocol) {
         self.tourRepository = tourRepository
     }
     
-    func fetchNearbySpots(lat: Double, lng: Double) async {
+    func fetchNearbySpots(lat: Double, lng: Double, selected: Int) async {
         isLoading = true
         errorMessage = nil
         
+        let typeCode = Self.typeMap[selected] ?? ""
+
         do {
             let results = try await tourRepository.searchLocationSpots(
                 pageNum: 0,
                 mapX: String(lng),
                 mapY: String(lat),
                 radius: "20000",
-                typeCode: ""
+                typeCode: typeCode
             )
             
             //추천 코스 제외
