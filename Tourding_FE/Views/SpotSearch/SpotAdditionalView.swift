@@ -21,7 +21,8 @@ struct SpotAdditionalView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        ZStack {
+            VStack(alignment: .leading, spacing: 0) {
             
             // MARK: - Top Navigation Bar
             ZStack {
@@ -69,11 +70,27 @@ struct SpotAdditionalView: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
                 }
-                .ignoresSafeArea(.container, edges: .bottom)   // ✅ 하단 safe area 무시
+                .ignoresSafeArea(.container, edges: .bottom)   // 하단 safe area 무시
             }
-        }   // VStack
-        .background(Color(.white).ignoresSafeArea())
-        .navigationBarHidden(true)  // ✅ 시스템 네비게이션 바 숨김
+            }   // VStack
+            .background(Color(.white).ignoresSafeArea())
+            .navigationBarHidden(true)  // 시스템 네비게이션 바 숨김
+            
+            // 로딩뷰
+            if spotviewModel.isLoading {
+                Color.white.opacity(0.5)
+                    .ignoresSafeArea()
+                
+                VStack {
+                    Spacer()
+                    
+                    DotsLoadingView()
+                    
+                    Spacer()
+                }
+            }// if 로딩 상태
+            
+        }   // ZStack
         .interactiveDismissDisabled(false) // 네이티브 스와이프 백 제스처 활성화
         .gesture(
             DragGesture()
