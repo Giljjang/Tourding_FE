@@ -45,6 +45,8 @@ final class HomeViewModel: ObservableObject {
             wayPoints: "",
             locateName: "\(start.name),\(end.name)",
             typeCode: "",
+            contentId: "",
+            contentTypeId: "",
             isUsed: false
         )
         do {

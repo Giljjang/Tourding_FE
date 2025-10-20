@@ -91,12 +91,26 @@ struct CustomBottomSheet<Content: View>: View {
                 
                 // moveToLocationButton - 바텀시트 외부에 배치
                 if currentPosition != .large {
-                    moveToLocationButton
-                        .position(
-                            x: 40,
-                            y: offset - 30 // offset 사용으로 실시간 반영
-                        )
-                        .animation(.easeInOut(duration: animationDuration), value: currentPosition)
+                    // 라이딩 중일 때는 위치추적 off일 때만 표시, 아닐 때는 항상 표시
+                    if isRiding {
+                        if let locationManager = locationManager {
+                            if !locationManager.isLocationTrackingEnabled {
+                                moveToLocationButton
+                                    .position(
+                                        x: 40,
+                                        y: offset - 30 // offset 사용으로 실시간 반영
+                                    )
+                                    .animation(.easeInOut(duration: animationDuration), value: currentPosition)
+                            }
+                        }
+                    } else {
+                        moveToLocationButton
+                            .position(
+                                x: 40,
+                                y: offset - 30 // offset 사용으로 실시간 반영
+                            )
+                            .animation(.easeInOut(duration: animationDuration), value: currentPosition)
+                    }
                 } //: if
             }
         }
@@ -110,26 +124,34 @@ struct CustomBottomSheet<Content: View>: View {
     //MARK: - View
     private var moveToLocationButton: some View {
         Button(action: {
-            // 위치 권한 확인 및 요청
-            if let locationManager = locationManager {
-                let authStatus = locationManager.checkLocationAuthorizationStatus()
-                
-                switch authStatus {
-                case .denied, .restricted:
-                    // 권한이 거부된 경우 설정으로 이동하도록 안내
-                    if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(settingsUrl)
+            // 라이딩 중일 때는 위치추적 토글, 아닐 때는 기존 동작
+            if isRiding {
+                // 라이딩 중: 위치추적 토글
+                if let locationManager = locationManager {
+                    locationManager.toggleLocationTracking()
+                }
+            } else {
+                // 라이딩 중이 아닐 때: 기존 위치 이동 동작
+                if let locationManager = locationManager {
+                    let authStatus = locationManager.checkLocationAuthorizationStatus()
+                    
+                    switch authStatus {
+                    case .denied, .restricted:
+                        // 권한이 거부된 경우 설정으로 이동하도록 안내
+                        if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(settingsUrl)
+                        }
+                    case .notDetermined:
+                        // 권한을 아직 결정하지 않은 경우 권한 요청
+                        locationManager.requestLocationPermission()
+                    case .authorizedWhenInUse, .authorizedAlways:
+                        // 권한이 허용된 경우 현재 위치로 이동
+                        if let mapView = mapView {
+                            locationManager.moveToCurrentLocation(on: mapView)
+                        }
+                    @unknown default:
+                        break
                     }
-                case .notDetermined:
-                    // 권한을 아직 결정하지 않은 경우 권한 요청
-                    locationManager.requestLocationPermission()
-                case .authorizedWhenInUse, .authorizedAlways:
-                    // 권한이 허용된 경우 현재 위치로 이동
-                    if let mapView = mapView {
-                        locationManager.moveToCurrentLocation(on: mapView)
-                    }
-                @unknown default:
-                    break
                 }
             }
         }) {

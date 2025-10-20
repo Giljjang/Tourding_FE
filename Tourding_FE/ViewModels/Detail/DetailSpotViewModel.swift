@@ -184,6 +184,22 @@ final class DetailSpotViewModel: ObservableObject {
             typeCodes.append(updatedData.typeCode)
         }
         let typeCode = typeCodes.joined(separator: ",")
+        
+        // contentId (0, last 제외 + updatedData 마지막에 추가)
+        let contentIds = originalData.dropFirst().dropLast()
+        let contentIdList = contentIds.map {
+            "\($0.contentId)"
+        }
+        let updatedContentId = "\(updatedData.contentid)"
+        let contents = (contentIdList + [updatedContentId]).joined(separator: ",")
+        
+        // contentTypeId (0, last 제외 + updatedData 마지막에 추가)
+        let contentTypeId = originalData.dropFirst().dropLast()
+        let contentTypeIdList = contentTypeId.map {
+            "\($0.contentId)"
+        }
+        let updatedContentTypeId = "\(updatedData.contentid)"
+        let contentTypes = (contentTypeIdList + [updatedContentTypeId]).joined(separator: ",")
 
         let requestBody = RequestRouteModel(
             userId: userId,
@@ -192,6 +208,8 @@ final class DetailSpotViewModel: ObservableObject {
             wayPoints: wayPoints,
             locateName: locateName,
             typeCode: typeCode,
+            contentId: contents,
+            contentTypeId: contentTypes,
             isUsed: false
         )
         

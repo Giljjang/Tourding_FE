@@ -245,13 +245,15 @@ final class MapViewController: UIViewController {
             return
         }
         
-        // moveToCurrentLocation과 동일한 카메라 설정
+        // 바텀시트 높이에 따른 동적 피봇 조정
         let cameraUpdate = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng))
         let pivotY = userLocationManager?.cameraPivotY ?? 0.5
         cameraUpdate.pivot = CGPoint(x: 0.5, y: pivotY)
         cameraUpdate.animation = .easeIn
         
         mapView.mapView.moveCamera(cameraUpdate)
+        
+        print("📷 MapViewController: 카메라 업데이트 완료 (피봇: \(pivotY))")
     }
     
     // 라이딩 중 LocationManager에서 호출되는 메서드

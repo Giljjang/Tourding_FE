@@ -30,10 +30,15 @@ final class LocationManager: NSObject, ObservableObject {
     
     // MARK: - Navigation Properties
     @Published var isNavigationMode: Bool = false
+    @Published var isLocationTrackingEnabled: Bool = true // 위치추적 상태 (라이딩 중)
     private var lastHeadingUpdate: Date = Date()
     private let headingUpdateThreshold: TimeInterval = 0.5 // 0.5초마다 업데이트
     // 바텀시트 높이에 따라 동적으로 조정할 카메라 pivot Y 값
     @Published var cameraPivotY: CGFloat = 0.3
+    
+    // MARK: - Auto Tracking Properties
+    private var touchTimer: Timer?
+    private let autoTrackingDelay: TimeInterval = 20.0 // 20초 후 자동 위치추적
     
     // MARK: - Initialization
     override init() {
@@ -233,7 +238,8 @@ final class LocationManager: NSObject, ObservableObject {
     // 네비게이션 모드 시작
     func startNavigationMode(on mapView: NMFMapView) {
         isNavigationMode = true
-        print("🧭 네비게이션 모드 시작")
+        isLocationTrackingEnabled = true
+        print("🧭 네비게이션 모드 시작 - 위치추적 on")
         
         // 나침반 업데이트 강제 시작
         if CLLocationManager.headingAvailable() {
@@ -259,8 +265,74 @@ final class LocationManager: NSObject, ObservableObject {
     // 네비게이션 모드 종료
     func stopNavigationMode() {
         isNavigationMode = false
+        isLocationTrackingEnabled = false
+        cancelAutoTrackingTimer() // 타이머 정리
         print("🧭 네비게이션 모드 종료")
     }
+    
+    // 위치추적 토글 (라이딩 중)
+    @MainActor
+    func toggleLocationTracking() {
+        isLocationTrackingEnabled.toggle()
+        print("📍 위치추적 상태 변경: \(isLocationTrackingEnabled)")
+        
+        if isLocationTrackingEnabled {
+            // 위치추적 on - 네비게이션 모드 시작
+            if let mapView = getCurrentMapView() {
+                startNavigationMode(on: mapView)
+            }
+        } else {
+            // 위치추적 off - 네비게이션 모드 종료
+            stopNavigationMode()
+        }
+    }
+    
+    // 화면 터치 감지 시 위치추적 off
+    @MainActor
+    func handleScreenTouch() {
+        guard isNavigationMode else { return }
+        
+        print("👆 화면 터치 감지 - 위치추적 off")
+        isLocationTrackingEnabled = false
+        print("📍 위치추적 상태 변경: \(isLocationTrackingEnabled)")
+        stopNavigationMode()
+        
+        // 20초 후 자동 위치추적 on 타이머 시작
+        startAutoTrackingTimer()
+    }
+    
+    // 20초 후 자동 위치추적 on 타이머 시작
+    private func startAutoTrackingTimer() {
+        // 기존 타이머 취소
+        touchTimer?.invalidate()
+        
+        touchTimer = Timer.scheduledTimer(withTimeInterval: autoTrackingDelay, repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                guard let self = self else { return }
+                
+                print("⏰ 20초 경과 - 자동 위치추적 on")
+                self.toggleLocationTracking()
+            }
+        }
+    }
+    
+    // 타이머 취소
+    func cancelAutoTrackingTimer() {
+        touchTimer?.invalidate()
+        touchTimer = nil
+    }
+    
+    // 현재 맵뷰 가져오기 (헬퍼 메서드)
+    private func getCurrentMapView() -> NMFMapView? {
+        return currentMapView
+    }
+    
+    // 맵뷰 참조 설정 (RidingViewModel에서 호출)
+    func setMapView(_ mapView: NMFMapView?) {
+        self.currentMapView = mapView
+    }
+    
+    private var currentMapView: NMFMapView?
     
     // 헤딩을 포함한 카메라 업데이트
     func updateCameraWithHeading(on mapView: NMFMapView, location: CLLocation) {
@@ -301,7 +373,7 @@ final class LocationManager: NSObject, ObservableObject {
         
         mapView.moveCamera(cameraUpdate)
         
-        print("🧭 카메라 헤딩 업데이트 완료: \(currentHeading)도")
+        print("🧭 카메라 헤딩 업데이트 완료: \(currentHeading)도 (피봇: \(cameraPivotY))")
     }
     
     // 위치 업데이트 시 네비게이션 모드에서 카메라 업데이트
@@ -357,14 +429,32 @@ extension LocationManager: CLLocationManagerDelegate {
         currentLocationString = "위도: \(location.coordinate.latitude), 경도: \(location.coordinate.longitude)"
         locationError = nil
         
-        // CLLocation 콜백 호출 (LocationManager 기능)
-        onLocationUpdate?(location)
+        // 라이딩 중일 때는 통합된 콜백만 호출 (중복 방지)
+        print("🌍 위치 콜백 호출 - 네비게이션 모드: \(isNavigationMode), 콜백 존재: \(onLocationUpdateNMGLatLng != nil)")
         
-        // NMGLatLng 콜백 호출 (UserLocationManager 기능)
-        if let onLocationUpdateNMGLatLng = onLocationUpdateNMGLatLng {
-            let nmgLocation = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
-            onLocationUpdateNMGLatLng(nmgLocation)
-            print("🌍 onLocationUpdateNMGLatLng 콜백 호출 완료")
+        // 메인 스레드에서 콜백 실행하여 스레드 안전성 확보
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            if self.isNavigationMode {
+                // NMGLatLng 콜백만 호출 (통합된 콜백)
+                if let onLocationUpdateNMGLatLng = self.onLocationUpdateNMGLatLng {
+                    let nmgLocation = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
+                    onLocationUpdateNMGLatLng(nmgLocation)
+                    print("🌍 통합된 위치 콜백 호출 완료 (네비게이션 모드)")
+                } else {
+                    print("❌ onLocationUpdateNMGLatLng 콜백이 nil입니다")
+                }
+            } else {
+                // 일반 모드에서는 기존 콜백들 호출
+                self.onLocationUpdate?(location)
+                
+                if let onLocationUpdateNMGLatLng = self.onLocationUpdateNMGLatLng {
+                    let nmgLocation = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
+                    onLocationUpdateNMGLatLng(nmgLocation)
+                    print("🌍 onLocationUpdateNMGLatLng 콜백 호출 완료")
+                }
+            }
         }
     }
     

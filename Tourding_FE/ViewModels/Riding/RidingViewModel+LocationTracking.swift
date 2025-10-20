@@ -17,6 +17,7 @@ extension RidingViewModel {
         print("🔄 flag 상태: \(flag)")
         print("🔄 guideList 개수: \(guideList.count)")
         print("🔄 markerCoordinates 개수: \(markerCoordinates.count)")
+        print("🔄 사용자 위치: \(newLocation.lat), \(newLocation.lng)")
         
         // 라이딩 중일 때만 마커 추적 및 카메라 업데이트
         guard flag else { 
@@ -41,13 +42,18 @@ extension RidingViewModel {
             print("📍 첫 번째 위치 업데이트")
         }
         
-        currentUserLocation = newLocation
+        // @MainActor로 메인 스레드에서 currentUserLocation 업데이트
+        await MainActor.run {
+            currentUserLocation = newLocation
+        }
         
         // 위치가 변경되었을 때만 마커 체크 및 카메라 업데이트
         if hasLocationChanged {
             print("✅ 위치 변경 감지됨: \(newLocation.lat), \(newLocation.lng)")
             print("📍 현재 가이드 리스트 개수: \(guideList.count)")
             print("📍 현재 마커 개수: \(markerCoordinates.count)")
+            
+            // 마커 체크와 카메라 업데이트를 순차적으로 실행하여 간섭 방지
             await checkAndRemovePassedMarkers()
             await updateCameraToUserLocation()
         } else {
@@ -128,8 +134,9 @@ extension RidingViewModel {
         print("✅ 남은 마커: \(markerCoordinates.count)개")
         print("✅ 남은 경로 좌표: \(pathCoordinates.count)개")
         
-        // 실제 지도에서 마커 업데이트 (메인 스레드에서 실행)
+        // 실제 지도에서 마커 업데이트 (메인 스레드에서 즉시 실행)
         updateMarkersOnMap()
+        print("🗺️ 마커 제거 후 지도 업데이트 완료")
     }
     
     // guideList의 좌표를 지날 때 showToilet과 showConvenienceStore 상태에 따라 마커 업데이트 함수 호출
@@ -219,18 +226,20 @@ extension RidingViewModel {
     @MainActor
     private func updateCameraToUserLocation() {
         guard let userLocation = currentUserLocation,
-              let mapView = mapView else { 
-            print("❌ 카메라 업데이트 실패: userLocation 또는 mapView가 nil")
+              let mapView = mapView,
+              let userLocationManager = userLocationManager else { 
+            print("❌ 카메라 업데이트 실패: userLocation, mapView 또는 userLocationManager가 nil")
             return 
         }
         
         let cameraUpdate = NMFCameraUpdate(scrollTo: userLocation)
-        cameraUpdate.pivot = CGPoint(x: 0.5, y: 0.3) // x: 0.5(가로 중앙), y: 0.3(세로 위쪽)
+        // 바텀시트 높이에 따른 동적 피봇 조정 (하드코딩 제거)
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: userLocationManager.cameraPivotY)
         cameraUpdate.animation = .easeIn
         mapView.moveCamera(cameraUpdate)
         
         print("📷 카메라가 사용자 위치로 업데이트됨: \(userLocation.lat), \(userLocation.lng)")
-        print("📷 사용자가 움직였으므로 카메라가 따라감")
+        print("📷 사용자가 움직였으므로 카메라가 따라감 (피봇: \(userLocationManager.cameraPivotY))")
     }
     
     // 지도에서 마커 업데이트 (@MainActor로 동기 처리)
@@ -244,10 +253,35 @@ extension RidingViewModel {
         // 기존 마커들을 모두 제거하고 새로운 마커들로 업데이트
         print("🗺️ 마커 업데이트 시작 - 제거할 마커: \(markerManager.getMarkers().count)개, 추가할 마커: \(markerCoordinates.count)개")
         
+        // 마커 업데이트를 배치로 처리하여 UI 깜빡임 방지
         markerManager.clearMarkers()
-        markerManager.addMarkers(coordinates: markerCoordinates, icons: markerIcons)
         
-        print("🗺️ 지도에서 마커 업데이트 완료: \(markerCoordinates.count)개")
+        // 새로운 마커 추가 (좌표와 아이콘이 일치하는지 확인)
+        if markerCoordinates.count == markerIcons.count {
+            markerManager.addMarkers(coordinates: markerCoordinates, icons: markerIcons)
+            print("🗺️ 지도에서 마커 업데이트 완료: \(markerCoordinates.count)개")
+        } else {
+            print("❌ 마커 좌표와 아이콘 개수가 일치하지 않음: 좌표 \(markerCoordinates.count)개, 아이콘 \(markerIcons.count)개")
+        }
+        
+        // 편의시설 마커도 함께 업데이트
+        updateFacilityMarkersOnMap()
+    }
+    
+    // 편의시설 마커 업데이트
+    @MainActor
+    private func updateFacilityMarkersOnMap() {
+        guard let markerManager = markerManager else { return }
+        
+        // 화장실 마커 업데이트
+        if !toiletMarkerCoordinates.isEmpty && toiletMarkerCoordinates.count == toiletMarkerIcons.count {
+            markerManager.addToiletMarkers(coordinates: toiletMarkerCoordinates, icons: toiletMarkerIcons)
+        }
+        
+        // 편의점 마커 업데이트
+        if !csMarkerCoordinates.isEmpty && csMarkerCoordinates.count == csMarkerIcons.count {
+            markerManager.addCSMarkers(coordinates: csMarkerCoordinates, icons: csMarkerIcons)
+        }
     }
 
 }

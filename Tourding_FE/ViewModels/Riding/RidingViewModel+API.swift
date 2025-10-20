@@ -32,7 +32,7 @@ extension RidingViewModel {
     }
     
     @MainActor
-    func getRouteLocationAPI() async {
+    func getRouteLocationAPI(isRecommend: Bool? = nil) async {
         guard let userId = userId else {
             print("❌ userId가 nil입니다")
             return
@@ -46,7 +46,10 @@ extension RidingViewModel {
         
         while retryCount < maxRetries {
             do {
-                let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: self.flag)
+                // isRecommend가 nil이 아닐 때는 !isRecommend, nil일 때는 self.flag 사용
+                let isUsed = isRecommend != nil ? !isRecommend! : self.flag
+                
+                let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: isUsed)
                 routeLocation = response
                 
                 markerCoordinates = routeLocation.compactMap { item in
@@ -167,6 +170,16 @@ extension RidingViewModel {
             .map { $0.typeCode }
         let typeCode = typeCodes.joined(separator: ",")
         
+        // contentIds (0, last 제외 + 선택된 데이터 삭제)
+        let middleContentsid = originalData.dropFirst().dropLast().filter { $0.contentId != selectedData.contentId }
+        let contentIdArray = middleContentsid.map { "\($0.contentId)" }
+        let contentids = contentIdArray.joined(separator: ",")
+        
+        // contentTypeId (0, last 제외 + 선택된 데이터 삭제)
+        let middleContentTypeid = originalData.dropFirst().dropLast().filter { $0.contentTypeId != selectedData.contentTypeId }
+        let contentTypeIdArray = middleContentTypeid.map { "\($0.contentTypeId)" }
+        let contentTypeids = contentTypeIdArray.joined(separator: ",")
+        
         let requestBody = RequestRouteModel(
             userId: userId,
             start: "\(start.lon),\(start.lat)",
@@ -174,10 +187,12 @@ extension RidingViewModel {
             wayPoints: wayPoints,
             locateName: locateName,
             typeCode: typeCode,
+            contentId: contentids,
+            contentTypeId: contentTypeids,
             isUsed: self.flag
         )
         
-        //        print("requestBody: \(requestBody)")
+        print("requestBody.contentId: \(requestBody.contentId)")
         
         do {
             let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
@@ -216,6 +231,16 @@ extension RidingViewModel {
         let typeCodes = locationData.dropFirst().dropLast().map { $0.typeCode }
         let typeCode = typeCodes.joined(separator: ",")
         
+        // contentIds (0, last 제외)
+        let middleIds = locationData.dropFirst().dropLast()
+        let contentIdsArray = middleIds.map { "\($0.contentId)" }
+        let contentsIds = contentIdsArray.joined(separator: ",")
+        
+        // contentTypeId (0, last 제외)
+        let middleTypeIds = locationData.dropFirst().dropLast()
+        let contentTypeIdsArray = middleTypeIds.map { "\($0.contentTypeId)" }
+        let contentsTypeIds = contentTypeIdsArray.joined(separator: ",")
+        
         let requestBody = RequestRouteModel(
             userId: userId,
             start: "\(start.lon),\(start.lat)",
@@ -223,10 +248,12 @@ extension RidingViewModel {
             wayPoints: wayPoints,
             locateName: locateName,
             typeCode: typeCode,
+            contentId: contentsIds,
+            contentTypeId: contentsTypeIds,
             isUsed: self.flag
         )
         
-        //    print("requestBody: \(requestBody)")
+        print("requestBody.contentId: \(requestBody.contentId)")
         
         do {
             let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
@@ -271,6 +298,16 @@ extension RidingViewModel {
         let typeCodes = locationData.dropFirst().dropLast().map { $0.typeCode }
         let typeCode = typeCodes.joined(separator: ",")
         
+        // contentIds (0, last 제외)
+        let middleIds = locationData.dropFirst().dropLast()
+        let contentIdsArray = middleIds.map { "\($0.contentId)" }
+        let contentsIds = contentIdsArray.joined(separator: ",")
+        
+        // contentTypeId (0, last 제외)
+        let middleTypeIds = locationData.dropFirst().dropLast()
+        let contentTypeIdsArray = middleTypeIds.map { "\($0.contentTypeId)" }
+        let contentsTypeIds = contentTypeIdsArray.joined(separator: ",")
+        
         let requestBody = RequestRouteModel(
             userId: userId,
             start: "\(start.lon),\(start.lat)",
@@ -278,8 +315,12 @@ extension RidingViewModel {
             wayPoints: wayPoints,
             locateName: locateName,
             typeCode: typeCode,
+            contentId: contentsIds,
+            contentTypeId: contentsTypeIds,
             isUsed: true
         )
+        
+        print("requestBody.contentId: \(requestBody.contentId)")
         
         do {
             let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
@@ -310,11 +351,17 @@ extension RidingViewModel {
             
             // 경로 데이터 재로드
             do {
-//                try Task.checkCancellation()
-//                await getRouteLocationAPI()
+                try Task.checkCancellation()
+                await getRouteLocationAPI(isRecommend: true) // 이거 추천코스에서 받은 데이터 false일 때 isUsed flase로 설정해서 데이터 받아오고 그걸 post해서 라이딩 시작하기 바로 가능하도록 구현...
+                
+                try Task.checkCancellation()
+                await postRidingStartAPI(locationData: routeLocation) // true로 바꿈
                 
                 try Task.checkCancellation()
                 await getRoutePathAPI()
+                
+                try Task.checkCancellation()
+                await getRouteLocationAPI()
                 
                 // 데이터 로드 완료 후 백업
                 backupOriginalData()
