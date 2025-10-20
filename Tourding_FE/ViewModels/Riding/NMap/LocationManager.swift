@@ -373,7 +373,7 @@ final class LocationManager: NSObject, ObservableObject {
         
         mapView.moveCamera(cameraUpdate)
         
-        print("🧭 카메라 헤딩 업데이트 완료: \(currentHeading)도")
+        print("🧭 카메라 헤딩 업데이트 완료: \(currentHeading)도 (피봇: \(cameraPivotY))")
     }
     
     // 위치 업데이트 시 네비게이션 모드에서 카메라 업데이트
@@ -429,14 +429,27 @@ extension LocationManager: CLLocationManagerDelegate {
         currentLocationString = "위도: \(location.coordinate.latitude), 경도: \(location.coordinate.longitude)"
         locationError = nil
         
-        // CLLocation 콜백 호출 (LocationManager 기능)
-        onLocationUpdate?(location)
+        // 라이딩 중일 때는 통합된 콜백만 호출 (중복 방지)
+        print("🌍 위치 콜백 호출 - 네비게이션 모드: \(isNavigationMode), 콜백 존재: \(onLocationUpdateNMGLatLng != nil)")
         
-        // NMGLatLng 콜백 호출 (UserLocationManager 기능)
-        if let onLocationUpdateNMGLatLng = onLocationUpdateNMGLatLng {
-            let nmgLocation = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
-            onLocationUpdateNMGLatLng(nmgLocation)
-            print("🌍 onLocationUpdateNMGLatLng 콜백 호출 완료")
+        if isNavigationMode {
+            // NMGLatLng 콜백만 호출 (통합된 콜백)
+            if let onLocationUpdateNMGLatLng = onLocationUpdateNMGLatLng {
+                let nmgLocation = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
+                onLocationUpdateNMGLatLng(nmgLocation)
+                print("🌍 통합된 위치 콜백 호출 완료 (네비게이션 모드)")
+            } else {
+                print("❌ onLocationUpdateNMGLatLng 콜백이 nil입니다")
+            }
+        } else {
+            // 일반 모드에서는 기존 콜백들 호출
+            onLocationUpdate?(location)
+            
+            if let onLocationUpdateNMGLatLng = onLocationUpdateNMGLatLng {
+                let nmgLocation = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
+                onLocationUpdateNMGLatLng(nmgLocation)
+                print("🌍 onLocationUpdateNMGLatLng 콜백 호출 완료")
+            }
         }
     }
     

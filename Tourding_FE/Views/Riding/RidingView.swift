@@ -228,21 +228,25 @@ struct RidingView: View {
                 
                 // locationManager 사용 (startRidingProcess와 동일)
                 if let userLocationManager = ridingViewModel.userLocationManager {
-                    // 새로운 콜백 생성
-                    let newCallback: (NMGLatLng) -> Void = { newLocation in
+                    // 통합된 콜백 생성 - 모든 위치 업데이트 로직을 하나로 처리
+                    let unifiedCallback: (NMGLatLng) -> Void = { newLocation in
+                        // 1. MapViewController 업데이트
                         if let mapViewController = ridingViewModel.mapViewController {
                             let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
                             mapViewController.updateUserLocation(clLocation)
                         }
+                        
+                        // 2. RidingViewModel 마커 체크 및 카메라 업데이트
                         Task {
                             await ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
                         }
                     }
                     
-                    // 콜백 설정
-                    userLocationManager.onLocationUpdateNMGLatLng = newCallback
+                    // 기존 콜백 제거 후 통합 콜백 설정
+                    userLocationManager.onLocationUpdate = nil // 기존 콜백 제거
+                    userLocationManager.onLocationUpdateNMGLatLng = unifiedCallback
                     userLocationManager.startLocationUpdates()
-                    print("📍 onAppear - 사용자 위치 추적 시작 - 마커 표시")
+                    print("📍 onAppear - 통합된 위치 추적 콜백 설정 완료")
                 } else {
                     print("❌ onAppear - userLocationManager가 nil")
                 }
@@ -336,15 +340,16 @@ struct RidingView: View {
                 }
             } else {
                 // 라이딩 중일 때는 사용자 위치로 카메라 이동
-                guard let locationManager = ridingViewModel.locationManager else { return }
+                guard let userLocationManager = ridingViewModel.userLocationManager else { return }
                 
-                // pivot 상태 저장
-                locationManager.cameraPivotY = yPivot
+                // pivot 상태 저장 (userLocationManager에 저장)
+                userLocationManager.cameraPivotY = yPivot
+                print("📷 바텀시트 높이 변경: 피봇을 \(yPivot)으로 설정")
                 
                 // 애니메이션 충돌 방지를 위해 약간의 지연 후 실행
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     // moveToCurrentLocation 호출하여 현재 위치로 카메라 이동
-                    locationManager.moveToCurrentLocation(on: mapView)
+                    userLocationManager.moveToCurrentLocation(on: mapView)
                 }
             }
         }
@@ -646,20 +651,24 @@ struct RidingView: View {
             }
         }
         
-        // locationManager의 콜백만 업데이트 (이미 startLocationUpdates가 호출된 상태)
-        let newCallback: (NMGLatLng) -> Void = { newLocation in
+        // 통합된 콜백으로 업데이트 (이미 startLocationUpdates가 호출된 상태)
+        let unifiedCallback: (NMGLatLng) -> Void = { newLocation in
+            // 1. MapViewController 업데이트
             if let mapViewController = ridingViewModel.mapViewController {
                 let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
                 mapViewController.updateUserLocation(clLocation)
             }
+            
+            // 2. RidingViewModel 마커 체크 및 카메라 업데이트
             Task {
                 await ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
             }
         }
         
-        // 기존 locationManager의 콜백 업데이트
-        locationManager.onLocationUpdateNMGLatLng = newCallback
-        print("📍 startRidingProcess - locationManager 콜백 업데이트 완료")
+        // 기존 콜백 제거 후 통합 콜백 설정
+        locationManager.onLocationUpdate = nil // 기존 콜백 제거
+        locationManager.onLocationUpdateNMGLatLng = unifiedCallback
+        print("📍 startRidingProcess - 통합된 위치 추적 콜백 설정 완료")
         
         // 라이딩 가이드 API 호출
         Task { [weak ridingViewModel] in
