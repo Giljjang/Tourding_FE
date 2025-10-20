@@ -44,7 +44,7 @@ struct CustomSpotView: View {
             GridItem(.flexible(), spacing: 16)
         ]
         
-        return LazyVGrid(columns: columns, spacing: 16) {
+        return LazyVGrid(columns: columns, spacing: 0) {
             ForEach(spots) { spot in
                 SpotCardView2(spot: spot)
                     .onTapGesture {
@@ -225,7 +225,7 @@ struct SpotCardView2: View {
                     .cornerRadius(6)
             }
             .padding(.top, 10)
-            .padding(.bottom, 5)
+            .padding(.bottom, 1)
         }
         .padding(10)
         .background(Color.white)

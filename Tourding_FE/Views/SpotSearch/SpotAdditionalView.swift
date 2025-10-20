@@ -48,30 +48,48 @@ struct SpotAdditionalView: View {
             searchTagView
                 .padding(.bottom, 16)
 
-            if spotviewModel.spots.isEmpty {
-                spotEmptyStateView
-                    .padding(.horizontal, 16)
-                    .frame(maxWidth: .infinity, alignment: .center)
-            } else {
-                // 목록 상태: 세로 스크롤
-                ScrollView(.vertical, showsIndicators: false) {
-                    CustomSpotView(
-                        spots: spotviewModel.spots,
-                        errorMessage: nil,
-                        navigationDetail: { contentid, contenttypeid in
-                            let data = ReqDetailModel(contentid: contentid, contenttypeid: contenttypeid)
+                if spotviewModel.spots.isEmpty {
+                    spotEmptyStateView
+                        .padding(.horizontal, 16)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                } else {
+                    // 목록 상태: 세로 스크롤
+                    ScrollView(.vertical, showsIndicators: false) {
+                        LazyVStack(spacing: 0) {
+                            CustomSpotView(
+                                spots: spotviewModel.spots,
+                                errorMessage: nil,
+                                navigationDetail: { contentid, contenttypeid in
+                                    let data = ReqDetailModel(contentid: contentid, contenttypeid: contenttypeid)
+                                    
+                                    print("스팟탐색: contentid: \(contentid), contenttypeid: \(contenttypeid)")
+                                    navigationManager.push(.DetailSpotView(isSpotAdd: false, detailId: data))
+                                    
+                                },
+                                isVertical: true
+                            ) // : CustomSpotView
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
                             
-                            print("스팟탐색: contentid: \(contentid), contenttypeid: \(contenttypeid)")
-                            navigationManager.push(.DetailSpotView(isSpotAdd: false, detailId: data))
-                            
-                        },
-                        isVertical: true
-                    ) // : CustomSpotView
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
+                            // 페이지네이션 트리거
+                            if spotviewModel.hasMoreData {
+                                if spotviewModel.isLoading {
+//                                    DotsLoadingView()
+//                                        .padding(.vertical, 20)
+                                } else {
+                                    Color.clear
+                                        .frame(height: 100)
+                                        .onAppear {
+                                            Task {
+                                                await spotviewModel.loadMoreSpots()
+                                            }
+                                        }
+                                }
+                            }
+                        }
+                    }
+                    .ignoresSafeArea(.container, edges: .bottom)
                 }
-                .ignoresSafeArea(.container, edges: .bottom)   // 하단 safe area 무시
-            }
             }   // VStack
             .background(Color(.white).ignoresSafeArea())
             .navigationBarHidden(true)  // 시스템 네비게이션 바 숨김
