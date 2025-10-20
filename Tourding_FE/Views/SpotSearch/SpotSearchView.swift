@@ -217,13 +217,11 @@ struct SpotSearchView: View {
                     .frame(width: 172)
                     .foregroundColor(.gray3)
                 
-                Text("앗, 현재 위치 근처에는")
+                Text("앗, 현재 위치 근처에는\n 추천 스팟이 없어요")
                     .font(.pretendardMedium(size: 18))
                     .foregroundColor(.gray3)
-                
-                Text("추천 스팟이 없어요")
-                    .font(.pretendardMedium(size: 18))
-                    .foregroundColor(.gray3)
+                    .lineSpacing(6) // 줄간격을 6pt 만큼 띄움
+                    .multilineTextAlignment(.center) // (선택) 가운데 정렬
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 40)
