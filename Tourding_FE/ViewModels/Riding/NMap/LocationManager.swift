@@ -432,23 +432,28 @@ extension LocationManager: CLLocationManagerDelegate {
         // 라이딩 중일 때는 통합된 콜백만 호출 (중복 방지)
         print("🌍 위치 콜백 호출 - 네비게이션 모드: \(isNavigationMode), 콜백 존재: \(onLocationUpdateNMGLatLng != nil)")
         
-        if isNavigationMode {
-            // NMGLatLng 콜백만 호출 (통합된 콜백)
-            if let onLocationUpdateNMGLatLng = onLocationUpdateNMGLatLng {
-                let nmgLocation = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
-                onLocationUpdateNMGLatLng(nmgLocation)
-                print("🌍 통합된 위치 콜백 호출 완료 (네비게이션 모드)")
-            } else {
-                print("❌ onLocationUpdateNMGLatLng 콜백이 nil입니다")
-            }
-        } else {
-            // 일반 모드에서는 기존 콜백들 호출
-            onLocationUpdate?(location)
+        // 메인 스레드에서 콜백 실행하여 스레드 안전성 확보
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             
-            if let onLocationUpdateNMGLatLng = onLocationUpdateNMGLatLng {
-                let nmgLocation = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
-                onLocationUpdateNMGLatLng(nmgLocation)
-                print("🌍 onLocationUpdateNMGLatLng 콜백 호출 완료")
+            if self.isNavigationMode {
+                // NMGLatLng 콜백만 호출 (통합된 콜백)
+                if let onLocationUpdateNMGLatLng = self.onLocationUpdateNMGLatLng {
+                    let nmgLocation = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
+                    onLocationUpdateNMGLatLng(nmgLocation)
+                    print("🌍 통합된 위치 콜백 호출 완료 (네비게이션 모드)")
+                } else {
+                    print("❌ onLocationUpdateNMGLatLng 콜백이 nil입니다")
+                }
+            } else {
+                // 일반 모드에서는 기존 콜백들 호출
+                self.onLocationUpdate?(location)
+                
+                if let onLocationUpdateNMGLatLng = self.onLocationUpdateNMGLatLng {
+                    let nmgLocation = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
+                    onLocationUpdateNMGLatLng(nmgLocation)
+                    print("🌍 onLocationUpdateNMGLatLng 콜백 호출 완료")
+                }
             }
         }
     }

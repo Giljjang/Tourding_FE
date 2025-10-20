@@ -42,13 +42,18 @@ extension RidingViewModel {
             print("📍 첫 번째 위치 업데이트")
         }
         
-        currentUserLocation = newLocation
+        // @MainActor로 메인 스레드에서 currentUserLocation 업데이트
+        await MainActor.run {
+            currentUserLocation = newLocation
+        }
         
         // 위치가 변경되었을 때만 마커 체크 및 카메라 업데이트
         if hasLocationChanged {
             print("✅ 위치 변경 감지됨: \(newLocation.lat), \(newLocation.lng)")
             print("📍 현재 가이드 리스트 개수: \(guideList.count)")
             print("📍 현재 마커 개수: \(markerCoordinates.count)")
+            
+            // 마커 체크와 카메라 업데이트를 순차적으로 실행하여 간섭 방지
             await checkAndRemovePassedMarkers()
             await updateCameraToUserLocation()
         } else {
@@ -248,7 +253,7 @@ extension RidingViewModel {
         // 기존 마커들을 모두 제거하고 새로운 마커들로 업데이트
         print("🗺️ 마커 업데이트 시작 - 제거할 마커: \(markerManager.getMarkers().count)개, 추가할 마커: \(markerCoordinates.count)개")
         
-        // 기존 마커 제거
+        // 마커 업데이트를 배치로 처리하여 UI 깜빡임 방지
         markerManager.clearMarkers()
         
         // 새로운 마커 추가 (좌표와 아이콘이 일치하는지 확인)
@@ -257,6 +262,25 @@ extension RidingViewModel {
             print("🗺️ 지도에서 마커 업데이트 완료: \(markerCoordinates.count)개")
         } else {
             print("❌ 마커 좌표와 아이콘 개수가 일치하지 않음: 좌표 \(markerCoordinates.count)개, 아이콘 \(markerIcons.count)개")
+        }
+        
+        // 편의시설 마커도 함께 업데이트
+        updateFacilityMarkersOnMap()
+    }
+    
+    // 편의시설 마커 업데이트
+    @MainActor
+    private func updateFacilityMarkersOnMap() {
+        guard let markerManager = markerManager else { return }
+        
+        // 화장실 마커 업데이트
+        if !toiletMarkerCoordinates.isEmpty && toiletMarkerCoordinates.count == toiletMarkerIcons.count {
+            markerManager.addToiletMarkers(coordinates: toiletMarkerCoordinates, icons: toiletMarkerIcons)
+        }
+        
+        // 편의점 마커 업데이트
+        if !csMarkerCoordinates.isEmpty && csMarkerCoordinates.count == csMarkerIcons.count {
+            markerManager.addCSMarkers(coordinates: csMarkerCoordinates, icons: csMarkerIcons)
         }
     }
 
