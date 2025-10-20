@@ -32,7 +32,7 @@ extension RidingViewModel {
     }
     
     @MainActor
-    func getRouteLocationAPI() async {
+    func getRouteLocationAPI(isRecommend: Bool? = nil) async {
         guard let userId = userId else {
             print("❌ userId가 nil입니다")
             return
@@ -46,7 +46,10 @@ extension RidingViewModel {
         
         while retryCount < maxRetries {
             do {
-                let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: self.flag)
+                // isRecommend가 nil이 아닐 때는 !isRecommend, nil일 때는 self.flag 사용
+                let isUsed = isRecommend != nil ? !isRecommend! : self.flag
+                
+                let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: isUsed)
                 routeLocation = response
                 
                 markerCoordinates = routeLocation.compactMap { item in
@@ -348,11 +351,17 @@ extension RidingViewModel {
             
             // 경로 데이터 재로드
             do {
-//                try Task.checkCancellation()
-//                await getRouteLocationAPI()
+                try Task.checkCancellation()
+                await getRouteLocationAPI(isRecommend: true) // 이거 추천코스에서 받은 데이터 false일 때 isUsed flase로 설정해서 데이터 받아오고 그걸 post해서 라이딩 시작하기 바로 가능하도록 구현...
+                
+                try Task.checkCancellation()
+                await postRidingStartAPI(locationData: routeLocation) // true로 바꿈
                 
                 try Task.checkCancellation()
                 await getRoutePathAPI()
+                
+                try Task.checkCancellation()
+                await getRouteLocationAPI()
                 
                 // 데이터 로드 완료 후 백업
                 backupOriginalData()
