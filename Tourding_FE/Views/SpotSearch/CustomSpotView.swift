@@ -13,9 +13,14 @@ struct CustomSpotView: View {
     let spots: [SpotData]
     let errorMessage: String?
     let navigationDetail: (String, String) -> Void
+    let isVertical: Bool?
     
     var body: some View {
+        if isVertical! {
+            spotListViewVertical
+        } else {
             spotListView
+        }
     }
     
     // MARK: - 스팟 리스트
@@ -29,10 +34,30 @@ struct CustomSpotView: View {
             }
         }
         .frame(maxHeight: 290)
+        .background(Color.gray1)
+    }
+    
+    // MARK: - 스팟 리스트 (새로운 Vertical)
+    private var spotListViewVertical: some View {
+        let columns = [
+            GridItem(.flexible(), spacing: 16),
+            GridItem(.flexible(), spacing: 16)
+        ]
+        
+        return LazyVGrid(columns: columns, spacing: 0) {
+            ForEach(spots) { spot in
+                SpotCardView2(spot: spot)
+                    .onTapGesture {
+                        navigationDetail(spot.contentid, spot.contenttypeid)
+                    }
+            }
+        }
+        .background(Color.white)
     }
 }
 
-// MARK: - 개별 스팟 카드 뷰
+
+// MARK: - 기본 스팟 카드 뷰
 struct SpotCardView: View {
     let spot: SpotData
     
@@ -47,10 +72,11 @@ struct SpotCardView: View {
             
             // 텍스트 정보 섹션
             VStack(alignment: .leading, spacing: 6) {
-                Text(spot.title)
+                Text(truncatedAddress(spot.title))
                     .font(.pretendardSemiBold(size: 18))
                     .foregroundColor(.gray6)
-                    .lineLimit(2)
+                    .lineLimit(1)
+                    .truncationMode(.tail)   // ✅ 뒤에 … 처리
                 
                 HStack(spacing: 3) {
                     Image("WhiteIcon")
@@ -64,7 +90,7 @@ struct SpotCardView: View {
                         .lineLimit(1)
                 }
             }
-            .padding(.top, 17)
+            .padding(.top, 10)
             .padding(.bottom, 5)
         }
         .padding(10)
@@ -81,7 +107,7 @@ struct SpotCardView: View {
                     image
                         .resizable()
                         .scaledToFill()
-                        .frame(width: 204, height: 204)
+                        .frame(width: 170, height: 170)
 //                        .frame(maxWidth: 204, maxHeight: 204)
                         .background(.white)
                 } placeholder: {
@@ -99,7 +125,7 @@ struct SpotCardView: View {
                 defaultImage
             }
         }
-        .frame(width: 204, height: 204)  // 고정 크기 설정
+        .frame(width: 170, height: 170)  // 고정 크기 설정
         .background(Color.white)  // 전체 배경도 하얀색
         .clipped()
         .cornerRadius(14)
@@ -110,7 +136,7 @@ struct SpotCardView: View {
         Image("common")
             .resizable()
             .scaledToFill()
-            .frame(height: 204)
+            .frame(height: 170)
     }
     
     // MARK: - 카테고리 태그
@@ -131,31 +157,143 @@ struct SpotCardView: View {
         .cornerRadius(8)
     }
     
+    //MARK: - 글자 자르기
+    private func truncatedAddress(_ addr: String, limit: Int = 10) -> String {
+        let trimmed = addr.split(separator: " ").prefix(3).joined(separator: " ")
+        if trimmed.count > limit {
+            let endIndex = trimmed.index(trimmed.startIndex, offsetBy: limit)
+            return String(trimmed[..<endIndex]) + "…"
+        } else {
+            return trimmed
+        }
+    }
+    
     // MARK: - 카테고리별 아이콘과 텍스트
     private var categoryIcon: String {
-        switch spot.contenttypeid {
-        case "12": return "humon" // 관광지
-        case "14": return "humon" // 문화시설
-        case "15": return "humon" // 축제공연행사
-        case "25": return "humon" // 여행코스
-        case "28": return "leport" // 레포츠
-        case "32": return "sleep" // 숙박
-        case "38": return "shoping" // 쇼핑
-        case "39": return "food" // 음식점
-        default: return "관광지"
+        switch spot.typeCode {
+        case "A01": return "nature" // 자연
+        case "A02": return "humon" // 문화,예술,역사
+        case "A03": return "leport" // 레포츠
+        case "A04": return "shoping" // 쇼핑
+        case "A05": return "food" // 음식
+        case "B02": return "sleep" // 숙박
+        default: return "humon"
         }
     }
     
     private var categoryText: String {
-        switch spot.contenttypeid {
-        case "12": return "관광지"
-        case "14": return "문화시설"
-        case "15": return "축제행사"
-        case "25": return "여행코스"
-        case "28": return "레포츠"
-        case "32": return "숙박"
-        case "38": return "쇼핑"
-        case "39": return "음식"
+        switch spot.typeCode {
+        case "A01": return "자연" // 자연
+        case "A02": return "인문(문화/예술/역사)" // 문화,예술,역사
+        case "A03": return "레포츠" // 레포츠
+        case "A04": return "쇼핑" // 쇼핑
+        case "A05": return "음식" // 음식
+        case "B02": return "숙박" // 숙박
+        default: return "관광지"
+        }
+    }
+}
+
+// MARK: - 더보기 스팟 카드 뷰
+struct SpotCardView2: View {
+    let spot: SpotData
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            
+            spotImage
+            
+            // 텍스트 정보 섹션
+            VStack(alignment: .leading, spacing: 6) {
+                Text(truncatedAddress(spot.title))
+                    .font(.pretendardSemiBold(size: 16))
+                    .foregroundColor(.gray6)
+                    .lineLimit(1)
+                    .truncationMode(.tail)   // ✅ 뒤에 … 처리
+                
+                Text(spot.addr1.split(separator: " ").prefix(3).joined(separator: " "))
+                    .font(.pretendardRegular(size: 14))
+                    .foregroundColor(.gray4)
+                    .lineLimit(1)
+                
+                Text(categoryText)
+                    .font(.pretendardRegular(size: 12))
+                    .foregroundColor(.gray4)
+                    .padding(.horizontal, 4.5)
+                    .padding(.vertical, 2)
+                    .background(Color.gray1)
+                    .cornerRadius(6)
+            }
+            .padding(.top, 10)
+            .padding(.bottom, 1)
+        }
+        .padding(10)
+        .background(Color.white)
+        .cornerRadius(14)
+        .shadow(color: .black.opacity(0.02), radius: 20, x: 0, y: 6)
+    }
+    
+    // MARK: - 스팟 이미지
+    private var spotImage: some View {
+        Group {
+            if !spot.firstimage.isEmpty {
+                AsyncImage(url: URL(string: spot.firstimage)) { image in
+                    image
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 170, height: 170)
+//                        .frame(maxWidth: 204, maxHeight: 204)
+                        .background(.white)
+                } placeholder: {
+                    defaultImage
+                }
+            } else if !spot.firstimage2.isEmpty {
+                AsyncImage(url: URL(string: spot.firstimage2)) { image in
+                    image
+                        .resizable()
+                        .scaledToFit()
+                } placeholder: {
+                    defaultImage
+                }
+            } else {
+                defaultImage
+            }
+        }
+        .frame(width: 170, height: 170)  // 고정 크기 설정
+        .background(Color.white)  // 전체 배경도 하얀색
+        .clipped()
+        .cornerRadius(14)
+    }
+    
+    // MARK: - 기본 이미지
+    private var defaultImage: some View {
+        Image("common")
+            .resizable()
+            .scaledToFill()
+            .frame(height: 170)
+    }
+
+    //MARK: - 글자 자르기
+    private func truncatedAddress(_ addr: String, limit: Int = 10) -> String {
+        let trimmed = addr.split(separator: " ").prefix(3).joined(separator: " ")
+        if trimmed.count > limit {
+            let endIndex = trimmed.index(trimmed.startIndex, offsetBy: limit)
+            return String(trimmed[..<endIndex]) + "…"
+        } else {
+            return trimmed
+        }
+    }
+    
+    // MARK: - 카테고리별 텍스트
+    
+    private var categoryText: String {
+        switch spot.typeCode {
+        case "A01": return "자연" // 자연
+        case "A02": return "인문(문화/예술/역사)" // 문화,예술,역사
+        case "A03": return "레포츠" // 레포츠
+        case "A04": return "쇼핑" // 쇼핑
+        case "A05": return "음식" // 음식
+        case "B02": return "숙박" // 숙박
         default: return "관광지"
         }
     }
@@ -191,7 +329,7 @@ struct SpotCardView: View {
     ScrollView {
         CustomSpotView(spots: sampleSpots, errorMessage: nil,  navigationDetail: { lon, lat in
             print("경도: \(lon), 위도: \(lat)")
-        })
+        }, isVertical: false)
             .padding()
     }
     .background(Color.gray1)
