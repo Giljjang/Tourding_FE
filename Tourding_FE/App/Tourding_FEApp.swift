@@ -94,6 +94,8 @@ struct Tourding_FEApp: App {
                                         recommendRouteViewModel: recommendRouteViewModel,
                                         routeName: routeName,
                                         description: description)
+                                case .SpotAdditionalView:
+                                    SpotAdditionalView(spotviewModel: viewModels.spotSearchViewModel, dsviewModel: viewModels.dsViewModel)
                                 default:
                                     EmptyView()
                                 }
