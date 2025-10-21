@@ -274,11 +274,11 @@ struct RidingView: View {
                 currentPosition = .medium
             }
             
-            // flag가 true로 변경될 때 콜백 재설정 (실시간 위치 업데이트 복구)
+            // flag가 true로 변경될 때 위치 추적 완전 재시작 (실시간 위치 업데이트 복구)
             if newValue == true {
-                print("🔄 flag가 true로 변경됨 - 콜백 재설정 시작")
+                print("🔄 flag가 true로 변경됨 - 위치 추적 완전 재시작")
                 
-                // 통합된 콜백 재설정
+                // 1. 통합된 콜백 재설정
                 let unifiedCallback: (NMGLatLng) -> Void = { newLocation in
                     print("📍 onChange 위치 콜백 호출됨: \(newLocation.lat), \(newLocation.lng)")
                     
@@ -295,10 +295,22 @@ struct RidingView: View {
                     }
                 }
                 
-                // 콜백 재설정
+                // 2. 콜백 재설정
                 locationManager.onLocationUpdate = nil // 기존 콜백 제거
                 locationManager.onLocationUpdateNMGLatLng = unifiedCallback
                 print("📍 onChange - 통합된 위치 추적 콜백 재설정 완료")
+                
+                // 3. 위치 업데이트 재시작 (핵심!)
+                locationManager.startLocationUpdates()
+                print("🌍 onChange - 위치 업데이트 재시작")
+                
+                // 4. 네비게이션 모드 재시작 (핵심!)
+                if let mapView = ridingViewModel.mapView {
+                    locationManager.startNavigationMode(on: mapView)
+                    print("🧭 onChange - 네비게이션 모드 재시작")
+                } else {
+                    print("❌ onChange - mapView가 nil이어서 네비게이션 모드 재시작 실패")
+                }
             }
             
         } // : onChange
