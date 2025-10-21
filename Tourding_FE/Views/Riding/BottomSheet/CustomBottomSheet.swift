@@ -97,7 +97,7 @@ struct CustomBottomSheet<Content: View>: View {
                             if !locationManager.isLocationTrackingEnabled {
                                 moveToLocationButton
                                     .position(
-                                        x: 40,
+                                        x: 40+45,
                                         y: offset - 30 // offset 사용으로 실시간 반영
                                     )
                                     .animation(.easeInOut(duration: animationDuration), value: currentPosition)
@@ -122,6 +122,7 @@ struct CustomBottomSheet<Content: View>: View {
     }
     
     //MARK: - View
+    // 내 위치로 이동 / 네비게이션 모드 버튼
     private var moveToLocationButton: some View {
         Button(action: {
             // 라이딩 중일 때는 위치추적 토글, 아닐 때는 기존 동작
@@ -155,13 +156,37 @@ struct CustomBottomSheet<Content: View>: View {
                 }
             }
         }) {
-            VStack(spacing: 0) {
-                Image("myPosition")
-            }
-            .frame(width: 40, height: 40)
-            .background(.white)
-            .clipShape(Circle())
-            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+            if !isRiding {
+                VStack(spacing: 0) {
+                    Image("myPosition")
+                }
+                .frame(width: 40, height: 40)
+                .background(.white)
+                .clipShape(Circle())
+                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+            } else { // 라이딩 중일 때 네비게이션 모드 버튼으로 바꿈
+                ZStack {
+                    // 💡 배경만 블러 처리
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(.white.opacity(0.9))
+                        .shadow(color: .black.opacity(0.02), radius: 10, x: 0, y: 6)
+                    
+                    // 콘텐츠 (선명하게 유지)
+                    HStack(spacing: 2) {
+                        Image("naviationMode")
+                            .padding(.vertical, 8)
+                            .padding(.leading, 6)
+                        
+                        Text("경로 안내 재개")
+                            .foregroundColor(.gray5)
+                            .font(.pretendardMedium(size: 14))
+                            .padding(.trailing, 12)
+                    }
+                }
+                .frame(width: 130)
+                .frame(height: 40)
+
+            } // if-else
         }
     }
     
