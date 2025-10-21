@@ -24,9 +24,14 @@ struct DetailSpotView: View {
         self.detailId = detailId
     }
     
-    let topSafeArea = UIApplication.shared.connectedScenes
-        .compactMap { $0 as? UIWindowScene }
-        .first?.windows.first?.safeAreaInsets.top ?? 0
+    let topSafeArea = {
+        let safeArea = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.windows.first?.safeAreaInsets.top ?? 0
+        
+        // SafeArea가 0이면 최소값(44pt) 사용
+        return safeArea > 0 ? safeArea : 44
+    }()
     let screenWidth = UIScreen.main.bounds.width
     
     var body: some View {

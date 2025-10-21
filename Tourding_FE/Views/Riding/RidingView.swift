@@ -36,9 +36,14 @@ struct RidingView: View {
     //라이딩 중 비정상 종료 감지
     @AppStorage("wasLastRunNormal") private var wasLastRunNormal: Bool = true
     
-    let topSafeArea = UIApplication.shared.connectedScenes
-        .compactMap { $0 as? UIWindowScene }
-        .first?.windows.first?.safeAreaInsets.top ?? 0
+    let topSafeArea = {
+        let safeArea = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.windows.first?.safeAreaInsets.top ?? 0
+        
+        // SafeArea가 0이면 최소값(44pt) 사용
+        return safeArea > 0 ? safeArea : 44
+    }()
     
     var body: some View {
         GeometryReader { geometry in
