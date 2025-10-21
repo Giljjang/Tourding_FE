@@ -52,10 +52,20 @@ struct RidingView: View {
                     Color.clear
                         .ignoresSafeArea(edges: .top)
                         .contentShape(Rectangle())
-                        .onTapGesture {
-                            print("지도 터치 감지 (SwiftUI)")
-                            locationManager.handleScreenTouch()
-                        }
+                        .gesture(
+                            SimultaneousGesture(
+                                TapGesture()
+                                    .onEnded { _ in
+                                        print("지도 탭 감지 (SwiftUI)")
+                                        locationManager.handleScreenTouch()
+                                    },
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { _ in
+                                        print("지도 드래그 감지 (SwiftUI)")
+                                        locationManager.handleScreenTouch()
+                                    }
+                            )
+                        )
                 }
                 
                 if currentPosition == .large {
