@@ -109,10 +109,11 @@ struct HomeView: View {
             Task { [weak viewModel] in
                 do {
                     try Task.checkCancellation()
-                    await viewModel?.getRouteLocationAPI()
+                    await viewModel?.getRouteRecommendAPI()
                     
                     try Task.checkCancellation()
-                    await viewModel?.getRouteRecommendAPI()
+                    await viewModel?.getRouteLocationAPI()
+                
                 } catch is CancellationError {
                     print("🚫 HomeView 초기화 Task 취소됨")
                 } catch {
