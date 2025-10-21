@@ -409,10 +409,10 @@ struct HomeView: View {
                     .padding(.top, 18)
                     .padding(.bottom, 20)
                     .onTapGesture {
-                        Task {
+                        Task { [weak viewModel] in
                             do {
                                 try Task.checkCancellation()
-                                await viewModel.postRouteByNameAPI(start: item.departure, goal: item.arrival)
+                                await viewModel?.postRouteByNameAPI(start: item.departure, goal: item.arrival)
                                 
                                 await MainActor.run {
                                     navigationManager.push(.RecommendRouteView(
