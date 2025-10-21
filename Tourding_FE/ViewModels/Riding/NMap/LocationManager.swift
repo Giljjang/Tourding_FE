@@ -298,7 +298,7 @@ final class LocationManager: NSObject, ObservableObject {
         stopNavigationMode()
         
         // 20초 후 자동 위치추적 on 타이머 시작
-        startAutoTrackingTimer()
+//        startAutoTrackingTimer()
     }
     
     // 20초 후 자동 위치추적 on 타이머 시작

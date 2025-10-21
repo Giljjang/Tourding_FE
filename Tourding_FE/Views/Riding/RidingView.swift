@@ -226,33 +226,8 @@ struct RidingView: View {
                     }
                 }
                 
-                // locationManager 사용 (startRidingProcess와 동일)
-                if let userLocationManager = ridingViewModel.userLocationManager {
-                    // 통합된 콜백 생성 - 모든 위치 업데이트 로직을 하나로 처리 (메인 스레드에서 실행)
-                    let unifiedCallback: (NMGLatLng) -> Void = { newLocation in
-                        print("📍 통합된 위치 콜백 호출됨: \(newLocation.lat), \(newLocation.lng)")
-                        
-                        // 메인 스레드에서 순차적으로 실행하여 간섭 방지
-                        Task { @MainActor in
-                            // 1. MapViewController 업데이트
-                            if let mapViewController = ridingViewModel.mapViewController {
-                                let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
-                                mapViewController.updateUserLocation(clLocation)
-                            }
-                            
-                            // 2. RidingViewModel 마커 체크 및 카메라 업데이트
-                            await ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
-                        }
-                    }
-                    
-                    // 기존 콜백 제거 후 통합 콜백 설정
-                    userLocationManager.onLocationUpdate = nil // 기존 콜백 제거
-                    userLocationManager.onLocationUpdateNMGLatLng = unifiedCallback
-                    userLocationManager.startLocationUpdates()
-                    print("📍 onAppear - 통합된 위치 추적 콜백 설정 완료")
-                } else {
-                    print("❌ onAppear - userLocationManager가 nil")
-                }
+                // onAppear에서는 콜백 설정하지 않음 (startRidingAPIProcess에서 설정)
+                print("📍 onAppear - 콜백 설정은 startRidingAPIProcess에서 처리됨")
             }
             
             Task { [weak ridingViewModel] in
@@ -652,12 +627,12 @@ struct RidingView: View {
             }
         }
         
-        // 기존 콜백 제거 후 통합 콜백 설정 (네비게이션 모드 시작 전에 설정)
+        // 1. 먼저 콜백 설정 (네비게이션 모드 시작 전에 설정)
         locationManager.onLocationUpdate = nil // 기존 콜백 제거
         locationManager.onLocationUpdateNMGLatLng = unifiedCallback
         print("📍 startRidingProcess - 통합된 위치 추적 콜백 설정 완료")
         
-        // 카메라를 사용자 위치로 이동하고 네비게이션 모드 시작
+        // 2. 그 다음 카메라를 사용자 위치로 이동하고 네비게이션 모드 시작
         if let coordinate = locationManager.getCurrentLocationAsNMGLatLng(),
            let mapView = ridingViewModel.mapView {
             ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
