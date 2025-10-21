@@ -239,12 +239,12 @@ final class LocationManager: NSObject, ObservableObject {
     func startNavigationMode(on mapView: NMFMapView) {
         isNavigationMode = true
         isLocationTrackingEnabled = true
-        print("🧭 네비게이션 모드 시작 - 위치추적 on")
+        // print("🧭 네비게이션 모드 시작 - 위치추적 on")
         
         // 나침반 업데이트 강제 시작
         if CLLocationManager.headingAvailable() {
             locationManager.startUpdatingHeading()
-            print("🧭 나침반 업데이트 시작")
+            // print("🧭 나침반 업데이트 시작")
         } else {
             print("❌ 나침반을 사용할 수 없습니다")
         }
@@ -267,7 +267,7 @@ final class LocationManager: NSObject, ObservableObject {
         isNavigationMode = false
         isLocationTrackingEnabled = false
         cancelAutoTrackingTimer() // 타이머 정리
-        print("🧭 네비게이션 모드 종료")
+        // print("🧭 네비게이션 모드 종료")
     }
     
     // 위치추적 토글 (라이딩 중)
@@ -298,7 +298,7 @@ final class LocationManager: NSObject, ObservableObject {
         stopNavigationMode()
         
         // 20초 후 자동 위치추적 on 타이머 시작
-        startAutoTrackingTimer()
+//        startAutoTrackingTimer()
     }
     
     // 20초 후 자동 위치추적 on 타이머 시작
@@ -344,7 +344,7 @@ final class LocationManager: NSObject, ObservableObject {
         let now = Date()
         // 너무 빈번한 업데이트 방지
         guard now.timeIntervalSince(lastHeadingUpdate) >= headingUpdateThreshold else { 
-            print("⏰ 헤딩 업데이트 간격이 너무 짧음 - 건너뜀")
+//            print("⏰ 헤딩 업데이트 간격이 너무 짧음 - 건너뜀")
             return 
         }
         
@@ -355,7 +355,7 @@ final class LocationManager: NSObject, ObservableObject {
         // 현재 카메라 위치 가져오기
         let currentCamera = mapView.cameraPosition
         
-        print("🧭 카메라 업데이트 시작 - 현재 헤딩: \(currentHeading)도, 줌: \(currentCamera.zoom)")
+        // print("🧭 카메라 업데이트 시작 - 현재 헤딩: \(currentHeading)도, 줌: \(currentCamera.zoom)")
         
         // 새로운 카메라 위치 생성 (헤딩 포함)
         let newCameraPosition = NMFCameraPosition(
@@ -373,7 +373,7 @@ final class LocationManager: NSObject, ObservableObject {
         
         mapView.moveCamera(cameraUpdate)
         
-        print("🧭 카메라 헤딩 업데이트 완료: \(currentHeading)도 (피봇: \(cameraPivotY))")
+        // print("🧭 카메라 헤딩 업데이트 완료: \(currentHeading)도 (피봇: \(cameraPivotY))")
     }
     
     // 위치 업데이트 시 네비게이션 모드에서 카메라 업데이트
@@ -436,34 +436,26 @@ extension LocationManager: CLLocationManagerDelegate {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
-            if self.isNavigationMode {
-                // NMGLatLng 콜백만 호출 (통합된 콜백)
-                if let onLocationUpdateNMGLatLng = self.onLocationUpdateNMGLatLng {
-                    let nmgLocation = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
-                    onLocationUpdateNMGLatLng(nmgLocation)
-                    print("🌍 통합된 위치 콜백 호출 완료 (네비게이션 모드)")
-                } else {
-                    print("❌ onLocationUpdateNMGLatLng 콜백이 nil입니다")
-                }
+            // 네비게이션 모드와 관계없이 항상 콜백 호출 (정밀도 향상)
+            if let onLocationUpdateNMGLatLng = self.onLocationUpdateNMGLatLng {
+                let nmgLocation = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
+                onLocationUpdateNMGLatLng(nmgLocation)
+                print("🌍 통합된 위치 콜백 호출 완료 (네비게이션 모드: \(self.isNavigationMode))")
             } else {
-                // 일반 모드에서는 기존 콜백들 호출
-                self.onLocationUpdate?(location)
-                
-                if let onLocationUpdateNMGLatLng = self.onLocationUpdateNMGLatLng {
-                    let nmgLocation = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
-                    onLocationUpdateNMGLatLng(nmgLocation)
-                    print("🌍 onLocationUpdateNMGLatLng 콜백 호출 완료")
-                }
+                print("❌ onLocationUpdateNMGLatLng 콜백이 nil입니다")
             }
+            
+            // 기존 콜백도 호출 (호환성 유지)
+            self.onLocationUpdate?(location)
         }
     }
     
     func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
-        print("🧭 didUpdateHeading 호출됨 - 정확도: \(newHeading.headingAccuracy)")
+        // print("🧭 didUpdateHeading 호출됨 - 정확도: \(newHeading.headingAccuracy)")
         
         // 나침반 데이터가 부정확한 경우 무시
         if newHeading.headingAccuracy < 0 {
-            print("❌ 나침반 데이터가 부정확함 - 무시")
+            // print("❌ 나침반 데이터가 부정확함 - 무시")
             return
         }
         
@@ -471,14 +463,14 @@ extension LocationManager: CLLocationManagerDelegate {
         let oldHeading = currentHeading
         currentHeading = newHeading.magneticHeading
         
-        print("🧭 헤딩 변경: \(oldHeading)도 → \(currentHeading)도")
+        // print("🧭 헤딩 변경: \(oldHeading)도 → \(currentHeading)도")
         
         // 콜백 호출
         onHeadingUpdate?(newHeading)
         
         // 네비게이션 모드에서 헤딩 업데이트 시 카메라 회전
         if isNavigationMode {
-            print("🧭 네비게이션 모드에서 헤딩 업데이트: \(currentHeading)도")
+            // print("🧭 네비게이션 모드에서 헤딩 업데이트: \(currentHeading)도")
         }
     }
     

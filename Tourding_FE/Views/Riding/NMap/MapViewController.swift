@@ -127,11 +127,11 @@ final class MapViewController: UIViewController {
             guard let self = self,
                   let mapView = self.mapView?.mapView,
                   userLocationManager.isNavigationMode else { 
-                print("❌ MapViewController: 헤딩 콜백 조건 불만족")
+//                print("❌ MapViewController: 헤딩 콜백 조건 불만족")
                 return 
             }
             
-            print("🗺️ MapViewController: 헤딩 콜백 호출됨 - \(heading.magneticHeading)도")
+//            print("🗺️ MapViewController: 헤딩 콜백 호출됨 - \(heading.magneticHeading)도")
             
             // 사용자 마커 방향 업데이트
             userLocationManager.updateLocationOverlayHeading(on: mapView)
@@ -150,13 +150,13 @@ final class MapViewController: UIViewController {
                 return 
             }
             
-            print("🗺️ MapViewController: 위치 업데이트 콜백 호출됨 - 네비게이션 모드")
+//            print("🗺️ MapViewController: 위치 업데이트 콜백 호출됨 - 네비게이션 모드")
             
             // 네비게이션 모드에서 위치 업데이트 시 카메라 설정
             userLocationManager.updateNavigationCamera(on: mapView, location: location)
         }
         
-        print("🗺️ MapViewController: LocationManager 설정 완료 (콜백은 RidingView에서 설정)")
+//        print("🗺️ MapViewController: LocationManager 설정 완료 (콜백은 RidingView에서 설정)")
     }
     
     // MARK: - Public Methods
@@ -239,6 +239,8 @@ final class MapViewController: UIViewController {
         
         // 사용자 위치 마커를 항상 userMarker으로 설정
         locationOverlay.icon = MarkerIcons.userMarker
+        
+        print("📍 MapViewController: 사용자 위치 마커 업데이트 완료 - \(lat), \(lng)")
         
         // ridingViewModel.flag가 true일 때만 카메라 이동
         guard let ridingViewModel = ridingViewModel, ridingViewModel.flag else {

@@ -181,14 +181,14 @@ struct RidingView: View {
             // 위치 권한 확인 및 요청
             checkAndRequestLocationPermission()
             
-            // SpotAddView로부터 돌아올 때 flag 상태 확인 및 초기화
-            if ridingViewModel.flag && isNotNomal == nil && !isStart {
+            // SpotAddView로부터 돌아올 때 무조건 flag를 false로 초기화
+            if isNotNomal == nil && !isStart {
                 print("🔄 SpotAddView로부터 돌아옴 - flag 상태 확인")
                 print("  - 현재 flag: \(ridingViewModel.flag)")
                 print("  - isNotNomal: \(isNotNomal != nil)")
                 print("  - isStart: \(isStart)")
                 
-                // SpotAddView로부터 돌아온 경우 flag를 false로 초기화
+                // SpotAddView로부터 돌아온 경우 무조건 flag를 false로 초기화
                 ridingViewModel.flag = false
                 print("✅ flag를 false로 초기화")
             }
@@ -226,33 +226,8 @@ struct RidingView: View {
                     }
                 }
                 
-                // locationManager 사용 (startRidingProcess와 동일)
-                if let userLocationManager = ridingViewModel.userLocationManager {
-                    // 통합된 콜백 생성 - 모든 위치 업데이트 로직을 하나로 처리 (메인 스레드에서 실행)
-                    let unifiedCallback: (NMGLatLng) -> Void = { newLocation in
-                        print("📍 통합된 위치 콜백 호출됨: \(newLocation.lat), \(newLocation.lng)")
-                        
-                        // 메인 스레드에서 순차적으로 실행하여 간섭 방지
-                        Task { @MainActor in
-                            // 1. MapViewController 업데이트
-                            if let mapViewController = ridingViewModel.mapViewController {
-                                let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
-                                mapViewController.updateUserLocation(clLocation)
-                            }
-                            
-                            // 2. RidingViewModel 마커 체크 및 카메라 업데이트
-                            await ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
-                        }
-                    }
-                    
-                    // 기존 콜백 제거 후 통합 콜백 설정
-                    userLocationManager.onLocationUpdate = nil // 기존 콜백 제거
-                    userLocationManager.onLocationUpdateNMGLatLng = unifiedCallback
-                    userLocationManager.startLocationUpdates()
-                    print("📍 onAppear - 통합된 위치 추적 콜백 설정 완료")
-                } else {
-                    print("❌ onAppear - userLocationManager가 nil")
-                }
+                // onAppear에서는 콜백 설정하지 않음 (startRidingAPIProcess에서 설정)
+                print("📍 onAppear - 콜백 설정은 startRidingAPIProcess에서 처리됨")
             }
             
             Task { [weak ridingViewModel] in
@@ -299,7 +274,63 @@ struct RidingView: View {
                 currentPosition = .medium
             }
             
+            // flag가 true로 변경될 때 위치 추적 완전 재시작 (실시간 위치 업데이트 복구)
+            if newValue == true {
+                print("🔄 flag가 true로 변경됨 - 위치 추적 완전 재시작")
+                
+                // 1. 통합된 콜백 재설정
+                let unifiedCallback: (NMGLatLng) -> Void = { newLocation in
+                    print("📍 onChange 위치 콜백 호출됨: \(newLocation.lat), \(newLocation.lng)")
+                    
+                    // 메인 스레드에서 순차적으로 실행하여 간섭 방지
+                    Task { @MainActor in
+                        // 1. MapViewController 업데이트
+                        if let mapViewController = ridingViewModel.mapViewController {
+                            let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
+                            mapViewController.updateUserLocation(clLocation)
+                        }
+                        
+                        // 2. RidingViewModel 마커 체크 및 카메라 업데이트
+                        await ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+                    }
+                }
+                
+                // 2. 콜백 재설정
+                locationManager.onLocationUpdate = nil // 기존 콜백 제거
+                locationManager.onLocationUpdateNMGLatLng = unifiedCallback
+                print("📍 onChange - 통합된 위치 추적 콜백 재설정 완료")
+                
+                // 3. 위치 업데이트 재시작 (핵심!)
+                locationManager.startLocationUpdates()
+                print("🌍 onChange - 위치 업데이트 재시작")
+                
+                // 4. 네비게이션 모드 재시작 (핵심!)
+                if let mapView = ridingViewModel.mapView {
+                    locationManager.startNavigationMode(on: mapView)
+                    print("🧭 onChange - 네비게이션 모드 재시작")
+                } else {
+                    print("❌ onChange - mapView가 nil이어서 네비게이션 모드 재시작 실패")
+                }
+            }
+            
         } // : onChange
+        .onChange(of: ridingViewModel.routeLocation) { newValue in
+            // flag가 false일 때 routeLocation이 변경되면 getRoutesTotalAPI 호출
+            if !ridingViewModel.flag {
+                print("🔄 routeLocation 변경 감지 - getRoutesTotalAPI 호출")
+                Task { [weak ridingViewModel] in
+                    do {
+                        try Task.checkCancellation()
+                        await ridingViewModel?.getRoutesTotalAPI()
+                        print("✅ getRoutesTotalAPI 호출 완료")
+                    } catch is CancellationError {
+                        print("🚫 getRoutesTotalAPI Task 취소됨")
+                    } catch {
+                        print("❌ getRoutesTotalAPI 에러: \(error)")
+                    }
+                }
+            }
+        } // : onChange routeLocation
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             // 앱이 포그라운드로 돌아왔을 때
             print("🔄 앱이 포그라운드로 돌아옴 - 지도 상태 확인")
@@ -635,25 +666,6 @@ struct RidingView: View {
         // flag 설정
         ridingViewModel.flag = true
         
-        // 카메라를 사용자 위치로 이동하고 네비게이션 모드 시작
-        if let coordinate = locationManager.getCurrentLocationAsNMGLatLng(),
-           let mapView = ridingViewModel.mapView {
-            ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
-            print("🎯 startRidingProcess - 카메라를 사용자 위치로 이동: \(coordinate.lat), \(coordinate.lng)")
-            
-            // 네비게이션 모드 시작 (사용자가 바라보는 방향에 따라 카메라 회전)
-            print("🧭 나침반 사용 가능 여부: \(CLLocationManager.headingAvailable())")
-            locationManager.startNavigationMode(on: mapView)
-        } else {
-            print("❌ startRidingProcess - 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
-            
-            // 위치가 없어도 네비게이션 모드는 시작
-            if let mapView = ridingViewModel.mapView {
-                print("🧭 startRidingProcess - 위치 없이 네비게이션 모드 시작 (위치 업데이트 대기)")
-                locationManager.startNavigationMode(on: mapView)
-            }
-        }
-        
         // 통합된 콜백으로 업데이트 (이미 startLocationUpdates가 호출된 상태) - 메인 스레드에서 실행
         let unifiedCallback: (NMGLatLng) -> Void = { newLocation in
             print("📍 startRidingProcess 위치 콜백 호출됨: \(newLocation.lat), \(newLocation.lng)")
@@ -671,10 +683,29 @@ struct RidingView: View {
             }
         }
         
-        // 기존 콜백 제거 후 통합 콜백 설정
+        // 1. 먼저 콜백 설정 (네비게이션 모드 시작 전에 설정)
         locationManager.onLocationUpdate = nil // 기존 콜백 제거
         locationManager.onLocationUpdateNMGLatLng = unifiedCallback
         print("📍 startRidingProcess - 통합된 위치 추적 콜백 설정 완료")
+        
+        // 2. 그 다음 카메라를 사용자 위치로 이동하고 네비게이션 모드 시작
+        if let coordinate = locationManager.getCurrentLocationAsNMGLatLng(),
+           let mapView = ridingViewModel.mapView {
+            ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
+            print("🎯 startRidingProcess - 카메라를 사용자 위치로 이동: \(coordinate.lat), \(coordinate.lng)")
+            
+            // 네비게이션 모드 시작 (사용자가 바라보는 방향에 따라 카메라 회전)
+            print("🧭 나침반 사용 가능 여부: \(CLLocationManager.headingAvailable())")
+            locationManager.startNavigationMode(on: mapView)
+        } else {
+            print("❌ startRidingProcess - 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
+            
+            // 위치가 없어도 네비게이션 모드는 시작
+            if let mapView = ridingViewModel.mapView {
+                print("🧭 startRidingProcess - 위치 없이 네비게이션 모드 시작 (위치 업데이트 대기)")
+                locationManager.startNavigationMode(on: mapView)
+            }
+        }
         
         // 라이딩 가이드 API 호출
         Task { [weak ridingViewModel] in

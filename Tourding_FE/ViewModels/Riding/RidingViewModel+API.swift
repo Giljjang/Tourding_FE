@@ -342,6 +342,9 @@ extension RidingViewModel {
         
         print("🔄 가이드 API 호출 시작 - isNotNomal: \(isNotNomal != nil)")
         
+        // 가이드 API 호출 시 로딩 상태 설정
+        isStartingRiding = true
+        
         // 라이딩 시작 전 원본 데이터 백업 (정상/비정상 종료 모두)
         print("🔄 라이딩 시작 - 원본 데이터 백업")
         
@@ -455,6 +458,9 @@ extension RidingViewModel {
                 }
             }
         }
+        
+        // 가이드 API 호출 완료 후 로딩 상태 해제
+        isStartingRiding = false
     }
     
     @MainActor
