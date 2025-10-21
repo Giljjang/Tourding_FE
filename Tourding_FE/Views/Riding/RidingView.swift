@@ -314,6 +314,23 @@ struct RidingView: View {
             }
             
         } // : onChange
+        .onChange(of: ridingViewModel.routeLocation) { newValue in
+            // flag가 false일 때 routeLocation이 변경되면 getRoutesTotalAPI 호출
+            if !ridingViewModel.flag {
+                print("🔄 routeLocation 변경 감지 - getRoutesTotalAPI 호출")
+                Task { [weak ridingViewModel] in
+                    do {
+                        try Task.checkCancellation()
+                        await ridingViewModel?.getRoutesTotalAPI()
+                        print("✅ getRoutesTotalAPI 호출 완료")
+                    } catch is CancellationError {
+                        print("🚫 getRoutesTotalAPI Task 취소됨")
+                    } catch {
+                        print("❌ getRoutesTotalAPI 에러: \(error)")
+                    }
+                }
+            }
+        } // : onChange routeLocation
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             // 앱이 포그라운드로 돌아왔을 때
             print("🔄 앱이 포그라운드로 돌아옴 - 지도 상태 확인")
