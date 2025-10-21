@@ -7,9 +7,12 @@ struct ImageZoomView: View {
     let title: String?
     
     private var topSafeArea: CGFloat {
-        UIApplication.shared.connectedScenes
+        let safeArea = UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .first?.windows.first?.safeAreaInsets.top ?? 0
+        
+        // SafeArea가 0이면 최소값(44pt) 사용
+        return safeArea > 0 ? safeArea : 44
     }
     
     @State private var currentIndex: Int = 0

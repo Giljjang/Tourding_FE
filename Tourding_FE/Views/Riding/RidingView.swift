@@ -36,9 +36,14 @@ struct RidingView: View {
     //라이딩 중 비정상 종료 감지
     @AppStorage("wasLastRunNormal") private var wasLastRunNormal: Bool = true
     
-    let topSafeArea = UIApplication.shared.connectedScenes
-        .compactMap { $0 as? UIWindowScene }
-        .first?.windows.first?.safeAreaInsets.top ?? 0
+    let topSafeArea = {
+        let safeArea = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.windows.first?.safeAreaInsets.top ?? 0
+        
+        // SafeArea가 0이면 최소값(44pt) 사용
+        return safeArea > 0 ? safeArea : 44
+    }()
     
     var body: some View {
         GeometryReader { geometry in
@@ -52,10 +57,20 @@ struct RidingView: View {
                     Color.clear
                         .ignoresSafeArea(edges: .top)
                         .contentShape(Rectangle())
-                        .onTapGesture {
-                            print("지도 터치 감지 (SwiftUI)")
-                            locationManager.handleScreenTouch()
-                        }
+                        .gesture(
+                            SimultaneousGesture(
+                                TapGesture()
+                                    .onEnded { _ in
+                                        print("지도 탭 감지 (SwiftUI)")
+                                        locationManager.handleScreenTouch()
+                                    },
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { _ in
+                                        print("지도 드래그 감지 (SwiftUI)")
+                                        locationManager.handleScreenTouch()
+                                    }
+                            )
+                        )
                 }
                 
                 if currentPosition == .large {
@@ -197,9 +212,7 @@ struct RidingView: View {
                 ridingViewModel.flag = isNotNomal
                 print("🔄 비정상 종료 감지 - 라이딩 모드로 복구")
                 startRidingWithLoading()
-            }
-            
-            if isStart {
+            } else if isStart {
                 startRidingWithLoading()
             }
             
@@ -649,14 +662,14 @@ struct RidingView: View {
         }
     }
     
-    // 라이딩 시작하기 버튼 클릭 시 3초 로딩과 함께 시작
+    // 라이딩 시작하기 버튼 클릭 시 API 완료 후 로딩 종료
     func startRidingWithLoading() {
         wasLastRunNormal = false // 비정상 종료
         ridingViewModel.isStartingRiding = true
         
         Task {
-            await self.startRidingAPIProcess() // 끝날 때까지 기다림
-            try? await Task.sleep(nanoseconds: 3_000_000_000) // 3초 대기
+            await self.startRidingAPIProcess() // API 완료까지 기다림
+            print("✅ 라이딩 시작 프로세스 완료 - 로딩 종료")
             self.ridingViewModel.isStartingRiding = false
         }
     }
@@ -712,6 +725,7 @@ struct RidingView: View {
             do {
                 try Task.checkCancellation()
                 await ridingViewModel?.getRouteGuideAPI(isNotNomal: isNotNomal)
+                print("✅ 라이딩 가이드 API 호출 완료")
             } catch is CancellationError {
                 print("🚫 라이딩 가이드 API Task 취소됨")
             } catch {
