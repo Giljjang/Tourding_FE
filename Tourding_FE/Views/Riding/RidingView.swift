@@ -720,15 +720,17 @@ struct RidingView: View {
             }
         }
         
-        // 라이딩 가이드 API 호출 (동기적으로 기다림)
-        do {
-            try Task.checkCancellation()
-            await ridingViewModel.getRouteGuideAPI(isNotNomal: isNotNomal)
-            print("✅ 라이딩 가이드 API 호출 완료")
-        } catch is CancellationError {
-            print("🚫 라이딩 가이드 API Task 취소됨")
-        } catch {
-            print("❌ 라이딩 가이드 API 에러: \(error)")
+        // 라이딩 가이드 API 호출
+        Task { [weak ridingViewModel] in
+            do {
+                try Task.checkCancellation()
+                await ridingViewModel?.getRouteGuideAPI(isNotNomal: isNotNomal)
+                print("✅ 라이딩 가이드 API 호출 완료")
+            } catch is CancellationError {
+                print("🚫 라이딩 가이드 API Task 취소됨")
+            } catch {
+                print("❌ 라이딩 가이드 API 에러: \(error)")
+            }
         }
     }
     
