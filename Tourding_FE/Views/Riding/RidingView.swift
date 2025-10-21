@@ -274,6 +274,33 @@ struct RidingView: View {
                 currentPosition = .medium
             }
             
+            // flag가 true로 변경될 때 콜백 재설정 (실시간 위치 업데이트 복구)
+            if newValue == true {
+                print("🔄 flag가 true로 변경됨 - 콜백 재설정 시작")
+                
+                // 통합된 콜백 재설정
+                let unifiedCallback: (NMGLatLng) -> Void = { newLocation in
+                    print("📍 onChange 위치 콜백 호출됨: \(newLocation.lat), \(newLocation.lng)")
+                    
+                    // 메인 스레드에서 순차적으로 실행하여 간섭 방지
+                    Task { @MainActor in
+                        // 1. MapViewController 업데이트
+                        if let mapViewController = ridingViewModel.mapViewController {
+                            let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
+                            mapViewController.updateUserLocation(clLocation)
+                        }
+                        
+                        // 2. RidingViewModel 마커 체크 및 카메라 업데이트
+                        await ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+                    }
+                }
+                
+                // 콜백 재설정
+                locationManager.onLocationUpdate = nil // 기존 콜백 제거
+                locationManager.onLocationUpdateNMGLatLng = unifiedCallback
+                print("📍 onChange - 통합된 위치 추적 콜백 재설정 완료")
+            }
+            
         } // : onChange
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             // 앱이 포그라운드로 돌아왔을 때
