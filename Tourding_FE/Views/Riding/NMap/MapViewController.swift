@@ -240,6 +240,8 @@ final class MapViewController: UIViewController {
         // 사용자 위치 마커를 항상 userMarker으로 설정
         locationOverlay.icon = MarkerIcons.userMarker
         
+        print("📍 MapViewController: 사용자 위치 마커 업데이트 완료 - \(lat), \(lng)")
+        
         // ridingViewModel.flag가 true일 때만 카메라 이동
         guard let ridingViewModel = ridingViewModel, ridingViewModel.flag else {
             return

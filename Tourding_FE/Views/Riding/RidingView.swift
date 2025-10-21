@@ -635,6 +635,28 @@ struct RidingView: View {
         // flag 설정
         ridingViewModel.flag = true
         
+        // 통합된 콜백으로 업데이트 (이미 startLocationUpdates가 호출된 상태) - 메인 스레드에서 실행
+        let unifiedCallback: (NMGLatLng) -> Void = { newLocation in
+            print("📍 startRidingProcess 위치 콜백 호출됨: \(newLocation.lat), \(newLocation.lng)")
+            
+            // 메인 스레드에서 순차적으로 실행하여 간섭 방지
+            Task { @MainActor in
+                // 1. MapViewController 업데이트
+                if let mapViewController = ridingViewModel.mapViewController {
+                    let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
+                    mapViewController.updateUserLocation(clLocation)
+                }
+                
+                // 2. RidingViewModel 마커 체크 및 카메라 업데이트
+                await ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
+            }
+        }
+        
+        // 기존 콜백 제거 후 통합 콜백 설정 (네비게이션 모드 시작 전에 설정)
+        locationManager.onLocationUpdate = nil // 기존 콜백 제거
+        locationManager.onLocationUpdateNMGLatLng = unifiedCallback
+        print("📍 startRidingProcess - 통합된 위치 추적 콜백 설정 완료")
+        
         // 카메라를 사용자 위치로 이동하고 네비게이션 모드 시작
         if let coordinate = locationManager.getCurrentLocationAsNMGLatLng(),
            let mapView = ridingViewModel.mapView {
@@ -653,28 +675,6 @@ struct RidingView: View {
                 locationManager.startNavigationMode(on: mapView)
             }
         }
-        
-        // 통합된 콜백으로 업데이트 (이미 startLocationUpdates가 호출된 상태) - 메인 스레드에서 실행
-        let unifiedCallback: (NMGLatLng) -> Void = { newLocation in
-            print("📍 startRidingProcess 위치 콜백 호출됨: \(newLocation.lat), \(newLocation.lng)")
-            
-            // 메인 스레드에서 순차적으로 실행하여 간섭 방지
-            Task { @MainActor in
-                // 1. MapViewController 업데이트
-                if let mapViewController = ridingViewModel.mapViewController {
-                    let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
-                    mapViewController.updateUserLocation(clLocation)
-                }
-                
-                // 2. RidingViewModel 마커 체크 및 카메라 업데이트
-                await ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
-            }
-        }
-        
-        // 기존 콜백 제거 후 통합 콜백 설정
-        locationManager.onLocationUpdate = nil // 기존 콜백 제거
-        locationManager.onLocationUpdateNMGLatLng = unifiedCallback
-        print("📍 startRidingProcess - 통합된 위치 추적 콜백 설정 완료")
         
         // 라이딩 가이드 API 호출
         Task { [weak ridingViewModel] in
