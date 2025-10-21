@@ -181,14 +181,14 @@ struct RidingView: View {
             // 위치 권한 확인 및 요청
             checkAndRequestLocationPermission()
             
-            // SpotAddView로부터 돌아올 때 flag 상태 확인 및 초기화
-            if ridingViewModel.flag && isNotNomal == nil && !isStart {
+            // SpotAddView로부터 돌아올 때 무조건 flag를 false로 초기화
+            if isNotNomal == nil && !isStart {
                 print("🔄 SpotAddView로부터 돌아옴 - flag 상태 확인")
                 print("  - 현재 flag: \(ridingViewModel.flag)")
                 print("  - isNotNomal: \(isNotNomal != nil)")
                 print("  - isStart: \(isStart)")
                 
-                // SpotAddView로부터 돌아온 경우 flag를 false로 초기화
+                // SpotAddView로부터 돌아온 경우 무조건 flag를 false로 초기화
                 ridingViewModel.flag = false
                 print("✅ flag를 false로 초기화")
             }
