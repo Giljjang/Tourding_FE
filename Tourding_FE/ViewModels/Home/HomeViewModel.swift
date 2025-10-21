@@ -81,13 +81,16 @@ final class HomeViewModel: ObservableObject {
             return
         }
         
+        isLoading = true
         do{
             let response = try await routeRepository.getRoutesRidingRecommend(pageNum: 0)
             routeRecommendList = response
+            print("추천코스: \(response)")
             
         } catch {
             print("GET getRouteRecommendAPI ERROR: ", error)
         }
+        isLoading = false
     }
     
     @MainActor
