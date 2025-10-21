@@ -48,11 +48,12 @@ struct SpotAdditionalView: View {
             searchTagView
                 .padding(.bottom, 16)
 
-                Spacer()
                 if spotviewModel.spots.isEmpty {
+                    Spacer()
                     spotEmptyStateView
                         .padding(.horizontal, 16)
                         .frame(maxWidth: .infinity, alignment: .center)
+                    Spacer()
                 } else {
                     // 목록 상태: 세로 스크롤
                     ScrollView(.vertical, showsIndicators: false) {
@@ -75,8 +76,8 @@ struct SpotAdditionalView: View {
                             // 페이지네이션 트리거
                             if spotviewModel.hasMoreData {
                                 if spotviewModel.isLoading {
-//                                    DotsLoadingView()
-//                                        .padding(.vertical, 20)
+    //                                    DotsLoadingView()
+    //                                        .padding(.vertical, 20)
                                 } else {
                                     Color.clear
                                         .frame(height: 100)
@@ -89,13 +90,12 @@ struct SpotAdditionalView: View {
                             }
                         }
                     }
-                    .ignoresSafeArea(.container, edges: .bottom)
                 }
                 
-                Spacer()
             }   // VStack
-            .background(Color(.white).ignoresSafeArea())
-            .navigationBarHidden(true)  // 시스템 네비게이션 바 숨김
+            .background(Color(.white))
+            .ignoresSafeArea(.container, edges: .bottom)
+            .navigationBarHidden(true)
             
             // 로딩뷰
             if spotviewModel.isLoading {
@@ -112,18 +112,16 @@ struct SpotAdditionalView: View {
             }// if 로딩 상태
             
         }   // ZStack
-        .interactiveDismissDisabled(false) // 네이티브 스와이프 백 제스처 활성화
+        .interactiveDismissDisabled(false)
         .gesture(
             DragGesture()
                 .onEnded { value in
-                    // 왼쪽에서 오른쪽으로 스와이프 감지
                     if value.translation.width > 100 && abs(value.translation.height) < 50 {
                         print("👈 스와이프 뒤로가기 감지")
                         navigationManager.pop()
                     }
                 }
-        ) // :gesture
-        // 좌표가 갱신되면 주소 표시
+        )
         .onReceive(dsviewModel.$currentLocation.compactMap { $0 }) { coord in
             Task {
                 do {
@@ -134,7 +132,6 @@ struct SpotAdditionalView: View {
                 } catch {
                     // 필요 시 에러 토스트/라벨
                 }
-                // TODO: 여기서 우리 서버 카드 리스트 호출 붙이면 됨
                 requestSpots(for: coord)
             }
         }
