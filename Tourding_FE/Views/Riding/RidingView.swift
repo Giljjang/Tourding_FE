@@ -662,14 +662,14 @@ struct RidingView: View {
         }
     }
     
-    // 라이딩 시작하기 버튼 클릭 시 3초 로딩과 함께 시작
+    // 라이딩 시작하기 버튼 클릭 시 API 완료 후 로딩 종료
     func startRidingWithLoading() {
         wasLastRunNormal = false // 비정상 종료
         ridingViewModel.isStartingRiding = true
         
         Task {
-            await self.startRidingAPIProcess() // 끝날 때까지 기다림
-            try? await Task.sleep(nanoseconds: 3_000_000_000) // 3초 대기
+            await self.startRidingAPIProcess() // API 완료까지 기다림
+            print("✅ 라이딩 시작 프로세스 완료 - 로딩 종료")
             self.ridingViewModel.isStartingRiding = false
         }
     }
@@ -720,16 +720,15 @@ struct RidingView: View {
             }
         }
         
-        // 라이딩 가이드 API 호출
-        Task { [weak ridingViewModel] in
-            do {
-                try Task.checkCancellation()
-                await ridingViewModel?.getRouteGuideAPI(isNotNomal: isNotNomal)
-            } catch is CancellationError {
-                print("🚫 라이딩 가이드 API Task 취소됨")
-            } catch {
-                print("❌ 라이딩 가이드 API 에러: \(error)")
-            }
+        // 라이딩 가이드 API 호출 (동기적으로 기다림)
+        do {
+            try Task.checkCancellation()
+            await ridingViewModel.getRouteGuideAPI(isNotNomal: isNotNomal)
+            print("✅ 라이딩 가이드 API 호출 완료")
+        } catch is CancellationError {
+            print("🚫 라이딩 가이드 API Task 취소됨")
+        } catch {
+            print("❌ 라이딩 가이드 API 에러: \(error)")
         }
     }
     
