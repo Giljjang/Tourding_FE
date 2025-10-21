@@ -60,7 +60,7 @@ final class RidingViewModel: ObservableObject {
     
     // MARK: - 사용자 위치 추적 관련
     @Published var currentUserLocation: NMGLatLng?
-    let markerPassThreshold: Double = 50.0 // 마커를 지나간 것으로 판단하는 거리 (미터)
+    let markerPassThreshold: Double = 30.0 // 마커를 지나간 것으로 판단하는 거리 (미터)
     
     let routeRepository: RouteRepositoryProtocol
     let kakaoRepository: KakaoRepositoryProtocol
