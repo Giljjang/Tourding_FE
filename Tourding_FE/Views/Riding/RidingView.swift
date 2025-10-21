@@ -212,9 +212,7 @@ struct RidingView: View {
                 ridingViewModel.flag = isNotNomal
                 print("🔄 비정상 종료 감지 - 라이딩 모드로 복구")
                 startRidingWithLoading()
-            }
-            
-            if isStart {
+            } else if isStart {
                 startRidingWithLoading()
             }
             
