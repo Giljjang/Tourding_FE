@@ -436,25 +436,17 @@ extension LocationManager: CLLocationManagerDelegate {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
-            if self.isNavigationMode {
-                // NMGLatLng 콜백만 호출 (통합된 콜백)
-                if let onLocationUpdateNMGLatLng = self.onLocationUpdateNMGLatLng {
-                    let nmgLocation = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
-                    onLocationUpdateNMGLatLng(nmgLocation)
-                    print("🌍 통합된 위치 콜백 호출 완료 (네비게이션 모드)")
-                } else {
-                    print("❌ onLocationUpdateNMGLatLng 콜백이 nil입니다")
-                }
+            // 네비게이션 모드와 관계없이 항상 콜백 호출 (정밀도 향상)
+            if let onLocationUpdateNMGLatLng = self.onLocationUpdateNMGLatLng {
+                let nmgLocation = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
+                onLocationUpdateNMGLatLng(nmgLocation)
+                print("🌍 통합된 위치 콜백 호출 완료 (네비게이션 모드: \(self.isNavigationMode))")
             } else {
-                // 일반 모드에서는 기존 콜백들 호출
-                self.onLocationUpdate?(location)
-                
-                if let onLocationUpdateNMGLatLng = self.onLocationUpdateNMGLatLng {
-                    let nmgLocation = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
-                    onLocationUpdateNMGLatLng(nmgLocation)
-                    print("🌍 onLocationUpdateNMGLatLng 콜백 호출 완료")
-                }
+                print("❌ onLocationUpdateNMGLatLng 콜백이 nil입니다")
             }
+            
+            // 기존 콜백도 호출 (호환성 유지)
+            self.onLocationUpdate?(location)
         }
     }
     
