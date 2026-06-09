@@ -73,14 +73,9 @@ final class HomeViewModel: ObservableObject {
         }
     }
     
-    // 추천코스
+    // 추천코스 (userId 불필요 — 로그인 직후 uid 저장 전에도 호출 가능)
     @MainActor
     func getRouteRecommendAPI() async {
-        guard let uid = KeychainHelper.loadUid() else {
-            print("⏭️ getRouteRecommendAPI skipped: userId is nil")
-            return
-        }
-        
         isLoading = true
         do{
             let response = try await routeRepository.getRoutesRidingRecommend(pageNum: 0)
