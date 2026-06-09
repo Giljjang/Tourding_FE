@@ -51,27 +51,7 @@ extension RidingViewModel {
                 
                 let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: isUsed)
                 routeLocation = response
-                
-                markerCoordinates = routeLocation.compactMap { item in
-                    if let lat = Double(item.lat), let lon = Double(item.lon) {
-                        return NMGLatLng(lat: lat, lng: lon)
-                    } else {
-                        return nil
-                    }
-                }
-                
-                markerIcons = routeLocation.enumerated().map { (index, item) in
-                    switch item.type {
-                    case "Start":
-                        return MarkerIcons.startMarker
-                    case "Goal":
-                        return MarkerIcons.goalMarker
-                    case "WayPoint":
-                        return MarkerIcons.numberMarker(index) // index 사용
-                    default:
-                        return MarkerIcons.numberMarker(0)
-                    }
-                }
+                applyRouteLocationMarkers(from: response)
                 
                 // 성공하면 루프 종료
                 break
@@ -252,18 +232,25 @@ extension RidingViewModel {
             contentTypeId: contentsTypeIds,
             isUsed: self.flag
         )
-        
-        print("requestBody.contentId: \(requestBody.contentId)")
-        
+
+        logDragDropPostBody(locationData: locationData, requestBody: requestBody)
+
         do {
-            let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
-            
-            // 드래그앤 드랍 후 마커 순서 업데이트
-            await updateMarkersAfterDragDrop(locationData: locationData)
-            
+            let _: () = try await routeRepository.postRoutes(requestBody: requestBody)
             isLoading = false
         } catch {
             print("POST ERROR: /routes \(error)")
+            isLoading = false
+        }
+    }
+
+    private func logDragDropPostBody(locationData: [LocationNameModel], requestBody: RequestRouteModel) {
+        print("🛣️ [DragDrop] routeLocation: \(locationData.map { "\($0.sequenceNum):\($0.name)" }.joined(separator: " → "))")
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        if let jsonData = try? encoder.encode(requestBody),
+           let jsonString = String(data: jsonData, encoding: .utf8) {
+            print("🛣️ [DragDrop] POST /routes body:\n\(jsonString)")
         }
     }
     

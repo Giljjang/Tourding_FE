@@ -5,15 +5,14 @@
 //  Created by GPT on 9/1/25.
 //
 
-import Foundation
 import SwiftUI
 
 struct RouteLocationDropDelegate: DropDelegate {
     @ObservedObject private var ridingViewModel: RidingViewModel
-    
+
     let currentItem: LocationNameModel
     @Binding var draggedItem: LocationNameModel?
-    
+
     init(
         ridingViewModel: RidingViewModel,
         currentItem: LocationNameModel,
@@ -23,50 +22,59 @@ struct RouteLocationDropDelegate: DropDelegate {
         self.currentItem = currentItem
         self._draggedItem = draggedItem
     }
-    
-    func dropExited(info: DropInfo) {
-    }
-    
-    func performDrop(info: DropInfo) -> Bool {
-        guard let draggedItem = draggedItem else { return false }
 
-        Task {
-            await ridingViewModel.postRouteDragNDropAPI(locationData: ridingViewModel.routeLocation)
-            await ridingViewModel.getRoutePathAPI()
+    func performDrop(info: DropInfo) -> Bool {
+        draggedItem = nil
+        Task { @MainActor in
+            await ridingViewModel.persistRouteOrderAfterReorder()
         }
-        
         return true
     }
-    
+
     func dropUpdated(info: DropInfo) -> DropProposal? {
-        return nil
+        DropProposal(operation: .move)
     }
-    
+
     func validateDrop(info: DropInfo) -> Bool {
-        return true
+        true
     }
-    
+
     func dropEntered(info: DropInfo) {
-        guard let draggedItem = self.draggedItem else { return }
-        
-        // 시작(0)과 도착(마지막) 고정: 재정렬 대상은 1..<(count-1)
-        let items = ridingViewModel.routeLocation
-        guard items.count >= 3 else { return }
-        
-        if draggedItem.sequenceNum != currentItem.sequenceNum {
-            guard let from = items.firstIndex(where: { $0.sequenceNum == draggedItem.sequenceNum }),
-                  let to = items.firstIndex(where: { $0.sequenceNum == currentItem.sequenceNum }) else { return }
-            // from/to가 1..<(count-1) 범위인지 확인
-            if from > 0 && from < items.count - 1 && to > 0 && to < items.count - 1 {
-                withAnimation {
-                    ridingViewModel.routeLocation.move(
-                        fromOffsets: IndexSet(integer: from),
-                        toOffset: to > from ? to + 1 : to
-                    )
-                }
-            }
+        guard let draggedItem,
+              let reordered = Self.reorderedRoute(
+                  from: ridingViewModel.routeLocation,
+                  draggedItem: draggedItem,
+                  targetItem: currentItem
+              ) else { return }
+
+        withAnimation {
+            ridingViewModel.routeLocation = reordered
         }
+
+        Task { @MainActor in
+            ridingViewModel.syncMapAfterRouteReorder(reordered)
+            ridingViewModel.schedulePersistRouteOrderAfterReorder()
+        }
+    }
+
+    /// 출발(0)·도착(last) 고정, 경유지만 재정렬
+    private static func reorderedRoute(
+        from items: [LocationNameModel],
+        draggedItem: LocationNameModel,
+        targetItem: LocationNameModel
+    ) -> [LocationNameModel]? {
+        guard items.count >= 3,
+              draggedItem.sequenceNum != targetItem.sequenceNum,
+              let from = items.firstIndex(where: { $0.sequenceNum == draggedItem.sequenceNum }),
+              let to = items.firstIndex(where: { $0.sequenceNum == targetItem.sequenceNum }),
+              from > 0, from < items.count - 1,
+              to > 0, to < items.count - 1 else { return nil }
+
+        var reordered = items
+        reordered.move(
+            fromOffsets: IndexSet(integer: from),
+            toOffset: to > from ? to + 1 : to
+        )
+        return reordered
     }
 }
-
-
