@@ -26,7 +26,11 @@ struct Tourding_FEApp: App {
         KakaoSDK.initSDK(appKey: kakaoNativeAppKey)
         print("🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨\(kakaoNativeAppKey)")
         print("🔎 BASE_URL at runtime =>", BASE_URL)
-        
+        #if DEBUG
+        if MockAPIConfiguration.useMockAPI {
+            print("🧪 Mock API mode enabled (-UseMockAPI or UserDefaults)")
+        }
+        #endif
     }
     
     var body: some Scene {

@@ -1,0 +1,101 @@
+[
+  {
+    "sequenceNum": 0,
+    "distance": 0,
+    "duration": 0,
+    "instructions": "출발지",
+    "locationName": "영일대 전망대",
+    "pointIndex": 0,
+    "type": 11,
+    "lon": "129.383051999155",
+    "lat": "36.0615645090088"
+  },
+  {
+    "sequenceNum": 1,
+    "distance": 94,
+    "duration": 56600,
+    "instructions": "Turn right onto 영일교",
+    "locationName": "영일교",
+    "pointIndex": 3,
+    "type": 1,
+    "lon": "129.382878",
+    "lat": "36.061687"
+  },
+  {
+    "sequenceNum": 2,
+    "distance": 2342,
+    "duration": 468400,
+    "instructions": "Turn right onto 동해안 자전거길",
+    "locationName": "동해안 자전거길",
+    "pointIndex": 4,
+    "type": 1,
+    "lon": "129.382092",
+    "lat": "36.062249"
+  },
+  {
+    "sequenceNum": 3,
+    "distance": 2388,
+    "duration": 477700,
+    "instructions": "Turn left onto 동해안 자전거길",
+    "locationName": "동해안 자전거길",
+    "pointIndex": 47,
+    "type": 0,
+    "lon": "129.401448",
+    "lat": "36.069734"
+  },
+  {
+    "sequenceNum": 4,
+    "distance": 4186,
+    "duration": 837300,
+    "instructions": "Continue straight onto 동해안 자전거길",
+    "locationName": "동해안 자전거길",
+    "pointIndex": 92,
+    "type": 6,
+    "lon": "129.412515",
+    "lat": "36.079838"
+  },
+  {
+    "sequenceNum": 5,
+    "distance": 3340,
+    "duration": 668000,
+    "instructions": "Continue straight onto 동해안 자전거길",
+    "locationName": "동해안 자전거길",
+    "pointIndex": 168,
+    "type": 6,
+    "lon": "129.420151",
+    "lat": "36.114158"
+  },
+  {
+    "sequenceNum": 6,
+    "distance": 223,
+    "duration": 44800,
+    "instructions": "Turn right",
+    "locationName": "",
+    "pointIndex": 253,
+    "type": 1,
+    "lon": "129.397273",
+    "lat": "36.130586"
+  },
+  {
+    "sequenceNum": 7,
+    "distance": 21,
+    "duration": 4300,
+    "instructions": "Turn right",
+    "locationName": "",
+    "pointIndex": 256,
+    "type": 1,
+    "lon": "129.399138",
+    "lat": "36.131922"
+  },
+  {
+    "sequenceNum": 8,
+    "distance": 0,
+    "duration": 0,
+    "instructions": "목적지가 왼쪽에 있습니다.",
+    "locationName": "칠포해수욕장",
+    "pointIndex": 257,
+    "type": 10,
+    "lon": "129.399293",
+    "lat": "36.131778"
+  }
+]
