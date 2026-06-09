@@ -179,11 +179,11 @@ final class RidingViewModel: ObservableObject {
 extension RidingViewModel {
     
     // 편의점 토글
-    func toggleConvenienceStore(locaion: String){
+    func toggleConvenienceStore(location: String){
         showConvenienceStore.toggle()
         
         if showConvenienceStore {
-            updateConvenienceStoreMarkers(location: locaion)
+            updateConvenienceStoreMarkers(location: location)
         } else {
             // 편의점 마커  제거
             csMarkerCoordinates.removeAll()
@@ -228,11 +228,11 @@ extension RidingViewModel {
     }
 
     // 화장실 토글도 동일하게 수정
-    func toggleToilet(locaion: String){
+    func toggleToilet(location: String){
         showToilet.toggle()
         
         if showToilet {
-            updateToiletMarkers(location: locaion)
+            updateToiletMarkers(location: location)
         } else {
             // 화장실 마커 제거
             toiletMarkerCoordinates.removeAll()

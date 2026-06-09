@@ -1,0 +1,54 @@
+---
+description: Riding 화면, NMapsMap, PathManager 규칙
+globs: "Tourding_FE/{ViewModels/Riding,Views/Riding,Views/RecommendRoute}/**/*.swift"
+alwaysApply: false
+---
+
+# Riding & Map (NMapsMap)
+
+## 데이터 흐름
+
+```
+API → RidingViewModel+API → @Published pathCoordinates/markerCoordinates
+  → NMapView → MapViewRepresentable → MapViewController
+  → PathManager.setCoordinates() → Douglas-Peucker → NMFPath overlay
+```
+
+## PathManager
+
+- `ViewModels/Riding/NMap/PathManager.swift`
+- Douglas-Peucker (`tolerance: 0.00001` ≈ 1m), 이중 NMFPath (white outline + `#00E1FF` inner)
+- **알고리즘 분리 예정**: `PathSimplifier` + `PathSimplificationMetrics` (테스트 가능 pure Swift)
+
+## MapViewRepresentable 연결 (중요)
+
+`updateUIView`에서 ViewModel에 주입:
+- `locationManager`, `mapView`, `markerManager`, `mapViewController`
+- **`pathManager` 연결 누락 버그** — `RecommendMapViewRepresentable`처럼 `ridingViewModel.pathManager = mapViewController.pathManager` 추가 필요
+- 미연결 시 `refreshMapDisplay()`, `restoreOriginalData()`의 pathManager 호출이 no-op
+
+## LocationManager
+
+- `CLLocationManager` 래퍼, `@MainActor`, `distanceFilter: 3m`
+- 라이딩 중: heading 기반 카메라, `cameraPivotY` (바텀시트 연동)
+- 콜백: `onLocationUpdateNMGLatLng` — **한 곳에서만** 설정 (현재 View/onChange/startRiding 중복 → Lifecycle extension으로 통합 예정)
+
+## RidingViewModel extension 역할
+
+| 파일 | 역할 |
+|------|------|
+| `+API.swift` | 서버 호출, 재시도, 마커/경로 @Published 갱신 |
+| `+LocationTracking.swift` | 3m 이동 임계, 30m 마커 통과, Haversine |
+| `+Utils.swift` | 좌표 파싱, 거리/시간 포맷 |
+| `+Lifecycle.swift` (예정) | appear, riding start/end, foreground refresh |
+
+## RidingView 리팩터링 방향
+
+View에 남길 것: 레이아웃, `@State currentPosition`, 버튼 → ViewModel 메서드 호출
+ViewModel로 옮길 것: `startRidingAPIProcess`, `refreshRouteData`, `onChange(flag)` 콜백 wiring, 카메라 pivot
+
+## 성능 로깅 (개선 예정)
+
+Before(raw) / After(simplified) A/B 비교:
+- 좌표 수, 추정 메모리 %, 처리 시간(ms), max deviation(m)
+- category: `map.perf`

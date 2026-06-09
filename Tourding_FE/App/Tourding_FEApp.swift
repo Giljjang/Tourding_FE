@@ -34,8 +34,8 @@ struct Tourding_FEApp: App {
         // 레파지토리 및 뷰모델 의존성 주입
         let viewModels = DependencyProvider.makeTabViewModels()
         let ridingViewModel = DependencyProvider.makeRidingViewModel()
-        let spotAddViewModel = DependencyProvider.makespotAddViewModel()
-        let filterViewModel = DependencyProvider.makesFilterBarViewModel()
+        let spotAddViewModel = DependencyProvider.makeSpotAddViewModel()
+        let filterViewModel = DependencyProvider.makeFilterBarViewModel()
         let detailViewModel = DependencyProvider.makeDetailViewModel()
         let RecentSearchViewModel = DependencyProvider.makeRecentSearchViewModel()
         let recommendRouteViewModel = DependencyProvider.makeRecommendViewModel()
@@ -68,8 +68,8 @@ struct Tourding_FEApp: App {
                                     LoginView()
                                 case .ServiceView:
                                     ServiceView()
-                                case .RidingView(let isNotNomal, let isStart):
-                                    RidingView(ridingViewModel: ridingViewModel, isNotNomal: isNotNomal,
+                                case .RidingView(let isNotNormal, let isStart):
+                                    RidingView(ridingViewModel: ridingViewModel, isNotNormal: isNotNormal,
                                         isStart: isStart
                                     )
                                 case .SpotAddView(let lat, let lon):

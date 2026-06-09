@@ -24,12 +24,12 @@ struct RidingView: View {
     @State private var currentPosition: BottomSheetPosition = .medium
     @State private var forceUpdate: Bool = false
     
-    let isNotNomal: Bool? // 비정상 종료일 때 true를 받음
+    let isNotNormal: Bool? // 비정상 종료일 때 true를 받음
     let isStart: Bool // 바로 라이딩 시작하면 true
     
-    init(ridingViewModel: RidingViewModel, isNotNomal: Bool?, isStart: Bool) {
+    init(ridingViewModel: RidingViewModel, isNotNormal: Bool?, isStart: Bool) {
         self._ridingViewModel = StateObject(wrappedValue: ridingViewModel)
-        self.isNotNomal = isNotNomal
+        self.isNotNormal = isNotNormal
         self.isStart = isStart
     }
     
@@ -102,7 +102,7 @@ struct RidingView: View {
                         mapView: ridingViewModel.mapView
                     )
                     
-                    ridingStartButtom
+                    ridingStartButton
                         .padding(.bottom, 30)
                         .background(.white)
                     
@@ -197,10 +197,10 @@ struct RidingView: View {
             checkAndRequestLocationPermission()
             
             // SpotAddView로부터 돌아올 때 무조건 flag를 false로 초기화
-            if isNotNomal == nil && !isStart {
+            if isNotNormal == nil && !isStart {
                 print("🔄 SpotAddView로부터 돌아옴 - flag 상태 확인")
                 print("  - 현재 flag: \(ridingViewModel.flag)")
-                print("  - isNotNomal: \(isNotNomal != nil)")
+                print("  - isNotNormal: \(isNotNormal != nil)")
                 print("  - isStart: \(isStart)")
                 
                 // SpotAddView로부터 돌아온 경우 무조건 flag를 false로 초기화
@@ -208,8 +208,8 @@ struct RidingView: View {
                 print("✅ flag를 false로 초기화")
             }
             
-            if let isNotNomal = isNotNomal { // 비정상 종료일 때 바로 라이딩 중으로 이동
-                ridingViewModel.flag = isNotNomal
+            if let isNotNormal = isNotNormal { // 비정상 종료일 때 바로 라이딩 중으로 이동
+                ridingViewModel.flag = isNotNormal
                 print("🔄 비정상 종료 감지 - 라이딩 모드로 복구")
                 startRidingWithLoading()
             } else if isStart {
@@ -218,7 +218,7 @@ struct RidingView: View {
             
             // flag가 true일 때 카메라를 사용자 위치로 이동하고 위치 추적 시작
             // (SpotAddView로부터 돌아온 경우가 아닐 때만)
-            if ridingViewModel.flag && !(isNotNomal == nil && !isStart) {
+            if ridingViewModel.flag && !(isNotNormal == nil && !isStart) {
                 print("🎯 onAppear - 라이딩 중, startRidingProcess 로직 실행")
                 // startRidingProcess와 동일한 로직 실행
                 if let coordinate = locationManager.getCurrentLocationAsNMGLatLng(),
@@ -482,7 +482,7 @@ struct RidingView: View {
         .position(x: 36, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : backButton
     
-    private var ridingStartButtom: some View {
+    private var ridingStartButton: some View {
         Button(action:{
             modalManager.showModal(
                 title: "라이딩을 시작할까요?",
@@ -517,14 +517,14 @@ struct RidingView: View {
         }
         .padding(.bottom, 18)
         .shadow(color: .white.opacity(0.8), radius: 8, x: 0, y: -14)
-    } // : ridingStartButtom
+    } // : ridingStartButton
     
     //MARK: - Riding 중
     private var toiletButton: some View {
         Button(action:{
             let position = locationManager.getCurrentLocationString()
             //            print("position: \(position)")
-            ridingViewModel.toggleToilet(locaion: position)
+            ridingViewModel.toggleToilet(location: position)
         }){
             HStack(spacing: 2){
                 Image(ridingViewModel.showToilet ? "toilet_on": "toilet_off")
@@ -547,7 +547,7 @@ struct RidingView: View {
             let position = locationManager.getCurrentLocationString()
             //            print("position: \(position)")
             
-            ridingViewModel.toggleConvenienceStore(locaion: position)
+            ridingViewModel.toggleConvenienceStore(location: position)
         }){
             HStack(spacing: 2){
                 Image(ridingViewModel.showConvenienceStore ? "cs_on": "cs_off")
@@ -724,7 +724,7 @@ struct RidingView: View {
         Task { [weak ridingViewModel] in
             do {
                 try Task.checkCancellation()
-                await ridingViewModel?.getRouteGuideAPI(isNotNomal: isNotNomal)
+                await ridingViewModel?.getRouteGuideAPI(isNotNormal: isNotNormal)
                 print("✅ 라이딩 가이드 API 호출 완료")
             } catch is CancellationError {
                 print("🚫 라이딩 가이드 API Task 취소됨")

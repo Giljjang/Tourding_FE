@@ -334,13 +334,13 @@ extension RidingViewModel {
     
     // routes/guide & routes/path
     @MainActor
-    func getRouteGuideAPI(isNotNomal: Bool?) async {
+    func getRouteGuideAPI(isNotNormal: Bool?) async {
         guard let userId = userId else {
             print("❌ userId가 nil입니다")
             return
         }
         
-        print("🔄 가이드 API 호출 시작 - isNotNomal: \(isNotNomal != nil)")
+        print("🔄 가이드 API 호출 시작 - isNotNormal: \(isNotNormal != nil)")
         
         // 가이드 API 호출 시 로딩 상태 설정
         isStartingRiding = true
@@ -349,7 +349,7 @@ extension RidingViewModel {
         print("🔄 라이딩 시작 - 원본 데이터 백업")
         
         // 비정상 종료 시에는 기존 데이터가 비어있을 수 있으므로 API 호출 후 백업
-        if let isNotNomal = isNotNomal, isNotNomal {
+        if let isNotNormal = isNotNormal, isNotNormal {
             print("🔄 비정상 종료 감지 - 경로 데이터 재로드 후 백업")
             
             // 경로 데이터 재로드
@@ -451,7 +451,7 @@ extension RidingViewModel {
                     print("❌ 가이드 API 호출 최종 실패")
                     
                     // 비정상 종료 시 가이드 데이터가 없어도 기본 마커 유지
-                    if isNotNomal != nil {
+                    if isNotNormal != nil {
                         print("⚠️ 비정상 종료 시 가이드 데이터 없음 - 기본 마커 유지")
                         // 기존 마커 데이터 유지
                     }

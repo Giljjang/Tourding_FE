@@ -15,7 +15,7 @@ final class HomeViewModel: ObservableObject {
     
     // MARK: - Home 화면 전용 상태들
     @Published var isLoading: Bool = false
-    @Published var abendFlag: Bool = true
+    @Published var abnormalEndFlag: Bool = true
     
     private let routeRepository: RouteRepositoryProtocol
     

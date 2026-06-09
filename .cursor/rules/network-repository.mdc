@@ -1,0 +1,57 @@
+---
+description: Network/Repository 레이어 규칙
+globs: "Tourding_FE/{Network,Repository}/**/*.swift"
+alwaysApply: false
+---
+
+# Network & Repository
+
+## NetworkService
+
+- `enum NetworkService` — static async/await 메서드
+- `APIType`: `.main` (BASE_URL), `.kakaoLocal`, `.custom(String)`
+- `request<T: Codable>(apiType:endpoint:parameters:headers:body:method:)`
+- 대용량: `downloadRequest<T>()` (`/tour/area-detail`)
+- BASE_URL: `AppConfig.swift` → Info.plist `BASE_URL`
+
+## Repository 규칙
+
+1. protocol 정의: `Repository/protocol/XxxRepositoryProtocol.swift`
+2. 구현: `Repository/XxxRepository.swift` — `final class`, `shared` singleton
+3. ViewModel은 **protocol 타입**으로만 의존 (Mock 주입 가능)
+
+```swift
+func getRoutesPath(userId: Int, isUsed: Bool) async throws -> [RoutePathModel] {
+    try await NetworkService.request(
+        apiType: .main,
+        endpoint: "/routes/path",
+        parameters: ["userId": String(userId), "isUsed": String(isUsed)]
+    )
+}
+```
+
+## Riding 주요 엔드포인트
+
+| Method | Path | 용도 |
+|--------|------|------|
+| POST | /routes | 경로 생성/수정 |
+| GET | /routes/path | 경로선 좌표 |
+| GET | /routes/location-name | 스팟 목록 |
+| GET | /routes/guide | turn-by-turn 가이드 |
+| GET | /routes | 거리/시간 |
+| POST | /routes/toilet, /routes/convenience-store | 편의시설 |
+
+## isUsed 플래그
+
+- `false`: 경로 편집 모드 / `true`: 라이딩 중 — `RidingViewModel.flag`와 연동
+
+## 예외
+
+- `UserRepository`만 NetworkService 미사용 (직접 URLSession) — 신규 코드는 NetworkService 사용
+- 에러: `NetworkService.ErrorType` vs `UserRepository.NetworkError` 이중화 존재 — 통합은 별도 작업
+
+## Mock (개선 예정)
+
+- `MockRouteRepository`, `MockKakaoRepository` → fixture JSON
+- `DependencyProvider`에 `#if DEBUG` mock 분기 추가 예정
+- fixture 위치: `Resources/Fixtures/` (미생성)
