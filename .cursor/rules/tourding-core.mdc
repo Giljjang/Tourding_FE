@@ -15,7 +15,7 @@ Tourding_FE/
   Network/          NetworkService, AppConfig, KakaoLocalService
   Repository/       *Repository + protocol/ + Mock/
   Model/            기능별 Request/Response
-  ViewModels/       기능별 ViewModel (+Extension)
+  ViewModels/       기능별 ViewModel (+API, +RouteReorder, +LocationTracking…)
   Views/            기능별 View + Components/
   Extension/        Color+Hex, Font+CustomFont, UIColor+Hex
   Utils/            SafeAreaUtils, FixtureLoader, MockAPIConfiguration

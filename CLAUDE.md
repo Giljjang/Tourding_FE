@@ -29,8 +29,8 @@ Tourding_FE/
 │   ├── Mock/               MockRouteRepository, MockKakaoRepository
 │   └── *Repository.swift
 ├── Model/                  Riding, Search, Detail, User…
-├── ViewModels/Riding/      +API, +LocationTracking, +Utils, NMap/
-├── Views/Riding/           RidingView, NMap/, BottomSheet/
+├── ViewModels/Riding/      +API, +RouteReorder, +LocationTracking, +Utils, NMap/
+├── Views/Riding/           RidingView, NMap/, BottomSheet/, RouteLocationDropDelegate
 ├── Extension/              Color+Hex, Font+CustomFont
 ├── Utils/                  FixtureLoader, MockAPIConfiguration, SafeAreaUtils
 └── Resources/Fixtures/     서버 캡처 JSON
@@ -72,7 +72,38 @@ private static func makeRouteRepository() -> RouteRepositoryProtocol {
 |----------|------|
 | `flag` | `false` 편집 / `true` 라이딩 중 |
 | `routeLocation`, `pathCoordinates`, `guideList` | 지도·가이드 데이터 |
+| `markerCoordinates`, `markerIcons` | `applyRouteLocationMarkers(from:)`로 갱신 |
+| `reorderPersistTask` | 경유지 DnD 디바운스 POST Task |
 | `isUsed` (API) | 서버 경로 사용 여부 |
+
+### ViewModel extensions
+
+| 파일 | 역할 |
+|------|------|
+| `+API.swift` | 서버/Mock 호출, `postRouteDragNDropAPI` |
+| `+RouteReorder.swift` | 경유지 DnD — 지도 동기화, 디바운스 POST, `persistRouteOrderAfterReorder` |
+| `+LocationTracking.swift` | 3m 이동, 30m 마커 통과 |
+| `+Utils.swift` | 좌표 파싱, 포맷 |
+| `+Lifecycle.swift` (예정) | appear, riding start/end, foreground |
+
+### 경유지 드래그앤드롭 (`flag=false` 편집 모드)
+
+```
+SheetContentView.onDrag/onDrop
+  → RouteLocationDropDelegate
+    → dropEntered: routeLocation 재할당 + syncMapAfterRouteReorder + schedulePersist (0.4s)
+    → performDrop: persistRouteOrderAfterReorder (즉시 POST)
+  → RidingViewModel+RouteReorder
+    → postRouteDragNDropAPI → getRoutePathAPI → syncMapAfterRouteReorder
+```
+
+**주의 (ScrollView DnD 특성)**:
+- `performDrop`이 호출되지 않는 경우가 있음 → `dropEntered` + 디바운스 POST로 보완
+- `routeLocation.move()` in-place는 `@Published` 미트리거 → **배열 재할당** 필수
+- POST 후 `getRouteLocationAPI` **호출하지 않음** (서버 `sequenceNum` 순으로 드래그 순서 덮어씀)
+- 경유지 마커 번호: 배열 `index`가 아니라 WayPoint 순번(1, 2, 3…) — `makeMarkerIcons(for:)`
+
+**디버그 로그**: `🛣️ [DragDrop]` — POST body JSON
 
 ### 지도 브릿지
 
@@ -125,6 +156,8 @@ NMapView → MapViewRepresentable → MapViewController
 - [x] 네이밍 오타 정리 (`Extension`, `HomeView`, `isNotNormal`)
 - [x] `pathManager` ViewModel 연결
 - [x] Fixture JSON + MockRepository + DI + 기본 테스트
+- [x] 경유지 드래그앤드롭 — 지도 마커·경로 동기화 (`+RouteReorder`, `RouteLocationDropDelegate`)
+- [x] 첫 로그인 추천 코스 표시 (`HomeViewModel.getRouteRecommendAPI` uid guard 제거)
 
 ### 다음
 - [ ] `PathSimplifier` + `PathSimplificationMetrics` + perf A/B 로깅
@@ -143,7 +176,7 @@ NMapView → MapViewRepresentable → MapViewController
 
 **DO**: minimal diff, protocol DI, NMaps와 pure logic 분리, `@MainActor` UI 업데이트, 한국어 응답
 
-**DON'T**: View에 오케스트레이션 추가, `RouteRepository.shared` 직접 참조로 Mock 우회, git commit/push (명시 요청 시만), 시크릿 커밋
+**DON'T**: View에 오케스트레이션 추가, `RouteRepository.shared` 직접 참조로 Mock 우회, git commit/push (명시 요청 시만), 시크릿 커밋, 경유지 DnD POST 후 `getRouteLocationAPI` 호출 (순서 덮어씀)
 
 **새 fixture 추가 시**: JSON 파일 + `FixtureLoaderTests` 디코딩 검증
 

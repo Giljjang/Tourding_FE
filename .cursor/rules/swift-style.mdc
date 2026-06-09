@@ -13,7 +13,7 @@ alwaysApply: false
 - Repository: protocol + `final class` 구현 (`shared`)
 - API 메서드: `*API` 접미사 (`getRoutePathAPI`)
 - Model: `RequestRouteModel`, `RoutePathModel`, `GuideModel`
-- 큰 ViewModel: extension 분리 (`+API`, `+LocationTracking`, `+Utils`)
+- 큰 ViewModel: extension 분리 (`+API`, `+RouteReorder`, `+LocationTracking`, `+Utils`)
 
 ## View 패턴
 
