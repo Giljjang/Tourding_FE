@@ -11,30 +11,32 @@ SwiftUI + NMapsMap 기반 자전거 라이딩/관광 경로 iOS 앱. MVVM + Repo
 
 ```
 Tourding_FE/
-  App/           Tourding_FEApp, DependencyProvider (DI)
-  Network/       NetworkService, AppConfig, KakaoLocalService, NetworkMonitor
-  Repository/    *Repository.swift + protocol/*Protocol.swift
-  Model/         기능별 Request/Response (Riding, Search, Detail, User…)
-  ViewModels/    기능별 ViewModel (+Extension 분리)
-  Views/         기능별 View + Components/ (재사용 UI)
-  Extension/    Color+Hex, Font+CustomFont, UIColor+Hex
-  Utils/         SafeAreaUtils 등
-  Resources/     Assets, GIF
-Tourding_FETests/   Swift Testing
-Tourding_FEUITests/
+  App/              Tourding_FEApp, DependencyProvider
+  Network/          NetworkService, AppConfig, KakaoLocalService
+  Repository/       *Repository + protocol/ + Mock/
+  Model/            기능별 Request/Response
+  ViewModels/       기능별 ViewModel (+Extension)
+  Views/            기능별 View + Components/
+  Extension/        Color+Hex, Font+CustomFont, UIColor+Hex
+  Utils/            SafeAreaUtils, FixtureLoader, MockAPIConfiguration
+  Resources/        Assets, Fixtures/ (서버 JSON)
+Tourding_FETests/     Swift Testing
 ```
 
-## 아키텍처 흐름
+## 아키텍처
 
-View → ViewModel → Repository(protocol) → NetworkService → URLSession
+```
+View → ViewModel → Repository(protocol) → NetworkService / FixtureLoader(Mock)
+```
 
-- DI: `DependencyProvider`에서 ViewModel 조립, protocol 타입으로 Repository 주입
-- 네비게이션: `NavigationManager.path: [ViewType]` stack + `TabContentView`
-- 전역 상태: `@EnvironmentObject` — `NavigationManager`, `ModalManager`, `RouteSharedManager`
-- `RidingViewModel`은 앱 수명 동안 `DependencyProvider.makeRidingViewModel()`로 1회 생성
+- DI: `DependencyProvider` — protocol 타입 주입
+- Mock: DEBUG + `-UseMockAPI` 또는 `MockAPIConfiguration.enableMockAPI()`
+- 네비게이션: `NavigationManager` + `ViewType` (`HomeView`, `RidingView` 등)
+- `@EnvironmentObject`: `NavigationManager`, `ModalManager`, `RouteSharedManager`
+- `RidingViewModel`은 앱 수명 동안 1회 생성
 
 ## 작업 원칙
 
-- **최소 범위 변경**: 요청과 무관한 리팩터링·리네임 금지
-- **기존 관례 우선**: 새 코드는 주변 파일 스타일에 맞출 것
-- 사용자와의 대화는 **한국어**로 응답
+- 최소 범위 변경, 기존 관례 우선
+- ViewModel/Repository는 protocol 의존 유지
+- 사용자와의 대화는 **한국어**

@@ -1,304 +1,160 @@
-# Tourding_FE — Claude / AI Agent Guide
+# Tourding_FE — AI Agent Guide
 
-SwiftUI + NMapsMap 자전거 라이딩/관광 경로 iOS 앱. 이 문서는 AI 에이전트가 코드베이스를 이해하고 일관되게 수정하기 위한 가이드입니다.
+SwiftUI + NMapsMap 자전거 라이딩/관광 iOS 앱.
 
 ---
 
-## 1. 프로젝트 개요
+## 프로젝트 개요
 
 | 항목 | 내용 |
 |------|------|
-| 언어 | Swift 5+, SwiftUI |
-| 지도 | NMapsMap (Naver Map SDK) |
-| 아키텍처 | MVVM + Repository |
+| 아키텍처 | MVVM + Repository (protocol DI) |
+| 지도 | NMapsMap |
 | DI | `DependencyProvider` |
-| 네비게이션 | `NavigationManager` + `ViewType` enum stack |
+| 네비게이션 | `NavigationManager` + `ViewType` stack |
 | 인증 | Kakao SDK + Keychain (`KeychainHelper.loadUid()`) |
-| 테스트 | Swift Testing (`Tourding_FETests`) — 현재 거의 비어 있음 |
+| 테스트 | Swift Testing — `FixtureLoaderTests` |
+| Mock | `MockRouteRepository`, `MockKakaoRepository` + `Resources/Fixtures/` |
 
 ---
 
-## 2. 폴더 구조
+## 폴더 구조
 
 ```
 Tourding_FE/
-├── App/
-│   ├── Tourding_FEApp.swift      # @main, Splash → Login/Tab, DI 조립
-│   └── DependencyProvider.swift  # ViewModel factory
-├── Network/
-│   ├── NetworkService.swift      # 공통 HTTP (async/await)
-│   ├── AppConfig.swift           # BASE_URL (Info.plist)
-│   ├── KakaoLocalService.swift   # Kakao REST API
-│   └── NetworkMonitor.swift      # NWPathMonitor
+├── App/                    Tourding_FEApp, DependencyProvider
+├── Network/                NetworkService, AppConfig, KakaoLocalService
 ├── Repository/
-│   ├── protocol/                 # *RepositoryProtocol
-│   ├── RouteRepository.swift
-│   ├── TourRepository.swift
-│   ├── KakaoRepository.swift
-│   └── UserRepository.swift      # ⚠️ NetworkService 미사용
-├── Model/
-│   ├── Riding/Request|Response/
-│   ├── Search/, Detail/, User/, Home/
-│   └── APIResponse.swift         # EmptyResponse
-├── ViewModels/
-│   ├── Riding/                   # 가장 복잡 — +API, +LocationTracking, +Utils
-│   │   └── NMap/                 # PathManager, LocationManager, MarkerManager
-│   ├── Home/, SpotSearch/, RecommendRoute/, Login/, Tab/, Components/
-├── Views/
-│   ├── Riding/                   # RidingView(737줄), NMap/, BottomSheet/
-│   ├── RecommendRoute/           # PathManager 재사용
-│   ├── Components/               # 재사용 UI (CustomModalView, FilterView…)
-│   └── …기능별 View
-├── Extension/                    # Color+Hex, Font+CustomFont, UIColor+Hex
-│   ├── Color+Hex.swift           # 디자인 시스템 색상
-│   ├── Font+CustomFont.swift     # Pretendard
-│   └── UIColor+Hex.swift
-├── Utils/
-│   └── SafeAreaUtils.swift
-└── Resources/                    # Assets, GIF
-Tourding_FETests/
-Tourding_FEUITests/
-.cursor/rules/                    # Cursor AI 규칙 (.mdc)
+│   ├── protocol/
+│   ├── Mock/               MockRouteRepository, MockKakaoRepository
+│   └── *Repository.swift
+├── Model/                  Riding, Search, Detail, User…
+├── ViewModels/Riding/      +API, +LocationTracking, +Utils, NMap/
+├── Views/Riding/           RidingView, NMap/, BottomSheet/
+├── Extension/              Color+Hex, Font+CustomFont
+├── Utils/                  FixtureLoader, MockAPIConfiguration, SafeAreaUtils
+└── Resources/Fixtures/     서버 캡처 JSON
 ```
 
 ---
 
-## 3. 아키텍처
+## 아키텍처
 
 ```
-View ──→ ViewModel ──→ Repository (protocol) ──→ NetworkService ──→ URLSession
-         @Published              ↑
-                                 MockRepository (구현 예정)
+View → ViewModel → Repository(protocol)
+                      ├─ RouteRepository → NetworkService
+                      └─ MockRouteRepository → FixtureLoader (DEBUG)
 ```
-
-### DI 패턴
 
 ```swift
-// DependencyProvider.swift
-@MainActor static func makeRidingViewModel() -> RidingViewModel {
-    RidingViewModel(
-        routeRepository: RouteRepository.shared,
-        kakaoRepository: KakaoRepository.shared
-    )
-}
-
-// View — init injection + @StateObject
-init(viewModel: HomeViewModel) {
-    self._viewModel = StateObject(wrappedValue: viewModel)
+// DependencyProvider — DEBUG에서 Mock 자동 전환
+private static func makeRouteRepository() -> RouteRepositoryProtocol {
+    #if DEBUG
+    if MockAPIConfiguration.useMockAPI { return MockRouteRepository.shared }
+    #endif
+    return RouteRepository.shared
 }
 ```
 
-### 전역 EnvironmentObject
+**Mock 활성화**: Launch Argument `-UseMockAPI` 또는 `MockAPIConfiguration.enableMockAPI()`
 
-- `NavigationManager` — push/pop, `ViewType` stack
-- `ModalManager` — `CustomModalView` 표시
-- `RouteSharedManager` — 홈↔라이딩 경로 공유
-- `LoginViewModel` — 로그인 상태
-
----
-
-## 4. 코드 스타일
-
-### 네이밍
-
-| 대상 | 규칙 | 예시 |
-|------|------|------|
-| ViewModel | `XxxViewModel` | `RidingViewModel` |
-| View | `XxxView` | `RidingView` |
-| Repository | `XxxRepository` + Protocol | `RouteRepositoryProtocol` |
-| API 메서드 | `*API` 접미사 | `getRoutePathAPI()` |
-| Model Request | `Request*` 또는 `Req*` | `RequestRouteModel`, `ReqFacilityInfoModel` |
-| Model Response | 도메인+Model | `RoutePathModel`, `GuideModel` |
-| Component | `*Component` 또는 `Custom*` | `LocalSpotRowItemComponent` |
-
-### Swift 관례
-
-- ViewModel: `final class`, `@MainActor` on async UI methods
-- Model: `struct`, `Codable`
-- MARK: `// MARK: - 섹션명` (기존 `//MARK:` 혼재 — 신규는 공백 포함)
-- View 서브컴포넌트: `private var header: some View`
-- 일부 View 종료 주석: `// : VStack` (기존 스타일 유지)
-
-### 디자인 시스템
-
-```swift
-.font(.pretendardSemiBold(size: 16))
-.foregroundColor(.gray5)        // gray1(밝음) ~ gray6(어두움)
-.background(Color.main)          // #00E1FF
-.cornerRadius(10)
-```
-
-색상 정의: `Extension/Color+Hex.swift`
-
-### 로깅 (현재)
-
-```swift
-print("🔵 요청 시작")
-print("❌ 에러: \(error)")
-print("📍 위치: \(lat), \(lng)")
-print("🛣️ 경로 최적화: \(count)개")
-```
-
-**개선 방향**: `AppLogger` (OSLog) + category별 레벨. verbose location log는 DEBUG only.
+**Mock 시나리오** (`MockRouteRepository`):
+- `.withWaypoints` (기본): Start + WayPoint + Goal
+- `.simple`: Start + Goal — `POST /routes`에서 `wayPoints`가 비어 있을 때
 
 ---
 
-## 5. Riding 모듈 (핵심)
+## Riding 모듈
 
-### 상태 (`RidingViewModel`)
+### ViewModel 상태
 
 | 프로퍼티 | 의미 |
 |----------|------|
-| `flag: Bool` | `false` 편집 모드 / `true` 라이딩 중 |
-| `routeLocation`, `routeMapPaths`, `routeTotal` | 라이딩 전 |
-| `guideList` | 라이딩 중 turn-by-turn |
-| `pathCoordinates`, `markerCoordinates/Icons` | 지도 바인딩 |
-| `isUsed` (API) | 서버 경로 사용 여부 — flag와 연동 |
+| `flag` | `false` 편집 / `true` 라이딩 중 |
+| `routeLocation`, `pathCoordinates`, `guideList` | 지도·가이드 데이터 |
+| `isUsed` (API) | 서버 경로 사용 여부 |
 
 ### 지도 브릿지
 
 ```
-NMapView (SwiftUI)
-  → MapViewRepresentable (UIViewRepresentable)
-    → MapViewController (UIViewController)
-      → PathManager, MarkerManager, NMFNaverMapView
+NMapView → MapViewRepresentable → MapViewController
+  → PathManager (Douglas-Peucker), MarkerManager
 ```
 
-### PathManager — Douglas-Peucker
+`MapViewRepresentable.updateUIView`에서 ViewModel에 `pathManager` 포함 전체 매니저 연결.
 
-- `setCoordinates()` → simplify → draw 이중 NMFPath
-- tolerance `0.00001` (~1m)
-- **분리 예정**: `PathSimplifier` (pure, testable) + `PathSimplificationMetrics`
+### 미해결 이슈
 
-### 알려진 이슈
-
-1. **`RidingViewModel.pathManager` 미연결** — `MapViewRepresentable.updateUIView`에서 `markerManager`/`mapViewController`는 연결하지만 `pathManager`는 누락. `RecommendMapViewRepresentable` 참고.
-2. **RidingView 737줄** — API/위치/카메라 오케스트레이션이 View에 있음 → `RidingViewModel+Lifecycle`으로 이전 예정.
-3. **LocationManager 콜백 중복** — onAppear, onChange(flag), startRidingAPIProcess에서 각각 설정.
-4. **LocationManager 소유** — View `@StateObject` + ViewModel `userLocationManager` 이중 참조.
+1. **RidingView ~737줄** — API/위치/카메라 로직 → `RidingViewModel+Lifecycle` 이전 예정
+2. **LocationManager 콜백 중복** — onAppear, onChange(flag), startRidingAPIProcess
+3. **POST /routes** — 서버는 `RoutesModel` 반환, 앱은 `EmptyResponse`로 무시
 
 ---
 
-## 6. Network / API
+## API 요약
 
-### NetworkService 사용법
+**Request**: `RequestRouteModel` — 좌표는 `경도,위도` 순 (`wayPoints`: `lon,lat|lon,lat`)
 
-```swift
-let paths: [RoutePathModel] = try await NetworkService.request(
-    apiType: .main,
-    endpoint: "/routes/path",
-    parameters: ["userId": String(userId), "isUsed": String(isUsed)]
-)
-```
+**Response**: `RoutePathModel`, `LocationNameModel`(Start/WayPoint/Goal), `GuideModel`, `RoutesModel`, `FacilityInfoModel`
 
-### Riding API 모델
+**Fixtures** (`Resources/Fixtures/`):
 
-**Request**: `RequestRouteModel` (userId, start, goal, wayPoints, locateName, typeCode, contentId, contentTypeId, isUsed)
-
-**Response**:
-- `RoutePathModel` — sequenceNum, lon, lat
-- `LocationNameModel` — name, type(Start/Goal/WayPoint), lon, lat
-- `GuideModel` — instructions, type(int→GuideType), guideText computed
-- `RoutesModel` — duration(초), distance(m)
-- `FacilityInfoModel` — 화장실/편의점
+| 파일 | 용도 |
+|------|------|
+| `routes_location_name_simple.json` | 2스팟 |
+| `routes_location_name_with_waypoints.json` | 3스팟 |
+| `routes_guide_simple.json` / `_with_waypoints.json` | 가이드 (type 9 = 경유지) |
+| `routes_path_unused.json` | 258좌표 (PathManager 벤치마크) |
+| `routes_toilet.json`, `routes_convenience_store.json` | 편의시설 |
 
 ---
 
-## 7. 테스트 & Mock (구현 예정)
+## 코드 스타일
 
-### 목표 구조
-
-```
-Resources/Fixtures/           # 서버 JSON 캡처
-Repository/Mock/              # MockRouteRepository, MockKakaoRepository
-Utils/AppLogger.swift
-Services/PathSimplifier.swift
-```
-
-### 테스트 우선순위
-
-1. PathSimplifier (단위)
-2. Haversine / 마커 통과 로직
-3. RidingViewModel + MockRepository (통합)
-4. pathManager 연결 후 refreshMapDisplay regression
-
-### DependencyProvider mock 분기 (예정)
-
-```swift
-#if DEBUG
-static func makeRidingViewModel(useMock: Bool = false) -> RidingViewModel { ... }
-#endif
-```
+- ViewModel: `final class`, API 메서드 `*API` 접미사, extension 분리
+- View: init injection + `@StateObject`, `private var` 서브뷰
+- MARK: `// MARK: -` (신규 코드)
+- 디자인: `.pretendard*`, `Color.gray1~6`, `Color.main`
+- 로깅: 현재 `print` + 이모지 → 예정 `AppLogger` (OSLog)
 
 ---
 
-## 8. 개선 로드맵
+## 개선 로드맵
 
-### Phase 1 — 기반
-- [ ] 서버 응답 JSON fixture 저장
-- [ ] MockRouteRepository / MockKakaoRepository
-- [ ] DependencyProvider DEBUG mock 분기
-- [ ] MapViewRepresentable pathManager 연결
+### 완료
+- [x] 네이밍 오타 정리 (`Extension`, `HomeView`, `isNotNormal`)
+- [x] `pathManager` ViewModel 연결
+- [x] Fixture JSON + MockRepository + DI + 기본 테스트
 
-### Phase 2 — 측정 가능한 최적화
-- [ ] PathSimplifier + PathSimplificationMetrics 추출
-- [ ] AppLogger + raw/simplified A/B perf 모드
-- [ ] fixture 기준 벤치마크 수치 문서화
-
-### Phase 3 — 테스트
-- [ ] PathSimplifier 단위 테스트
-- [ ] RidingViewModel Mock 시나리오 테스트
-
-### Phase 4 — MVVM 정리
-- [ ] RidingViewModel+Lifecycle (appear, start/end riding, foreground)
+### 다음
+- [ ] `PathSimplifier` + `PathSimplificationMetrics` + perf A/B 로깅
+- [ ] RidingViewModel Mock 시나리오 테스트 확대
+- [ ] `RidingViewModel+Lifecycle` — View 로직 이전
 - [ ] LocationManager 소유권·콜백 단일화
-- [ ] RidingView 150~250줄 목표
 
-### 기타 기술 부채
+### 기술 부채
 - UserRepository → NetworkService 통합
 - ErrorType 이중화 해소
-- `print` → OSLog 정리
+- `print` → OSLog
 
 ---
 
-## 9. AI 에이전트 작업 규칙
+## AI 에이전트 규칙
 
-### DO
-- 요청 범위만 수정 (minimal diff)
-- 주변 파일 스타일·네이밍·패턴 따르기
-- Repository는 protocol 타입으로 주입
-- NMaps 의존 로직과 pure logic 분리
-- `@MainActor` UI 업데이트 준수
-- 사용자에게 한국어로 응답
+**DO**: minimal diff, protocol DI, NMaps와 pure logic 분리, `@MainActor` UI 업데이트, 한국어 응답
 
-### DON'T
-- View에 API/위치 오케스트레이션 추가
-- singleton 직접 참조로 Mock 경로 막기
-- print 남발 (Logger 도입 후)
-- git commit/push — 사용자 명시 요청 시에만
-- .env, API key 등 시크릿 커밋
+**DON'T**: View에 오케스트레이션 추가, `RouteRepository.shared` 직접 참조로 Mock 우회, git commit/push (명시 요청 시만), 시크릿 커밋
 
-### RidingView 수정 시
-- UI 레이아웃 변경 vs 로직 이전 구분
-- 로직 이전은 `RidingViewModel+Lifecycle.swift` 신규 extension 우선
-- LocationManager 콜백은 **한 곳**에서만 설정
-
-### PathManager 수정 시
-- Douglas-Peucker는 `PathSimplifier`로 분리 후 PathManager는 thin wrapper
-- perf 로그는 `PathSimplificationMetrics` struct로 반환
+**새 fixture 추가 시**: JSON 파일 + `FixtureLoaderTests` 디코딩 검증
 
 ---
 
-## 10. Cursor Rules
-
-`.cursor/rules/`에 세분화된 규칙 파일:
+## Cursor Rules
 
 | 파일 | scope |
 |------|-------|
-| `tourding-core.mdc` | alwaysApply — 프로젝트 개요 |
-| `swift-style.mdc` | `**/*.swift` — 코딩 스타일 |
-| `network-repository.mdc` | Network/Repository |
-| `riding-map.mdc` | Riding/NMap |
-| `testing-improvements.mdc` | Tests + 로드맵 |
-
-이 CLAUDE.md와 `.cursor/rules/`는 함께 참조하세요.
+| `tourding-core.mdc` | alwaysApply |
+| `swift-style.mdc` | `**/*.swift` |
+| `network-repository.mdc` | Network, Repository, Utils |
+| `riding-map.mdc` | Riding, NMap |
+| `testing-improvements.mdc` | Tests |

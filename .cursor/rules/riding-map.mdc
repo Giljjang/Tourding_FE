@@ -9,46 +9,35 @@ alwaysApply: false
 ## 데이터 흐름
 
 ```
-API → RidingViewModel+API → @Published pathCoordinates/markerCoordinates
-  → NMapView → MapViewRepresentable → MapViewController
-  → PathManager.setCoordinates() → Douglas-Peucker → NMFPath overlay
+API/Mock → RidingViewModel+API → @Published pathCoordinates
+  → NMapView → MapViewRepresentable → MapViewController → PathManager
 ```
+
+## MapViewRepresentable 연결
+
+`updateUIView`에서 ViewModel에 주입: `locationManager`, `mapView`, `markerManager`, `pathManager`, `mapViewController`
 
 ## PathManager
 
-- `ViewModels/Riding/NMap/PathManager.swift`
-- Douglas-Peucker (`tolerance: 0.00001` ≈ 1m), 이중 NMFPath (white outline + `#00E1FF` inner)
-- **알고리즘 분리 예정**: `PathSimplifier` + `PathSimplificationMetrics` (테스트 가능 pure Swift)
+- Douglas-Peucker (`tolerance: 0.00001`), 이중 NMFPath
+- **예정**: `PathSimplifier` 분리 + `PathSimplificationMetrics` (pure Swift, 테스트 가능)
 
-## MapViewRepresentable 연결 (중요)
-
-`updateUIView`에서 ViewModel에 주입:
-- `locationManager`, `mapView`, `markerManager`, `mapViewController`
-- **`pathManager` 연결 누락 버그** — `RecommendMapViewRepresentable`처럼 `ridingViewModel.pathManager = mapViewController.pathManager` 추가 필요
-- 미연결 시 `refreshMapDisplay()`, `restoreOriginalData()`의 pathManager 호출이 no-op
-
-## LocationManager
-
-- `CLLocationManager` 래퍼, `@MainActor`, `distanceFilter: 3m`
-- 라이딩 중: heading 기반 카메라, `cameraPivotY` (바텀시트 연동)
-- 콜백: `onLocationUpdateNMGLatLng` — **한 곳에서만** 설정 (현재 View/onChange/startRiding 중복 → Lifecycle extension으로 통합 예정)
-
-## RidingViewModel extension 역할
+## RidingViewModel extensions
 
 | 파일 | 역할 |
 |------|------|
-| `+API.swift` | 서버 호출, 재시도, 마커/경로 @Published 갱신 |
-| `+LocationTracking.swift` | 3m 이동 임계, 30m 마커 통과, Haversine |
-| `+Utils.swift` | 좌표 파싱, 거리/시간 포맷 |
-| `+Lifecycle.swift` (예정) | appear, riding start/end, foreground refresh |
+| `+API.swift` | 서버/Mock 호출, 마커·경로 갱신 |
+| `+LocationTracking.swift` | 3m 이동, 30m 마커 통과 |
+| `+Utils.swift` | 좌표 파싱, 포맷 |
+| `+Lifecycle.swift` (예정) | appear, riding start/end, foreground |
 
-## RidingView 리팩터링 방향
+## 미해결 이슈
 
-View에 남길 것: 레이아웃, `@State currentPosition`, 버튼 → ViewModel 메서드 호출
-ViewModel로 옮길 것: `startRidingAPIProcess`, `refreshRouteData`, `onChange(flag)` 콜백 wiring, 카메라 pivot
+- `RidingView` ~737줄 — 오케스트레이션 ViewModel 이전 필요
+- LocationManager 콜백 중복 (onAppear / onChange / startRiding)
+- View `@StateObject` + ViewModel `userLocationManager` 이중 소유
 
-## 성능 로깅 (개선 예정)
+## View 수정 시
 
-Before(raw) / After(simplified) A/B 비교:
-- 좌표 수, 추정 메모리 %, 처리 시간(ms), max deviation(m)
-- category: `map.perf`
+- UI 레이아웃만 View에, 로직은 ViewModel extension으로
+- LocationManager 콜백은 한 곳에서만 설정

@@ -1,43 +1,34 @@
 ---
-description: 테스트 작성 규칙 및 개선 로드맵
+description: 테스트 및 Mock 사용 규칙
 globs: "Tourding_FETests/**/*.swift"
 alwaysApply: false
 ---
 
-# Testing & Improvements
+# Testing
 
-## 테스트 프레임워크
+## 프레임워크
 
 - Swift Testing: `@Test`, `#expect`, `@testable import Tourding_FE`
-- NMapsMap 의존 로직은 pure Swift로 분리 후 테스트 (PathSimplifier, Haversine, GuideModel 변환)
+- NMapsMap 의존 로직은 pure Swift 분리 후 테스트
 
-## 우선 테스트 대상
+## 구현됨
 
-1. `PathSimplifier` — 직선/곡선/tolerance 경계, reductionRate
-2. `RidingViewModel+Utils` — `calculateDistance`, 좌표 파싱
-3. `RidingViewModel+LocationTracking` — 30m 마커 통과, flag guard
-4. Mock Repository + fixture — API 없이 ViewModel 시나리오
+- `FixtureLoaderTests` — fixture 디코딩, MockRouteRepository 가이드(type 9)
+- `Resources/Fixtures/` — user, routes, guide(simple/waypoints), path(258점), toilet, cs
 
-## Mock 인프라 (구현 예정)
+## Mock 실행
 
-```
-Resources/Fixtures/     routes_path.json, routes_guide.json …
-Repository/Mock/        MockRouteRepository, MockKakaoRepository
-DependencyProvider      #if DEBUG useMock 분기
-```
+Xcode Launch Argument: `-UseMockAPI`
+또는 DEBUG: `MockAPIConfiguration.enableMockAPI()`
 
-## 개선 로드맵 (우선순위)
+## 추가 테스트 예정
 
-| Phase | 작업 |
-|-------|------|
-| 1 | fixture + MockRepository + pathManager 연결 버그 수정 |
-| 2 | PathSimplifier 추출 + AppLogger + perf A/B |
-| 3 | 단위 테스트 추가 |
-| 4 | RidingView → ViewModel+Lifecycle 이전 |
+1. `PathSimplifier` — 단순화 알고리즘
+2. `RidingViewModel+Utils` — Haversine, 좌표 파싱
+3. `RidingViewModel+LocationTracking` — 마커 통과
+4. RidingViewModel Mock 시나리오 (simple ↔ waypoints)
 
-## PR/변경 시 체크
+## 변경 시 체크
 
-- [ ] protocol 기반 DI 유지 (singleton 직접 참조 추가 금지)
-- [ ] View에 비즈니스 로직 추가하지 않았는가
-- [ ] NMaps 의존 없는 로직은 테스트 가능하게 분리했는가
-- [ ] 기존 `print` 대량 추가 대신 Logger 또는 `#if DEBUG`
+- protocol DI 유지, View에 비즈니스 로직 추가 금지
+- 새 fixture 추가 시 `FixtureLoaderTests`에 디코딩 검증 추가

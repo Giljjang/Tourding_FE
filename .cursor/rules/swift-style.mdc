@@ -6,79 +6,41 @@ alwaysApply: false
 
 # Swift / SwiftUI Style
 
-## 파일 헤더
-
-```swift
-//
-//  FileName.swift
-//  Tourding_FE
-//
-//  Created by ...
-//
-```
-
-## 타입·접근 제어
+## 타입·네이밍
 
 - ViewModel: `final class XxxViewModel: ObservableObject`
-- View/Model: `struct`
-- Repository: `final class XxxRepository: XxxRepositoryProtocol` + `static let shared`
-- 섹션 구분: `// MARK: - 설명` (신규 코드는 공백 포함 형식 통일)
-
-## ViewModel 패턴
-
-```swift
-@Published var isLoading: Bool = false
-private let routeRepository: RouteRepositoryProtocol
-
-init(routeRepository: RouteRepositoryProtocol) { ... }
-
-@MainActor
-func getRoutePathAPI() async { ... }  // API 메서드는 *API 접미사
-```
-
-- 큰 ViewModel은 extension 파일로 분리: `RidingViewModel+API.swift`, `+LocationTracking.swift`, `+Utils.swift`
+- View/Model: `struct` + Codable
+- Repository: protocol + `final class` 구현 (`shared`)
+- API 메서드: `*API` 접미사 (`getRoutePathAPI`)
+- Model: `RequestRouteModel`, `RoutePathModel`, `GuideModel`
+- 큰 ViewModel: extension 분리 (`+API`, `+LocationTracking`, `+Utils`)
 
 ## View 패턴
 
 ```swift
-struct HomeView: View {
-    @EnvironmentObject var navigationManager: NavigationManager
-    @StateObject private var viewModel: HomeViewModel
-
-    init(viewModel: HomeViewModel) {
-        self._viewModel = StateObject(wrappedValue: viewModel)
-    }
-
-    var body: some View { ... }
-
-    // MARK: - View
-    private var header: some View { ... }
+@StateObject private var viewModel: HomeViewModel
+init(viewModel: HomeViewModel) {
+    self._viewModel = StateObject(wrappedValue: viewModel)
 }
+private var header: some View { ... }
 ```
 
-- UI 서브뷰: `private var xxx: some View`
-- `@StateObject` vs `@ObservedObject`: RidingView처럼 부모 리렌더와 무관하게 `@Published` 즉시 반영이 필요하면 `@StateObject`
-
-## Model
-
-- Codable struct, camelCase 프로퍼티 (서버 스키마 그대로)
-- Request: `RequestRouteModel`, `ReqFacilityInfoModel` (Req/Request 혼용 — 신규는 기존 폴더 관례 따름)
-- Response: `RoutePathModel`, `GuideModel` 등
-- 비즈니스 변환은 Model computed property (`GuideModel.guideType`, `guideText`)
+- RidingView처럼 부모 리렌더와 무관한 즉시 반영 → `@StateObject`
+- MARK: `// MARK: -` (신규 코드)
 
 ## 디자인 시스템
 
-- 폰트: `.pretendardRegular/Medium/SemiBold/Bold(size:)`
-- 색상: `Color.gray1`~`gray6`, `Color.main`, `Color.mainCalm`, `Color(hex:)`
-- UIKit 지도: `UIColor(hex:)` (`Extension/UIColor+Hex.swift`)
+- `.pretendardRegular/Medium/SemiBold(size:)`
+- `Color.gray1`~`gray6`, `Color.main`, `Color(hex:)`
+- `Extension/Color+Hex.swift`, `Extension/UIColor+Hex.swift`
 
-## 로깅 (현재 → 개선 방향)
+## DI
 
-- 현재: `print("🔵/❌/📍 ...")` 이모지 prefix
-- 신규/리팩터 시: `AppLogger` (OSLog) 도입 예정 — `print` 남발 금지, `#if DEBUG` 감싸기
+- ViewModel 생성자는 `RouteRepositoryProtocol` 등 protocol 타입
+- `DependencyProvider` 경유 — `RouteRepository.shared` 직접 주입 금지
 
 ## 금지
 
-- View에 API 호출·복잡한 오케스트레이션 추가 (RidingView 리팩터링 방향: ViewModel로 이전)
-- 불필요한 force unwrap, 과도한 error handling
+- View에 API 호출·복잡한 오케스트레이션 추가
 - 관련 없는 파일 포맷팅 변경
+- `print` 남발 (향후 `AppLogger` 도입 예정)
