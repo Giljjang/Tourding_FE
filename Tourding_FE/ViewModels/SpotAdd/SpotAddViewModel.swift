@@ -30,6 +30,10 @@ final class SpotAddViewModel: ObservableObject {
     
     private let tourRepository: TourRepositoryProtocol
     private let routeRepository: RouteRepositoryProtocol
+
+    /// 첫 페이지 search-location 직렬화 — 동시 요청 시 서버 500 방지
+    private var nearbySearchSerialTask: Task<Void, Never>?
+    private var nearbySearchGeneration = 0
     
     init(
         tourRepository: TourRepositoryProtocol,
@@ -114,6 +118,60 @@ final class SpotAddViewModel: ObservableObject {
     //MARK: - API 호출
     func fetchNearbySpots(lat: String, lng: String, typeCode: String, pageNum: Int = 1) async {
         let isFirstPage = pageNum <= 1
+
+        if isFirstPage {
+            nearbySearchGeneration += 1
+            let generation = nearbySearchGeneration
+            let previous = nearbySearchSerialTask
+
+            // #region agent log
+            DebugSessionLogger.log(
+                location: "SpotAddViewModel.swift:fetchNearbySpots",
+                message: "first page fetch queued",
+                hypothesisId: "G",
+                data: [
+                    "generation": String(generation),
+                    "typeCode": typeCode,
+                    "filter": clickFliter
+                ]
+            )
+            // #endregion
+
+            nearbySearchSerialTask = Task { @MainActor in
+                await previous?.value
+                guard generation == nearbySearchGeneration else {
+                    print("🛣️ [SpotAdd] stale queued fetch skipped gen=\(generation)")
+                    return
+                }
+                await performNearbySearch(
+                    lat: lat,
+                    lng: lng,
+                    typeCode: typeCode,
+                    pageNum: pageNum,
+                    generation: generation
+                )
+            }
+            await nearbySearchSerialTask?.value
+            return
+        }
+
+        await performNearbySearch(
+            lat: lat,
+            lng: lng,
+            typeCode: typeCode,
+            pageNum: pageNum,
+            generation: nearbySearchGeneration
+        )
+    }
+
+    private func performNearbySearch(
+        lat: String,
+        lng: String,
+        typeCode: String,
+        pageNum: Int,
+        generation: Int
+    ) async {
+        let isFirstPage = pageNum <= 1
         if isFirstPage {
             isLoading = true
             currentPage = 1
@@ -130,18 +188,20 @@ final class SpotAddViewModel: ObservableObject {
                 isScrollLoading = false
             }
         }
-        
-        print("🛣️ [SpotAdd] search-location filter=\(clickFliter) typeCode=\(typeCode) pageNum=\(pageNum) lat=\(lat) lon=\(lng)")
+
+        print("🛣️ [SpotAdd] search-location filter=\(clickFliter) typeCode=\(typeCode) pageNum=\(pageNum) lat=\(lat) lon=\(lng) gen=\(generation)")
 
         // #region agent log
         DebugSessionLogger.log(
-            location: "SpotAddViewModel.swift:fetchNearbySpots",
-            message: "fetchNearbySpots called",
-            hypothesisId: "C",
+            location: "SpotAddViewModel.swift:performNearbySearch",
+            message: "search executing",
+            hypothesisId: "G",
             data: [
-                "filter": clickFliter,
+                "generation": String(generation),
+                "currentGeneration": String(nearbySearchGeneration),
                 "typeCode": typeCode,
                 "pageNum": String(pageNum),
+                "filter": clickFliter,
                 "lat": lat,
                 "lon": lng,
                 "isFirstPage": String(isFirstPage)
@@ -158,9 +218,13 @@ final class SpotAddViewModel: ObservableObject {
                 typeCode: typeCode
             )
 
-            //추천 코스 제외
+            guard generation == nearbySearchGeneration else {
+                print("🛣️ [SpotAdd] stale response ignored gen=\(generation)")
+                return
+            }
+
             let filteredResults = results.filter { $0.typeCode != "C01" }
-            
+
             if isFirstPage {
                 spots = filteredResults
                 if filteredResults.isEmpty {
@@ -176,10 +240,11 @@ final class SpotAddViewModel: ObservableObject {
                     currentPage += 1
                 }
             }
-            
+
             print("📄 hasMoreData: \(hasMoreData) (데이터 있음: \(!filteredResults.isEmpty))")
-            
+
         } catch {
+            guard generation == nearbySearchGeneration else { return }
             errorMessage = "스팟을 불러오는데 실패했습니다."
             print("API 오류: \(error)")
         }

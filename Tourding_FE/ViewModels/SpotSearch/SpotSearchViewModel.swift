@@ -32,6 +32,9 @@ final class SpotSearchViewModel: ObservableObject {
     private var lastLat: Double = 0
     private var lastLng: Double = 0
     private var lastSelected: Int = 0
+
+    private var nearbySearchSerialTask: Task<Void, Never>?
+    private var nearbySearchGeneration = 0
     
     init(tourRepository: TourRepositoryProtocol) {
         self.tourRepository = tourRepository
@@ -39,47 +42,59 @@ final class SpotSearchViewModel: ObservableObject {
     
     // 새로운 검색 시작 (페이지 리셋)
     func fetchNearbySpots(lat: Double, lng: Double, selected: Int) async {
-        isLoading = true
-        errorMessage = nil
-        currentPage = 1  // 페이지 리셋
-        spots = []  // 기존 데이터 초기화
-        hasMoreData = true
-        
         lastLat = lat
         lastLng = lng
         lastSelected = selected
-        
-        let typeCode = Self.typeMap[selected] ?? TourTypeCode.all
 
-        print("🛣️ [SpotSearch] search-location selected=\(selected) typeCode=\(typeCode) pageNum=1 lat=\(lat) lon=\(lng)")
+        nearbySearchGeneration += 1
+        let generation = nearbySearchGeneration
+        let previous = nearbySearchSerialTask
 
-        do {
-            let results = try await tourRepository.searchLocationSpots(
-                pageNum: 1,
-                mapX: String(lastLng),
-                mapY: String(lastLat),
-                radius: "20000",
-                typeCode: typeCode
-            )
-            
-            // 추천 코스 제외
-            let filtered = results.filter { $0.typeCode != "C01" }
-            spots = filtered
-            
-            if filtered.isEmpty {
-                hasMoreData = false
-            } else {
-                currentPage = 2  // 다음 페이지 준비
-            }
-            
+        nearbySearchSerialTask = Task { @MainActor in
+            await previous?.value
+            guard generation == nearbySearchGeneration else { return }
+
+            isLoading = true
             errorMessage = nil
-        } catch {
-            errorMessage = "스팟을 불러오는데 실패했습니다."
-            print("API 오류: \(error)")
-            hasMoreData = false
+            currentPage = 1
+            spots = []
+            hasMoreData = true
+
+            let typeCode = Self.typeMap[selected] ?? TourTypeCode.all
+            print("🛣️ [SpotSearch] search-location selected=\(selected) typeCode=\(typeCode) pageNum=1 lat=\(lat) lon=\(lng) gen=\(generation)")
+
+            do {
+                let results = try await tourRepository.searchLocationSpots(
+                    pageNum: 1,
+                    mapX: String(lastLng),
+                    mapY: String(lastLat),
+                    radius: "20000",
+                    typeCode: typeCode
+                )
+
+                guard generation == nearbySearchGeneration else { return }
+
+                let filtered = results.filter { $0.typeCode != "C01" }
+                spots = filtered
+
+                if filtered.isEmpty {
+                    hasMoreData = false
+                } else {
+                    currentPage = 2
+                }
+
+                errorMessage = nil
+            } catch {
+                guard generation == nearbySearchGeneration else { return }
+                errorMessage = "스팟을 불러오는데 실패했습니다."
+                print("API 오류: \(error)")
+                hasMoreData = false
+            }
+
+            isLoading = false
         }
-        
-        isLoading = false
+
+        await nearbySearchSerialTask?.value
     }
     
     // 다음 페이지 로드 (기존 데이터에 추가) - SpotAdditionalView용
