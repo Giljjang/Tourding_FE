@@ -51,27 +51,7 @@ extension RidingViewModel {
                 
                 let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: isUsed)
                 routeLocation = response
-                
-                markerCoordinates = routeLocation.compactMap { item in
-                    if let lat = Double(item.lat), let lon = Double(item.lon) {
-                        return NMGLatLng(lat: lat, lng: lon)
-                    } else {
-                        return nil
-                    }
-                }
-                
-                markerIcons = routeLocation.enumerated().map { (index, item) in
-                    switch item.type {
-                    case "Start":
-                        return MarkerIcons.startMarker
-                    case "Goal":
-                        return MarkerIcons.goalMarker
-                    case "WayPoint":
-                        return MarkerIcons.numberMarker(index) // index 사용
-                    default:
-                        return MarkerIcons.numberMarker(0)
-                    }
-                }
+                applyRouteLocationMarkers(from: response)
                 
                 // 성공하면 루프 종료
                 break
@@ -252,18 +232,25 @@ extension RidingViewModel {
             contentTypeId: contentsTypeIds,
             isUsed: self.flag
         )
-        
-        print("requestBody.contentId: \(requestBody.contentId)")
-        
+
+        logDragDropPostBody(locationData: locationData, requestBody: requestBody)
+
         do {
-            let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
-            
-            // 드래그앤 드랍 후 마커 순서 업데이트
-            await updateMarkersAfterDragDrop(locationData: locationData)
-            
+            let _: () = try await routeRepository.postRoutes(requestBody: requestBody)
             isLoading = false
         } catch {
             print("POST ERROR: /routes \(error)")
+            isLoading = false
+        }
+    }
+
+    private func logDragDropPostBody(locationData: [LocationNameModel], requestBody: RequestRouteModel) {
+        print("🛣️ [DragDrop] routeLocation: \(locationData.map { "\($0.sequenceNum):\($0.name)" }.joined(separator: " → "))")
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        if let jsonData = try? encoder.encode(requestBody),
+           let jsonString = String(data: jsonData, encoding: .utf8) {
+            print("🛣️ [DragDrop] POST /routes body:\n\(jsonString)")
         }
     }
     
@@ -334,13 +321,13 @@ extension RidingViewModel {
     
     // routes/guide & routes/path
     @MainActor
-    func getRouteGuideAPI(isNotNomal: Bool?) async {
+    func getRouteGuideAPI(isNotNormal: Bool?) async {
         guard let userId = userId else {
             print("❌ userId가 nil입니다")
             return
         }
         
-        print("🔄 가이드 API 호출 시작 - isNotNomal: \(isNotNomal != nil)")
+        print("🔄 가이드 API 호출 시작 - isNotNormal: \(isNotNormal != nil)")
         
         // 가이드 API 호출 시 로딩 상태 설정
         isStartingRiding = true
@@ -349,7 +336,7 @@ extension RidingViewModel {
         print("🔄 라이딩 시작 - 원본 데이터 백업")
         
         // 비정상 종료 시에는 기존 데이터가 비어있을 수 있으므로 API 호출 후 백업
-        if let isNotNomal = isNotNomal, isNotNomal {
+        if let isNotNormal = isNotNormal, isNotNormal {
             print("🔄 비정상 종료 감지 - 경로 데이터 재로드 후 백업")
             
             // 경로 데이터 재로드
@@ -451,7 +438,7 @@ extension RidingViewModel {
                     print("❌ 가이드 API 호출 최종 실패")
                     
                     // 비정상 종료 시 가이드 데이터가 없어도 기본 마커 유지
-                    if isNotNomal != nil {
+                    if isNotNormal != nil {
                         print("⚠️ 비정상 종료 시 가이드 데이터 없음 - 기본 마커 유지")
                         // 기존 마커 데이터 유지
                     }

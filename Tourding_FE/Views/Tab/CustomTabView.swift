@@ -20,13 +20,13 @@ struct CustomTabView: View {
             HStack(alignment: .top, spacing: 0){
                 
                 Button(action: {
-                    navigationManager.currentTab = .HomewView
+                    navigationManager.currentTab = .HomeView
                 }){
                     VStack(spacing:4){
-                        Image(currentView == .HomewView ? "riding_on": "riding_off")
+                        Image(currentView == .HomeView ? "riding_on": "riding_off")
                         
                         Text("라이딩")
-                            .foregroundStyle(currentView == .HomewView ? Color.white : Color.gray4)
+                            .foregroundStyle(currentView == .HomeView ? Color.white : Color.gray4)
                             .font(.pretendardSemiBold(size: 12))
                         
                         Spacer()
@@ -79,6 +79,6 @@ struct CustomTabView: View {
 }
 
 #Preview {
-    CustomTabView(currentView: .HomewView)
+    CustomTabView(currentView: .HomeView)
         .environmentObject(NavigationManager())
 }

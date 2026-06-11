@@ -61,7 +61,7 @@ struct MyPageView: View {
                                     
                                     myPageViewModel.AppleLogout(globalLoginViewModel: loginViewModel)
                                 }
-                                navigationManager.currentTab = .HomewView
+                                navigationManager.currentTab = .HomeView
                                 routeSharedManager.clearRoute()
                                 print("로그아웃됨")
                             }
@@ -91,7 +91,7 @@ struct MyPageView: View {
                         onActive: {
 //                            myPageViewModel.withdraw(globalLoginViewModel: loginViewModel)
                             recentSearchViewModel.clear()
-                            navigationManager.currentTab = .HomewView
+                            navigationManager.currentTab = .HomeView
                             routeSharedManager.clearRoute()
                             loginViewModel.revokeAccount()
                             print("회원탈퇴됨")

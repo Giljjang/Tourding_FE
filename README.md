@@ -80,7 +80,7 @@ Tourding_FE/
 │   └── DependencyProvider.swift  # 의존성 주입 관리
 ├── Views/                         # SwiftUI 뷰 컴포넌트
 │   ├── Home/                     # 홈 화면
-│   ├── Riding/                   # 라이딩 화면 (네비게이션)
+│   ├── Riding/                   # 라이딩 화면 (NMap/, BottomSheet/, DnD)
 │   ├── RecommendRoute/           # 추천 코스 화면
 │   ├── SpotSearch/              # 스팟 검색 및 필터링
 │   ├── SpotAdd/                 # 스팟 추가 (라이딩 중)
@@ -89,11 +89,14 @@ Tourding_FE/
 │   ├── MyPage/                  # 마이페이지
 │   └── Components/               # 재사용 가능한 컴포넌트
 ├── ViewModels/                   # MVVM 뷰모델
-│   ├── Riding/                  # 라이딩 관련 뷰모델
+│   ├── Riding/                  # 라이딩 관련 뷰모델 (extension 분리)
 │   │   ├── RidingViewModel.swift
 │   │   ├── RidingViewModel+API.swift
+│   │   ├── RidingViewModel+RouteReorder.swift   # 경유지 DnD
+│   │   ├── RidingViewModel+Lifecycle.swift     # appear, 라이딩 시작/종료, 위치 추적
 │   │   ├── RidingViewModel+LocationTracking.swift
-│   │   └── RidingViewModel+Utils.swift
+│   │   ├── RidingViewModel+Utils.swift
+│   │   └── NMap/                               # 지도 매니저 연동
 │   ├── RecommendRoute/          # 추천 코스 뷰모델
 │   ├── SpotSearch/              # 스팟 검색 뷰모델
 │   └── Components/              # 공통 컴포넌트 뷰모델
@@ -106,17 +109,25 @@ Tourding_FE/
 │   ├── NetworkService.swift    # 통합 네트워크 서비스
 │   ├── KakaoLocalService.swift # 카카오 로컬 API
 │   └── NetworkMonitor.swift    # 네트워크 상태 모니터링
-├── Repository/                  # 데이터 저장소
+├── Repository/                  # 데이터 저장소 (protocol + DI)
+│   ├── protocol/               # Repository 프로토콜
+│   ├── Mock/                   # MockRouteRepository, MockKakaoRepository
 │   ├── RouteRepository.swift   # 경로 데이터 관리
 │   ├── TourRepository.swift    # 투어 데이터 관리
-│   ├── UserRepository.swift    # 사용자 데이터 관리
+│   ├── UserRepository.swift      # 사용자 데이터 관리
 │   └── KakaoRepository.swift   # 카카오 API 연동
+├── Extension/                   # Color+Hex, Font+CustomFont 등
 ├── Utils/                       # 유틸리티
-│   └── SafeAreaUtils.swift     # 안전 영역 관리
+│   ├── SafeAreaUtils.swift
+│   ├── FixtureLoader.swift       # Mock fixture 로더
+│   └── MockAPIConfiguration.swift
 └── Resources/                   # 리소스 파일
     ├── Assets.xcassets/        # 이미지 및 색상 리소스
+    ├── Fixtures/               # 서버 응답 캡처 JSON (Mock API용)
     ├── Font/                   # 커스텀 폰트 (Pretendard)
     └── GIF/                    # 애니메이션 리소스
+
+Tourding_FETests/                 # Swift Testing (FixtureLoaderTests 등)
 ```
 
 ## 🚀 시작하기
@@ -158,6 +169,8 @@ Tourding_FE/
 - **빠른 액세스**: 자주 사용하는 기능들에 대한 바로가기
 
 ### 🚴‍♂️ 라이딩 화면 (핵심 기능)
+- **편집 / 라이딩 모드**: 코스 편집(`flag=false`)과 실시간 네비게이션(`flag=true`) 분리
+- **경유지 드래그 앤 드롭**: 순서 변경 시 지도 마커·경로선 즉시 동기화
 - **실시간 네비게이션**: GPS 기반 정확한 길 안내
 - **나침반 모드**: 사용자 방향에 따른 카메라 자동 회전
 - **마커 자동 관리**: 지나간 경로 마커 자동 제거 (30m 임계값)
@@ -218,6 +231,34 @@ KAKAO_URL = https://dapi.kakao.com
 - **위치 권한**: `Info.plist`에서 위치 사용 권한 설명 설정
 - **네트워크 보안**: HTTPS 통신을 위한 보안 설정
 - **백그라운드 모드**: 위치 추적을 위한 백그라운드 실행 허용
+
+### Mock API (개발·테스트)
+
+백엔드 없이 라이딩 흐름을 검증할 수 있습니다.
+
+- **활성화**: Xcode Launch Argument `-UseMockAPI` 또는 DEBUG에서 `MockAPIConfiguration.enableMockAPI()`
+- **Fixture**: `Resources/Fixtures/` — 경로, 가이드, 편의시설 등 서버 응답 JSON
+- **시나리오**: `MockRouteRepository` — `.withWaypoints`(기본), `.simple`(출발·도착만)
+
+### 아키텍처 (Riding 모듈)
+
+```
+View → ViewModel → Repository(protocol)
+                      ├─ RouteRepository → NetworkService
+                      └─ MockRouteRepository → FixtureLoader (DEBUG)
+```
+
+`RidingViewModel`은 extension으로 역할을 분리합니다.
+
+| Extension | 역할 |
+|-----------|------|
+| `+API` | 서버/Mock API 호출 |
+| `+RouteReorder` | 경유지 DnD, 지도 동기화 |
+| `+Lifecycle` | appear, 라이딩 시작/종료, 포그라운드, 위치 콜백 |
+| `+LocationTracking` | 3m 이동 감지, 30m 마커 통과 |
+| `+Utils` | 좌표 파싱, 포맷 |
+
+자세한 개발 가이드는 [`CLAUDE.md`](CLAUDE.md)를 참고하세요.
 
 ## 🤝 기여하기
 

@@ -1,0 +1,42 @@
+---
+description: Tourding_FE 프로젝트 개요, 폴더 구조, 기본 원칙
+alwaysApply: true
+---
+
+# Tourding_FE — Core
+
+SwiftUI + NMapsMap 기반 자전거 라이딩/관광 경로 iOS 앱. MVVM + Repository 패턴.
+
+## 폴더 구조
+
+```
+Tourding_FE/
+  App/              Tourding_FEApp, DependencyProvider
+  Network/          NetworkService, AppConfig, KakaoLocalService
+  Repository/       *Repository + protocol/ + Mock/
+  Model/            기능별 Request/Response
+  ViewModels/       기능별 ViewModel (+API, +RouteReorder, +Lifecycle, +LocationTracking…)
+  Views/            기능별 View + Components/
+  Extension/        Color+Hex, Font+CustomFont, UIColor+Hex
+  Utils/            SafeAreaUtils, FixtureLoader, MockAPIConfiguration
+  Resources/        Assets, Fixtures/ (서버 JSON)
+Tourding_FETests/     Swift Testing
+```
+
+## 아키텍처
+
+```
+View → ViewModel → Repository(protocol) → NetworkService / FixtureLoader(Mock)
+```
+
+- DI: `DependencyProvider` — protocol 타입 주입
+- Mock: DEBUG + `-UseMockAPI` 또는 `MockAPIConfiguration.enableMockAPI()`
+- 네비게이션: `NavigationManager` + `ViewType` (`HomeView`, `RidingView` 등)
+- `@EnvironmentObject`: `NavigationManager`, `ModalManager`, `RouteSharedManager`
+- `RidingViewModel`은 앱 수명 동안 1회 생성
+
+## 작업 원칙
+
+- 최소 범위 변경, 기존 관례 우선
+- ViewModel/Repository는 protocol 의존 유지
+- 사용자와의 대화는 **한국어**

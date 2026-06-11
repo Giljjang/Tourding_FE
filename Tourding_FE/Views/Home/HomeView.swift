@@ -136,7 +136,7 @@ struct HomeView: View {
                     onActive: {
                         print("시작됨")
                         wasLastRunNormal = true
-                        navigationManager.push(.RidingView(isNotNomal: true, isStart: true))
+                        navigationManager.push(.RidingView(isNotNormal: true, isStart: true))
                         print("wasLastRunNormal: \(wasLastRunNormal)")
                     }
                 )
