@@ -8,6 +8,63 @@
 import Foundation
 
 enum NetworkService {
+
+    // #region agent log
+    private static var searchLocationRequestSeq = 0
+    private static let searchLocationSeqLock = NSLock()
+
+    private static func nextSearchLocationSeq() -> Int {
+        searchLocationSeqLock.lock()
+        defer { searchLocationSeqLock.unlock() }
+        searchLocationRequestSeq += 1
+        return searchLocationRequestSeq
+    }
+
+    private static func debugLogSearchLocation(
+        phase: String,
+        url: URL,
+        method: String,
+        seq: Int,
+        request: URLRequest? = nil,
+        statusCode: Int? = nil,
+        responseSnippet: String? = nil,
+        hypothesisId: String
+    ) {
+        guard url.absoluteString.contains("search-location") else { return }
+
+        var data: [String: String] = [
+            "seq": String(seq),
+            "phase": phase,
+            "url": url.absoluteString,
+            "method": method
+        ]
+
+        if let request {
+            let body = request.httpBody.flatMap { String(data: $0, encoding: .utf8) } ?? "nil"
+            let headers = request.allHTTPHeaderFields?
+                .map { "\($0.key)=\($0.value)" }
+                .sorted()
+                .joined(separator: "; ") ?? "none"
+            data["body"] = body
+            data["headers"] = headers
+            data["hasAcceptHeader"] = String(request.value(forHTTPHeaderField: "Accept") != nil)
+        }
+
+        if let statusCode {
+            data["statusCode"] = String(statusCode)
+        }
+        if let responseSnippet {
+            data["responseSnippet"] = String(responseSnippet.prefix(300))
+        }
+
+        DebugSessionLogger.log(
+            location: "NetworkService.swift:requestToServer",
+            message: "search-location \(phase)",
+            hypothesisId: hypothesisId,
+            data: data
+        )
+    }
+    // #endregion
     
     // API 타입 정의
     enum APIType {
@@ -112,6 +169,22 @@ enum NetworkService {
             if let body = request.httpBody {
                 print("🔵 Request Body: \(String(data: body, encoding: .utf8) ?? "디코딩 실패")")
             }
+
+            // #region agent log
+            let debugSeq = request.url?.absoluteString.contains("search-location") == true
+                ? nextSearchLocationSeq()
+                : 0
+            if let requestURL = request.url, debugSeq > 0 {
+                debugLogSearchLocation(
+                    phase: "request",
+                    url: requestURL,
+                    method: request.httpMethod ?? "GET",
+                    seq: debugSeq,
+                    request: request,
+                    hypothesisId: "A_B_E"
+                )
+            }
+            // #endregion
             
             let data: Data
             let response: URLResponse
@@ -122,6 +195,22 @@ enum NetworkService {
            if let httpResponse = response as? HTTPURLResponse {
                print("🔵 HTTP Status Code: \(httpResponse.statusCode)")
            }
+
+            // #region agent log
+            if let requestURL = request.url, debugSeq > 0 {
+                let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+                let snippet = String(data: data, encoding: .utf8) ?? ""
+                debugLogSearchLocation(
+                    phase: "response",
+                    url: requestURL,
+                    method: request.httpMethod ?? "GET",
+                    seq: debugSeq,
+                    statusCode: status,
+                    responseSnippet: snippet,
+                    hypothesisId: status >= 400 ? "F" : "F_ok"
+                )
+            }
+            // #endregion
 //           print("🔵 Response Data: \(String(data: data, encoding: .utf8) ?? "디코딩 실패")")
             
             if let httpResponse = response as? HTTPURLResponse,

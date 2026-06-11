@@ -7,6 +7,12 @@
 
 import Foundation
 
+// MARK: - Tour type codes
+enum TourTypeCode {
+    /// 전체 카테고리 — `/tour/search-location` 빈 문자열은 서버 500 유발
+    static let all = "0"
+}
+
 // MARK: - Request
 struct SpotSearchRequest: Codable {
     let pageNum: Int

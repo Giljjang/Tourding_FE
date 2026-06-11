@@ -20,7 +20,7 @@ final class SpotSearchViewModel: ObservableObject {
     private let tourRepository: TourRepositoryProtocol
     
     private static let typeMap: [Int: String] = [
-        0: "",
+        0: TourTypeCode.all,
         1: "A01",
         2: "A02",
         3: "A03",
@@ -49,8 +49,10 @@ final class SpotSearchViewModel: ObservableObject {
         lastLng = lng
         lastSelected = selected
         
-        let typeCode = Self.typeMap[selected] ?? ""
-        
+        let typeCode = Self.typeMap[selected] ?? TourTypeCode.all
+
+        print("🛣️ [SpotSearch] search-location selected=\(selected) typeCode=\(typeCode) pageNum=1 lat=\(lat) lon=\(lng)")
+
         do {
             let results = try await tourRepository.searchLocationSpots(
                 pageNum: 1,
@@ -85,8 +87,10 @@ final class SpotSearchViewModel: ObservableObject {
         if isLoading || !hasMoreData { return }
         
         isLoading = true
-        let typeCode = Self.typeMap[lastSelected] ?? ""
-        
+        let typeCode = Self.typeMap[lastSelected] ?? TourTypeCode.all
+
+        print("🛣️ [SpotSearch] search-location selected=\(lastSelected) typeCode=\(typeCode) pageNum=\(currentPage) lat=\(lastLat) lon=\(lastLng)")
+
         do {
             let results = try await tourRepository.searchLocationSpots(
                 pageNum: currentPage,

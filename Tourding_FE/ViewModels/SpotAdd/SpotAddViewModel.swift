@@ -24,7 +24,7 @@ final class SpotAddViewModel: ObservableObject {
     @Published var isLoading = false //전체 로딩
     @Published var isScrollLoading: Bool = false // 스크롤 로딩
     @Published var hasMoreData = true // 가져올 데이터가 더 있는지 확인
-    @Published var currentPage = 0
+    @Published var currentPage = 1
     
     @Published var errorMessage: String?
     
@@ -65,8 +65,10 @@ final class SpotAddViewModel: ObservableObject {
         }
     } // : func
     
-    func matchTypeCodeName(for title: String) -> String {
-        switch title {
+    func typeCode(for filter: String) -> String {
+        switch filter {
+        case "전체":
+            return TourTypeCode.all
         case "자연":
             return "A01"
         case "인문(문화/예술/역사)":
@@ -82,7 +84,7 @@ final class SpotAddViewModel: ObservableObject {
         case "추천코스":
             return "C01"
         default:
-            return "A01"
+            return TourTypeCode.all
         }
     }
     
@@ -110,10 +112,11 @@ final class SpotAddViewModel: ObservableObject {
     }
     
     //MARK: - API 호출
-    func fetchNearbySpots(lat: String, lng: String, typeCode: String, pageNum: Int = 0) async {
-        if pageNum == 0 {
+    func fetchNearbySpots(lat: String, lng: String, typeCode: String, pageNum: Int = 1) async {
+        let isFirstPage = pageNum <= 1
+        if isFirstPage {
             isLoading = true
-            currentPage = 0
+            currentPage = 1
             hasMoreData = true
         } else {
             isScrollLoading = true
@@ -121,15 +124,33 @@ final class SpotAddViewModel: ObservableObject {
         errorMessage = nil
 
         defer {
-            if pageNum == 0 {
+            if isFirstPage {
                 isLoading = false
             } else {
                 isScrollLoading = false
             }
         }
         
+        print("🛣️ [SpotAdd] search-location filter=\(clickFliter) typeCode=\(typeCode) pageNum=\(pageNum) lat=\(lat) lon=\(lng)")
+
+        // #region agent log
+        DebugSessionLogger.log(
+            location: "SpotAddViewModel.swift:fetchNearbySpots",
+            message: "fetchNearbySpots called",
+            hypothesisId: "C",
+            data: [
+                "filter": clickFliter,
+                "typeCode": typeCode,
+                "pageNum": String(pageNum),
+                "lat": lat,
+                "lon": lng,
+                "isFirstPage": String(isFirstPage)
+            ]
+        )
+        // #endregion
+
         do {
-            var results = try await tourRepository.searchLocationSpots(
+            let results = try await tourRepository.searchLocationSpots(
                 pageNum: pageNum,
                 mapX: lng,
                 mapY: lat,
@@ -140,18 +161,22 @@ final class SpotAddViewModel: ObservableObject {
             //추천 코스 제외
             let filteredResults = results.filter { $0.typeCode != "C01" }
             
-            if pageNum == 0 {
-                // 첫 페이지 → 기존 데이터 리셋
+            if isFirstPage {
                 spots = filteredResults
-                currentPage = 1
+                if filteredResults.isEmpty {
+                    hasMoreData = false
+                } else {
+                    currentPage = 2
+                }
             } else {
-                // 다음 페이지 → 기존 데이터 뒤에 추가
                 spots.append(contentsOf: filteredResults)
-                currentPage = pageNum
+                if filteredResults.isEmpty {
+                    hasMoreData = false
+                } else {
+                    currentPage += 1
+                }
             }
             
-            // 더 이상 데이터가 없는지 확인 (빈 배열이면 마지막 페이지)
-            hasMoreData = !filteredResults.isEmpty
             print("📄 hasMoreData: \(hasMoreData) (데이터 있음: \(!filteredResults.isEmpty))")
             
         } catch {
@@ -169,9 +194,8 @@ final class SpotAddViewModel: ObservableObject {
             return 
         }
         
-        let nextPage = currentPage + 1
-        print("📄 다음 페이지 로드 시작: \(nextPage)")
-        await fetchNearbySpots(lat: lat, lng: lng, typeCode: typeCode, pageNum: nextPage)
+        print("📄 다음 페이지 로드 시작: \(currentPage)")
+        await fetchNearbySpots(lat: lat, lng: lng, typeCode: typeCode, pageNum: currentPage)
     }
     
     @MainActor
