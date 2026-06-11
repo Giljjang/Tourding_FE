@@ -76,7 +76,7 @@ struct Tourding_FEApp: App {
                                     RidingView(ridingViewModel: ridingViewModel, isNotNormal: isNotNormal,
                                         isStart: isStart
                                     )
-                                case .SpotAddView(let lat, let lon):
+                                case .SpotAddView(let lat, let lon, _):
                                     SpotAddView(
                                         spotAddViewModel: spotAddViewModel,
                                         lat: lat,

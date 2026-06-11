@@ -86,24 +86,31 @@ struct SpotAddView: View {
                     }
                 }
         )
-        .onAppear{
-            Task { [weak spotAddViewModel] in
-                do {
-                    try Task.checkCancellation()
-                    await spotAddViewModel?.fetchNearbySpots(
-                        lat: lat,
-                        lng: lon,
-                        typeCode: spotAddViewModel?.clickFliter == "전체" ? "" : spotAddViewModel?.matchTypeCodeName(for: spotAddViewModel?.clickFliter ?? "전체") ?? "")
-                    
-                    try Task.checkCancellation()
-                    await spotAddViewModel?.getRouteLocationAPI()
-                } catch is CancellationError {
-                    print("🚫 SpotAdd 초기화 Task 취소됨")
-                } catch {
-                    print("❌ SpotAdd 초기화 에러: \(error)")
-                }
-            }
-        }//: onAppear
+        .task {
+            await loadInitialData()
+        }
+    }
+
+    // MARK: - Data load
+
+    private func loadInitialData() async {
+        if let saved = UserDefaults.standard.string(forKey: "SpotAddClickFilter") {
+            spotAddViewModel.clickFliter = saved
+        }
+
+        let typeCode = spotAddViewModel.typeCode(for: spotAddViewModel.clickFliter)
+
+        do {
+            try Task.checkCancellation()
+            await spotAddViewModel.fetchNearbySpots(lat: lat, lng: lon, typeCode: typeCode)
+
+            try Task.checkCancellation()
+            await spotAddViewModel.getRouteLocationAPI(showsLoading: false)
+        } catch is CancellationError {
+            print("🚫 SpotAdd 초기화 Task 취소됨")
+        } catch {
+            print("❌ SpotAdd 초기화 에러: \(error)")
+        }
     }
     
     //MARK: - View
@@ -174,7 +181,7 @@ struct SpotAddView: View {
             
             //토글 필터 변경시 초기화
             spotAddViewModel.hasMoreData = false
-            spotAddViewModel.currentPage = 0
+            spotAddViewModel.currentPage = 1
             
             Task { [weak spotAddViewModel] in
                 do {
@@ -182,7 +189,7 @@ struct SpotAddView: View {
                     await spotAddViewModel?.fetchNearbySpots(
                         lat: lat,
                         lng: lon,
-                        typeCode: spotAddViewModel?.matchTypeCodeName(for: title) ?? "")
+                        typeCode: spotAddViewModel?.typeCode(for: title) ?? "")
                 } catch is CancellationError {
                     print("🚫 SpotAdd 필터 Task 취소됨")
                 } catch {
@@ -398,7 +405,7 @@ struct SpotAddView: View {
                 await spotAddViewModel?.loadNextPage(
                     lat: lat,
                     lng: lon,
-                    typeCode: spotAddViewModel?.clickFliter == "전체" ? "" : spotAddViewModel?.matchTypeCodeName(for: spotAddViewModel?.clickFliter ?? "전체") ?? ""
+                    typeCode: spotAddViewModel?.typeCode(for: spotAddViewModel?.clickFliter ?? "전체") ?? ""
                 )
             } catch is CancellationError {
                 print("🚫 SpotAdd 무한스크롤 Task 취소됨")

@@ -22,14 +22,12 @@ extension RidingViewModel {
     }
 
     @MainActor
-    func handleOnAppear(
+    func handleInitialEntry(
         locationManager: LocationManager,
         isNotNormal: Bool?,
         isStart: Bool,
         onStartRiding: @escaping () -> Void
     ) {
-        handleSpotAddReturnIfNeeded(isNotNormal: isNotNormal, isStart: isStart)
-
         if let isNotNormal {
             flag = isNotNormal
             print("🔄 비정상 종료 감지 - 라이딩 모드로 복구")
@@ -38,8 +36,7 @@ extension RidingViewModel {
             onStartRiding()
         }
 
-        let isSpotAddReturn = isNotNormal == nil && !isStart
-        setupRidingNavigationOnAppear(locationManager: locationManager, isSpotAddReturn: isSpotAddReturn)
+        setupRidingNavigationOnAppear(locationManager: locationManager)
 
         Task { [weak self] in
             await self?.loadEditModeRouteData(cameraOnlyWhenNotRiding: true)
@@ -47,21 +44,20 @@ extension RidingViewModel {
     }
 
     @MainActor
-    private func handleSpotAddReturnIfNeeded(isNotNormal: Bool?, isStart: Bool) {
-        guard isNotNormal == nil, !isStart else { return }
+    func handleReturnFromChild(locationManager: LocationManager) {
+        guard !flag else { return }
 
-        print("🔄 SpotAddView로부터 돌아옴 - flag 상태 확인")
-        print("  - 현재 flag: \(flag)")
-        print("  - isNotNormal: \(isNotNormal != nil)")
-        print("  - isStart: \(isStart)")
-
+        print("🔄 자식 화면에서 복귀 - 편집 모드 유지")
         flag = false
-        print("✅ flag를 false로 초기화")
+
+        Task { [weak self] in
+            await self?.refreshEditModeRouteData()
+        }
     }
 
     @MainActor
-    private func setupRidingNavigationOnAppear(locationManager: LocationManager, isSpotAddReturn: Bool) {
-        guard flag, !isSpotAddReturn else { return }
+    private func setupRidingNavigationOnAppear(locationManager: LocationManager) {
+        guard flag else { return }
 
         print("🎯 onAppear - 라이딩 중, startRidingProcess 로직 실행")
         startRidingNavigationMode(locationManager: locationManager, logPrefix: "onAppear")
