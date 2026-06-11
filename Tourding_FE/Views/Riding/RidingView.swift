@@ -23,6 +23,7 @@ struct RidingView: View {
     
     @State private var currentPosition: BottomSheetPosition = .medium
     @State private var forceUpdate: Bool = false
+    @State private var didRunInitialSetup = false
     
     let isNotNormal: Bool? // 비정상 종료일 때 true를 받음
     let isStart: Bool // 바로 라이딩 시작하면 true
@@ -187,12 +188,18 @@ struct RidingView: View {
         .onAppear {
             ridingViewModel.configureLocationManager(locationManager)
             checkAndRequestLocationPermission()
-            ridingViewModel.handleOnAppear(
-                locationManager: locationManager,
-                isNotNormal: isNotNormal,
-                isStart: isStart,
-                onStartRiding: startRidingWithLoading
-            )
+
+            if !didRunInitialSetup {
+                didRunInitialSetup = true
+                ridingViewModel.handleInitialEntry(
+                    locationManager: locationManager,
+                    isNotNormal: isNotNormal,
+                    isStart: isStart,
+                    onStartRiding: startRidingWithLoading
+                )
+            } else {
+                ridingViewModel.handleReturnFromChild(locationManager: locationManager)
+            }
         }
         .onChange(of: ridingViewModel.flag) { newValue in
             withAnimation(.easeInOut(duration: 0.3)) {

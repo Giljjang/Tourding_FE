@@ -86,24 +86,29 @@ struct SpotAddView: View {
                     }
                 }
         )
-        .onAppear{
-            Task { [weak spotAddViewModel] in
-                do {
-                    try Task.checkCancellation()
-                    await spotAddViewModel?.fetchNearbySpots(
-                        lat: lat,
-                        lng: lon,
-                        typeCode: spotAddViewModel?.clickFliter == "전체" ? "" : spotAddViewModel?.matchTypeCodeName(for: spotAddViewModel?.clickFliter ?? "전체") ?? "")
-                    
-                    try Task.checkCancellation()
-                    await spotAddViewModel?.getRouteLocationAPI()
-                } catch is CancellationError {
-                    print("🚫 SpotAdd 초기화 Task 취소됨")
-                } catch {
-                    print("❌ SpotAdd 초기화 에러: \(error)")
-                }
-            }
-        }//: onAppear
+        .task {
+            await loadInitialData()
+        }
+    }
+
+    // MARK: - Data load
+
+    private func loadInitialData() async {
+        let typeCode = spotAddViewModel.clickFliter == "전체"
+            ? ""
+            : spotAddViewModel.matchTypeCodeName(for: spotAddViewModel.clickFliter)
+
+        do {
+            try Task.checkCancellation()
+            await spotAddViewModel.fetchNearbySpots(lat: lat, lng: lon, typeCode: typeCode)
+
+            try Task.checkCancellation()
+            await spotAddViewModel.getRouteLocationAPI(showsLoading: false)
+        } catch is CancellationError {
+            print("🚫 SpotAdd 초기화 Task 취소됨")
+        } catch {
+            print("❌ SpotAdd 초기화 에러: \(error)")
+        }
     }
     
     //MARK: - View

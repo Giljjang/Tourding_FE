@@ -119,6 +119,14 @@ final class SpotAddViewModel: ObservableObject {
             isScrollLoading = true
         }
         errorMessage = nil
+
+        defer {
+            if pageNum == 0 {
+                isLoading = false
+            } else {
+                isScrollLoading = false
+            }
+        }
         
         do {
             var results = try await tourRepository.searchLocationSpots(
@@ -149,13 +157,6 @@ final class SpotAddViewModel: ObservableObject {
         } catch {
             errorMessage = "스팟을 불러오는데 실패했습니다."
             print("API 오류: \(error)")
-            
-        }
-        
-        if pageNum == 0 {
-            isLoading = false
-        } else {
-            isScrollLoading = false
         }
     }
     
@@ -174,25 +175,29 @@ final class SpotAddViewModel: ObservableObject {
     }
     
     @MainActor
-    func getRouteLocationAPI() async {
+    func getRouteLocationAPI(showsLoading: Bool = true) async {
         guard let userId = userId else {
             print("❌ userId가 nil입니다")
             errorMessage = "사용자 정보를 찾을 수 없습니다."
             return
         }
-        
-        isLoading = true
+
+        if showsLoading {
+            isLoading = true
+        }
+        defer {
+            if showsLoading {
+                isLoading = false
+            }
+        }
+
         do {
             let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: false)
             routeLocation = response
-            
-//            print("routeLocation: \(routeLocation)")
-            
         } catch {
             print("GET ERROR: /routes/location-name \(error)")
             errorMessage = "경로 정보를 불러오는데 실패했습니다."
         }
-        isLoading = false
     }
     
     @MainActor

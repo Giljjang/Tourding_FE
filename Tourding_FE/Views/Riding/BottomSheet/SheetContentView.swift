@@ -128,23 +128,23 @@ struct SheetContentView: View {
                 
                 Spacer()
                 
-                Button(action:{
-                    if let lastLocation = ridingViewModel.routeLocation.last {
-                        
-                        // 스팟 추가 토글 필터를 전체로 초기화
-                        UserDefaults.standard.set("전체", forKey: "SpotAddClickFilter")
-                        
-                        navigationManager.push(.SpotAddView(
-                            lat: lastLocation.lat,
-                            lon: lastLocation.lon
-                        ))
-                    }
-                }){
+                Button(action: {
+                    guard let lastLocation = ridingViewModel.routeLocation.last else { return }
+
+                    UserDefaults.standard.set("전체", forKey: "SpotAddClickFilter")
+
+                    navigationManager.push(.SpotAddView(
+                        lat: lastLocation.lat,
+                        lon: lastLocation.lon,
+                        sessionId: UUID()
+                    ))
+                }) {
                     Image("icon_plus")
                     Text("스팟 추가")
-                        .foregroundColor(.gray6)
+                        .foregroundColor(ridingViewModel.routeLocation.isEmpty ? .gray3 : .gray6)
                         .font(.pretendardSemiBold(size: 16))
                 }
+                .disabled(ridingViewModel.routeLocation.isEmpty)
                 .padding(.top, 1)
                 .padding(.trailing, 16)
             } // : HStack

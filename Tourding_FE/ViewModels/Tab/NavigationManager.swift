@@ -16,7 +16,7 @@ enum ViewType : Hashable {
     case LoginView
     case RidingView(isNotNormal: Bool? = nil, // 비정상 종료일 때 true
                     isStart: Bool = false) // 바로 라이딩 시작하면 true
-    case SpotAddView(lat: String, lon: String)
+    case SpotAddView(lat: String, lon: String, sessionId: UUID)
     case ServiceView
     case DestinationSearchView(isFromHome: Bool, isAddSpot: Bool)
     case DetailSpotView(isSpotAdd: Bool, detailId: ReqDetailModel)
