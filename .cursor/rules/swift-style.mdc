@@ -26,6 +26,7 @@ private var header: some View { ... }
 ```
 
 - RidingView처럼 부모 리렌더와 무관한 즉시 반영 → `@StateObject`
+- RidingView 라이프사이클: View는 위임만, 로직은 `RidingViewModel+Lifecycle`
 - MARK: `// MARK: -` (신규 코드)
 
 ## 디자인 시스템

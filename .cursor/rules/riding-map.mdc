@@ -32,7 +32,22 @@ API/Mock → RidingViewModel+API → @Published pathCoordinates
 | `+RouteReorder.swift` | 경유지 DnD 오케스트레이션 — `syncMapAfterRouteReorder`, `persistRouteOrderAfterReorder`, 디바운스 POST |
 | `+LocationTracking.swift` | 3m 이동, 30m 마커 통과 |
 | `+Utils.swift` | 좌표 파싱, 포맷 |
-| `+Lifecycle.swift` | appear, riding start/end, foreground, location tracking |
+| `+Lifecycle.swift` | appear, riding start/end, foreground, `setupRidingLocationCallback` |
+
+## RidingView 라이프사이클
+
+**흐름**:
+1. `onAppear` → `configureLocationManager` → `handleOnAppear`
+2. 편집 모드: `loadEditModeRouteData` (getRoutesTotal → getRouteLocation → getRoutePath)
+3. 라이딩 시작: `startRidingWithLoading` → `startRidingAPIProcess` → `setupRidingLocationCallback`
+4. `flag` true 전환: `activateRidingLocationTracking` — 콜백 재설정 + 위치·네비게이션 재시작
+5. 라이딩 종료: `endRiding` — 위치 추적 중지, 편의시설 마커 제거, 편집 모드 복귀
+6. 포그라운드: `handleForegroundRefresh` — 편집 모드에서만 경로 재로드
+
+**위치 콜백 단일화**: `setupRidingLocationCallback` — onAppear/onChange/startRiding 모두 이 메서드 경유. `onLocationUpdate`는 nil로 초기화 후 `onLocationUpdateNMGLatLng`만 설정.
+
+**View 책임**: UI, 바텀시트 카메라 피봇(`currentPosition`), 위치 권한 모달, ViewModel 위임  
+**금지**: View에 API 호출·위치 콜백 인라인 정의 추가
 
 ## 경유지 드래그앤드롭
 
@@ -56,11 +71,12 @@ API/Mock → RidingViewModel+API → @Published pathCoordinates
 
 ## 미해결 이슈
 
-- `MapViewController.locationManager` vs View `userLocationManager` 이중 GPS 인스턴스
-- View `@StateObject locationManager` 소유권 — Step 3에서 통합 검토
+- `MapViewController.locationManager` vs `RidingView` `@StateObject locationManager` 이중 GPS 인스턴스
+- `RidingView.onChange(currentPosition)` 바텀시트 카메라 피봇 — ViewModel 이전 검토
 
-## View / DnD 수정 시
+## View / DnD / Lifecycle 수정 시
 
-- UI·제스처만 View/`DropDelegate`에, POST·경로 재조회는 `+RouteReorder` / `+API`로
-- LocationManager 콜백은 한 곳에서만 설정
+- UI·제스처만 View/`DropDelegate`에, 오케스트레이션은 `+Lifecycle` / `+RouteReorder` / `+API`로
+- LocationManager 콜백은 `setupRidingLocationCallback` 한 곳에서만 설정
 - DnD 변경 시 리스트·마커·경로선 세 가지가 함께 갱신되는지 확인
+- Lifecycle 변경 시 편집/라이딩/비정상종료/SpotAdd복귀/포그라운드 시나리오 확인

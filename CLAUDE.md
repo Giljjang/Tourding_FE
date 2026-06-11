@@ -29,7 +29,7 @@ Tourding_FE/
 │   ├── Mock/               MockRouteRepository, MockKakaoRepository
 │   └── *Repository.swift
 ├── Model/                  Riding, Search, Detail, User…
-├── ViewModels/Riding/      +API, +RouteReorder, +LocationTracking, +Utils, NMap/
+├── ViewModels/Riding/      +API, +RouteReorder, +Lifecycle, +LocationTracking, +Utils, NMap/
 ├── Views/Riding/           RidingView, NMap/, BottomSheet/, RouteLocationDropDelegate
 ├── Extension/              Color+Hex, Font+CustomFont
 ├── Utils/                  FixtureLoader, MockAPIConfiguration, SafeAreaUtils
@@ -86,6 +86,25 @@ private static func makeRouteRepository() -> RouteRepositoryProtocol {
 | `+Utils.swift` | 좌표 파싱, 포맷 |
 | `+Lifecycle.swift` | appear, riding start/end, foreground, location tracking |
 
+### RidingView 라이프사이클 (`+Lifecycle`)
+
+```
+RidingView.onAppear
+  → configureLocationManager
+  → handleOnAppear → loadEditModeRouteData (편집 모드 API 3종)
+  → onStartRiding → startRidingWithLoading → startRidingAPIProcess
+
+RidingView.onChange(flag == true)
+  → activateRidingLocationTracking → setupRidingLocationCallback (단일 콜백)
+
+위치 콜백 (setupRidingLocationCallback)
+  → mapViewController.updateUserLocation
+  → updateUserLocationAndCheckMarkers (+LocationTracking)
+```
+
+**View 책임** (~423줄): UI, 바텀시트 카메라 피봇, 위치 권한 모달, ViewModel 메서드 위임  
+**ViewModel 책임** (`+Lifecycle`): API 오케스트레이션, 라이딩 시작/종료, 포그라운드 새로고침, 위치 콜백 단일 설정
+
 ### 경유지 드래그앤드롭 (`flag=false` 편집 모드)
 
 ```
@@ -116,8 +135,8 @@ NMapView → MapViewRepresentable → MapViewController
 
 ### 미해결 이슈
 
-1. **RidingView ~737줄** — API/위치/카메라 로직 → `RidingViewModel+Lifecycle` 이전 예정
-2. **LocationManager 콜백 중복** — onAppear, onChange(flag), startRidingAPIProcess
+1. **LocationManager 이중 인스턴스** — `RidingView` `@StateObject locationManager` vs `MapViewController.locationManager`
+2. **바텀시트 카메라 피봇** — `RidingView.onChange(currentPosition)` 로직 ViewModel 이전 검토
 3. **POST /routes** — 서버는 `RoutesModel` 반환, 앱은 `EmptyResponse`로 무시
 
 ---
@@ -166,6 +185,7 @@ NMapView → MapViewRepresentable → MapViewController
 - [ ] LocationManager 이중 인스턴스 정리 (`MapViewController.locationManager` vs `userLocationManager`)
 
 ### 기술 부채
+- `POST /routes` 응답 타입 불일치 (`RoutesModel` vs `EmptyResponse`)
 - UserRepository → NetworkService 통합
 - ErrorType 이중화 해소
 - `print` → OSLog

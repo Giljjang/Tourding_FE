@@ -27,7 +27,8 @@ Xcode Launch Argument: `-UseMockAPI`
 2. `RidingViewModel+Utils` — Haversine, 좌표 파싱
 3. `RidingViewModel.makeMarkerIcons(for:)` — Start/WayPoint/Goal 아이콘 순번 (pure static)
 4. `RidingViewModel+LocationTracking` — 마커 통과
-5. RidingViewModel Mock 시나리오 (simple ↔ waypoints)
+5. `RidingViewModel+Lifecycle` — 편집 모드 경로 로드, 라이딩 시작/종료 (Mock API)
+6. RidingViewModel Mock 시나리오 (simple ↔ waypoints)
 
 ## 변경 시 체크
 
