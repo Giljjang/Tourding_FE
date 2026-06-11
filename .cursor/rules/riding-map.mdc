@@ -32,7 +32,7 @@ API/Mock → RidingViewModel+API → @Published pathCoordinates
 | `+RouteReorder.swift` | 경유지 DnD 오케스트레이션 — `syncMapAfterRouteReorder`, `persistRouteOrderAfterReorder`, 디바운스 POST |
 | `+LocationTracking.swift` | 3m 이동, 30m 마커 통과 |
 | `+Utils.swift` | 좌표 파싱, 포맷 |
-| `+Lifecycle.swift` (예정) | appear, riding start/end, foreground |
+| `+Lifecycle.swift` | appear, riding start/end, foreground, location tracking |
 
 ## 경유지 드래그앤드롭
 
@@ -56,9 +56,8 @@ API/Mock → RidingViewModel+API → @Published pathCoordinates
 
 ## 미해결 이슈
 
-- `RidingView` ~737줄 — 오케스트레이션 ViewModel 이전 필요
-- LocationManager 콜백 중복 (onAppear / onChange / startRiding)
-- View `@StateObject` + ViewModel `userLocationManager` 이중 소유
+- `MapViewController.locationManager` vs View `userLocationManager` 이중 GPS 인스턴스
+- View `@StateObject locationManager` 소유권 — Step 3에서 통합 검토
 
 ## View / DnD 수정 시
 

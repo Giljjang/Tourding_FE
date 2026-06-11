@@ -84,7 +84,7 @@ private static func makeRouteRepository() -> RouteRepositoryProtocol {
 | `+RouteReorder.swift` | 경유지 DnD — 지도 동기화, 디바운스 POST, `persistRouteOrderAfterReorder` |
 | `+LocationTracking.swift` | 3m 이동, 30m 마커 통과 |
 | `+Utils.swift` | 좌표 파싱, 포맷 |
-| `+Lifecycle.swift` (예정) | appear, riding start/end, foreground |
+| `+Lifecycle.swift` | appear, riding start/end, foreground, location tracking |
 
 ### 경유지 드래그앤드롭 (`flag=false` 편집 모드)
 
@@ -158,12 +158,12 @@ NMapView → MapViewRepresentable → MapViewController
 - [x] Fixture JSON + MockRepository + DI + 기본 테스트
 - [x] 경유지 드래그앤드롭 — 지도 마커·경로 동기화 (`+RouteReorder`, `RouteLocationDropDelegate`)
 - [x] 첫 로그인 추천 코스 표시 (`HomeViewModel.getRouteRecommendAPI` uid guard 제거)
+- [x] `RidingViewModel+Lifecycle` — View 오케스트레이션 이전, 위치 콜백 단일화 (`setupRidingLocationCallback`)
 
 ### 다음
 - [ ] `PathSimplifier` + `PathSimplificationMetrics` + perf A/B 로깅
 - [ ] RidingViewModel Mock 시나리오 테스트 확대
-- [ ] `RidingViewModel+Lifecycle` — View 로직 이전
-- [ ] LocationManager 소유권·콜백 단일화
+- [ ] LocationManager 이중 인스턴스 정리 (`MapViewController.locationManager` vs `userLocationManager`)
 
 ### 기술 부채
 - UserRepository → NetworkService 통합

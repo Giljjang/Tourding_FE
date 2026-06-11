@@ -184,170 +184,31 @@ struct RidingView: View {
         } // : GeometryReader
         .ignoresSafeArea()
         .navigationBarBackButtonHidden()
-        .onAppear{
-            // LocationManager 인스턴스를 RidingViewModel에 전달
-            ridingViewModel.userLocationManager = locationManager
-            
-            // 맵뷰 참조 설정
-            if let mapView = ridingViewModel.mapView {
-                locationManager.setMapView(mapView)
-            }
-            
-            // 위치 권한 확인 및 요청
+        .onAppear {
+            ridingViewModel.configureLocationManager(locationManager)
             checkAndRequestLocationPermission()
-            
-            // SpotAddView로부터 돌아올 때 무조건 flag를 false로 초기화
-            if isNotNormal == nil && !isStart {
-                print("🔄 SpotAddView로부터 돌아옴 - flag 상태 확인")
-                print("  - 현재 flag: \(ridingViewModel.flag)")
-                print("  - isNotNormal: \(isNotNormal != nil)")
-                print("  - isStart: \(isStart)")
-                
-                // SpotAddView로부터 돌아온 경우 무조건 flag를 false로 초기화
-                ridingViewModel.flag = false
-                print("✅ flag를 false로 초기화")
-            }
-            
-            if let isNotNormal = isNotNormal { // 비정상 종료일 때 바로 라이딩 중으로 이동
-                ridingViewModel.flag = isNotNormal
-                print("🔄 비정상 종료 감지 - 라이딩 모드로 복구")
-                startRidingWithLoading()
-            } else if isStart {
-                startRidingWithLoading()
-            }
-            
-            // flag가 true일 때 카메라를 사용자 위치로 이동하고 위치 추적 시작
-            // (SpotAddView로부터 돌아온 경우가 아닐 때만)
-            if ridingViewModel.flag && !(isNotNormal == nil && !isStart) {
-                print("🎯 onAppear - 라이딩 중, startRidingProcess 로직 실행")
-                // startRidingProcess와 동일한 로직 실행
-                if let coordinate = locationManager.getCurrentLocationAsNMGLatLng(),
-                   let mapView = ridingViewModel.mapView {
-                    ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
-                    print("🎯 onAppear - 카메라를 사용자 위치로 이동: \(coordinate.lat), \(coordinate.lng)")
-                    
-                    // 네비게이션 모드 시작
-                    print("🧭 onAppear - 나침반 사용 가능 여부: \(CLLocationManager.headingAvailable())")
-                    locationManager.startNavigationMode(on: mapView)
-                } else {
-                    print("❌ onAppear - 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
-                    
-                    // 비정상 종료 시 위치가 없어도 네비게이션 모드는 시작
-                    if let mapView = ridingViewModel.mapView {
-                        print("🧭 onAppear - 위치 없이 네비게이션 모드 시작 (위치 업데이트 대기)")
-                        locationManager.startNavigationMode(on: mapView)
-                    }
-                }
-                
-                // onAppear에서는 콜백 설정하지 않음 (startRidingAPIProcess에서 설정)
-                print("📍 onAppear - 콜백 설정은 startRidingAPIProcess에서 처리됨")
-            }
-            
-            Task { [weak ridingViewModel] in
-                do {
-                    
-                    try Task.checkCancellation()
-                    await ridingViewModel?.getRoutesTotalAPI()
-                    
-                    try Task.checkCancellation()
-                    await ridingViewModel?.getRouteLocationAPI()
-                    
-                    try Task.checkCancellation()
-                    await ridingViewModel?.getRoutePathAPI()
-                    
-                    // API 호출 완료 후 초기 카메라 위치 설정 (flag가 false일 때만)
-                    try Task.checkCancellation()
-                    await MainActor.run {
-                        guard let ridingViewModel = ridingViewModel,
-                              let firstLocation = ridingViewModel.routeLocation.first,
-                              let lat = Double(firstLocation.lat),
-                              let lon = Double(firstLocation.lon),
-                              let mapView = ridingViewModel.mapView else {
-                            print("❌ 초기 카메라 위치 설정 실패: mapView 또는 경로 데이터가 없습니다")
-                            return
-                        }
-                        
-                        // flag가 false일 때만 경로 첫 번째 좌표로 카메라 설정
-                        if !ridingViewModel.flag {
-                            let coordinate = NMGLatLng(lat: lat, lng: lon)
-                            ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
-                            print("초기 카메라 위치를 경로 첫 번째 좌표로 설정: \(lat), \(lon)")
-                        }
-                    }
-                } catch is CancellationError {
-                    print("🚫 RidingView 초기화 Task 취소됨")
-                } catch {
-                    print("❌ RidingView 초기화 에러: \(error)")
-                }
-            } // : Task
-        }// : onAppear
+            ridingViewModel.handleOnAppear(
+                locationManager: locationManager,
+                isNotNormal: isNotNormal,
+                isStart: isStart,
+                onStartRiding: startRidingWithLoading
+            )
+        }
         .onChange(of: ridingViewModel.flag) { newValue in
-            // flag가 변경될 때마다 currentPosition을 .medium으로 설정
             withAnimation(.easeInOut(duration: 0.3)) {
                 currentPosition = .medium
             }
-            
-            // flag가 true로 변경될 때 위치 추적 완전 재시작 (실시간 위치 업데이트 복구)
-            if newValue == true {
-                print("🔄 flag가 true로 변경됨 - 위치 추적 완전 재시작")
-                
-                // 1. 통합된 콜백 재설정
-                let unifiedCallback: (NMGLatLng) -> Void = { newLocation in
-                    print("📍 onChange 위치 콜백 호출됨: \(newLocation.lat), \(newLocation.lng)")
-                    
-                    // 메인 스레드에서 순차적으로 실행하여 간섭 방지
-                    Task { @MainActor in
-                        // 1. MapViewController 업데이트
-                        if let mapViewController = ridingViewModel.mapViewController {
-                            let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
-                            mapViewController.updateUserLocation(clLocation)
-                        }
-                        
-                        // 2. RidingViewModel 마커 체크 및 카메라 업데이트
-                        await ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
-                    }
-                }
-                
-                // 2. 콜백 재설정
-                locationManager.onLocationUpdate = nil // 기존 콜백 제거
-                locationManager.onLocationUpdateNMGLatLng = unifiedCallback
-                print("📍 onChange - 통합된 위치 추적 콜백 재설정 완료")
-                
-                // 3. 위치 업데이트 재시작 (핵심!)
-                locationManager.startLocationUpdates()
-                print("🌍 onChange - 위치 업데이트 재시작")
-                
-                // 4. 네비게이션 모드 재시작 (핵심!)
-                if let mapView = ridingViewModel.mapView {
-                    locationManager.startNavigationMode(on: mapView)
-                    print("🧭 onChange - 네비게이션 모드 재시작")
-                } else {
-                    print("❌ onChange - mapView가 nil이어서 네비게이션 모드 재시작 실패")
-                }
+
+            if newValue {
+                ridingViewModel.activateRidingLocationTracking(locationManager: locationManager)
             }
-            
-        } // : onChange
-        .onChange(of: ridingViewModel.routeLocation) { newValue in
-            // flag가 false일 때 routeLocation이 변경되면 getRoutesTotalAPI 호출
-            if !ridingViewModel.flag {
-                print("🔄 routeLocation 변경 감지 - getRoutesTotalAPI 호출")
-                Task { [weak ridingViewModel] in
-                    do {
-                        try Task.checkCancellation()
-                        await ridingViewModel?.getRoutesTotalAPI()
-                        print("✅ getRoutesTotalAPI 호출 완료")
-                    } catch is CancellationError {
-                        print("🚫 getRoutesTotalAPI Task 취소됨")
-                    } catch {
-                        print("❌ getRoutesTotalAPI 에러: \(error)")
-                    }
-                }
-            }
-        } // : onChange routeLocation
+        }
+        .onChange(of: ridingViewModel.routeLocation) { _ in
+            ridingViewModel.handleRouteLocationChangedInEditMode()
+        }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            // 앱이 포그라운드로 돌아왔을 때
             print("🔄 앱이 포그라운드로 돌아옴 - 지도 상태 확인")
-            checkAndRefreshMapData()
+            ridingViewModel.handleForegroundRefresh()
         }
         .onChange(of: currentPosition) { oldValue, newValue in
             guard let mapView = ridingViewModel.mapView else { return }
@@ -411,66 +272,12 @@ struct RidingView: View {
         Button(action:{
             if !ridingViewModel.flag {
                 navigationManager.pop()
-            } else { //라이딩 시작 후 뒤로가기
-                
+            } else {
                 wasLastRunNormal = true
-                
-                // 위치 추적 중지 및 네비게이션 모드 종료
-                locationManager.stopLocationUpdates()
-                locationManager.stopNavigationMode()
-                locationManager.cancelAutoTrackingTimer() // 자동 위치추적 타이머 정리
-                
-                if let firstLocation = ridingViewModel.routeLocation.first,
-                   let lat = Double(firstLocation.lat),
-                   let lon = Double(firstLocation.lon),
-                   let mapView = ridingViewModel.mapView {
-                    
-                    let coordinate = NMGLatLng(lat: lat, lng: lon)
-                    ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
-                    print("초기 카메라 위치를 경로 첫 번째 좌표로 설정: \(lat), \(lon)")
-                    
-                } else {
-                    print("❌ 초기 카메라 위치 설정 실패: mapView 또는 경로 데이터가 없습니다")
+                Task {
+                    await ridingViewModel.endRiding(isStart: isStart, locationManager: locationManager)
                 }
-                
-                Task { [weak ridingViewModel] in
-                    do {
-                        try Task.checkCancellation()
-                        await ridingViewModel?.getRoutesTotalAPI()
-                        
-                        try Task.checkCancellation()
-                        await ridingViewModel?.getRouteLocationAPI()
-                        
-                        try Task.checkCancellation()
-                        await ridingViewModel?.getRoutePathAPI()
-                        
-                        await MainActor.run {
-                            guard let ridingViewModel = ridingViewModel else { return }
-                            
-                            //화장실 마커 전부 제거
-                            ridingViewModel.toiletMarkerCoordinates.removeAll()
-                            ridingViewModel.toiletMarkerIcons.removeAll()
-                            
-                            //편의점 마커 전부 제거
-                            ridingViewModel.csMarkerCoordinates.removeAll()
-                            ridingViewModel.csMarkerIcons.removeAll()
-                            
-                            ridingViewModel.showConvenienceStore = false
-                            ridingViewModel.showToilet = false
-                            
-                            // 라이딩 종료 시 원본 데이터로 복원
-                            ridingViewModel.restoreOriginalData(isStart: isStart)
-                            
-                            // flag를 false로 설정 (마지막에 실행)
-                            ridingViewModel.flag = false
-                        }
-                    } catch is CancellationError {
-                        print("🚫 라이딩 종료 Task 취소됨")
-                    } catch {
-                        print("❌ 라이딩 종료 에러: \(error)")
-                    }
-                }
-            } //: if-else
+            }
         }){
             Image("riding_back")
                 .padding(.vertical, 8)
@@ -565,8 +372,16 @@ struct RidingView: View {
         .position(x: 208, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : csButton
     
-    //MARK: - function
-    
+    //MARK: - Lifecycle helpers
+
+    private func startRidingWithLoading() {
+        ridingViewModel.startRidingWithLoading(
+            isNotNormal: isNotNormal,
+            locationManager: locationManager,
+            onMarkAbnormalExit: { wasLastRunNormal = false }
+        )
+    }
+
     //위치 권한 체크
     private func checkAndRequestLocationPermission() {
         let authStatus = locationManager.checkLocationAuthorizationStatus()
@@ -605,133 +420,4 @@ struct RidingView: View {
             break
         }
     }
-    
-    // 앱이 포그라운드로 돌아왔을 때 지도 데이터 확인 및 새로고침
-    private func checkAndRefreshMapData() {
-        // 라이딩 중이 아닐 때만 데이터 새로고침 (라이딩 중에는 중단하지 않음)
-        guard !ridingViewModel.flag else {
-            print("🚫 라이딩 중이므로 데이터 새로고침 건너뜀")
-            return
-        }
-        
-        // 경로 데이터가 비어있거나 지도가 제대로 초기화되지 않은 경우
-        if ridingViewModel.routeLocation.isEmpty || ridingViewModel.pathCoordinates.isEmpty {
-            print("🔄 경로 데이터가 비어있음 - API 재호출 시작")
-            refreshRouteData()
-        } else {
-            //            print("✅ 경로 데이터가 정상적으로 로드됨")
-            // 지도 마커와 경로선 다시 그리기
-            ridingViewModel.refreshMapDisplay()
-        }
-    }
-    
-    // 경로 데이터 새로고침
-    private func refreshRouteData() {
-        Task { [weak ridingViewModel] in
-            do {
-                try Task.checkCancellation()
-                await ridingViewModel?.getRoutesTotalAPI()
-                
-                try Task.checkCancellation()
-                await ridingViewModel?.getRouteLocationAPI()
-                
-                try Task.checkCancellation()
-                await ridingViewModel?.getRoutePathAPI()
-                
-                // API 호출 완료 후 초기 카메라 위치 설정
-                try Task.checkCancellation()
-                await MainActor.run {
-                    guard let ridingViewModel = ridingViewModel,
-                          let firstLocation = ridingViewModel.routeLocation.first,
-                          let lat = Double(firstLocation.lat),
-                          let lon = Double(firstLocation.lon),
-                          let mapView = ridingViewModel.mapView else {
-                        print("❌ 새로고침 후 초기 카메라 위치 설정 실패")
-                        return
-                    }
-                    
-                    let coordinate = NMGLatLng(lat: lat, lng: lon)
-                    ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
-                    print("✅ 새로고침 후 초기 카메라 위치 설정 완료: \(lat), \(lon)")
-                }
-            } catch is CancellationError {
-                print("🚫 경로 데이터 새로고침 Task 취소됨")
-            } catch {
-                print("❌ 경로 데이터 새로고침 에러: \(error)")
-            }
-        }
-    }
-    
-    // 라이딩 시작하기 버튼 클릭 시 API 완료 후 로딩 종료
-    func startRidingWithLoading() {
-        wasLastRunNormal = false // 비정상 종료
-        ridingViewModel.isStartingRiding = true
-        
-        Task {
-            await self.startRidingAPIProcess() // API 완료까지 기다림
-            print("✅ 라이딩 시작 프로세스 완료 - 로딩 종료")
-            self.ridingViewModel.isStartingRiding = false
-        }
-    }
-    
-    // 라이딩 중 API 호출 로직
-    func startRidingAPIProcess() async {
-        // flag 설정
-        ridingViewModel.flag = true
-        
-        // 통합된 콜백으로 업데이트 (이미 startLocationUpdates가 호출된 상태) - 메인 스레드에서 실행
-        let unifiedCallback: (NMGLatLng) -> Void = { newLocation in
-            print("📍 startRidingProcess 위치 콜백 호출됨: \(newLocation.lat), \(newLocation.lng)")
-            
-            // 메인 스레드에서 순차적으로 실행하여 간섭 방지
-            Task { @MainActor in
-                // 1. MapViewController 업데이트
-                if let mapViewController = ridingViewModel.mapViewController {
-                    let clLocation = CLLocation(latitude: newLocation.lat, longitude: newLocation.lng)
-                    mapViewController.updateUserLocation(clLocation)
-                }
-                
-                // 2. RidingViewModel 마커 체크 및 카메라 업데이트
-                await ridingViewModel.updateUserLocationAndCheckMarkers(newLocation)
-            }
-        }
-        
-        // 1. 먼저 콜백 설정 (네비게이션 모드 시작 전에 설정)
-        locationManager.onLocationUpdate = nil // 기존 콜백 제거
-        locationManager.onLocationUpdateNMGLatLng = unifiedCallback
-        print("📍 startRidingProcess - 통합된 위치 추적 콜백 설정 완료")
-        
-        // 2. 그 다음 카메라를 사용자 위치로 이동하고 네비게이션 모드 시작
-        if let coordinate = locationManager.getCurrentLocationAsNMGLatLng(),
-           let mapView = ridingViewModel.mapView {
-            ridingViewModel.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
-            print("🎯 startRidingProcess - 카메라를 사용자 위치로 이동: \(coordinate.lat), \(coordinate.lng)")
-            
-            // 네비게이션 모드 시작 (사용자가 바라보는 방향에 따라 카메라 회전)
-            print("🧭 나침반 사용 가능 여부: \(CLLocationManager.headingAvailable())")
-            locationManager.startNavigationMode(on: mapView)
-        } else {
-            print("❌ startRidingProcess - 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
-            
-            // 위치가 없어도 네비게이션 모드는 시작
-            if let mapView = ridingViewModel.mapView {
-                print("🧭 startRidingProcess - 위치 없이 네비게이션 모드 시작 (위치 업데이트 대기)")
-                locationManager.startNavigationMode(on: mapView)
-            }
-        }
-        
-        // 라이딩 가이드 API 호출
-        Task { [weak ridingViewModel] in
-            do {
-                try Task.checkCancellation()
-                await ridingViewModel?.getRouteGuideAPI(isNotNormal: isNotNormal)
-                print("✅ 라이딩 가이드 API 호출 완료")
-            } catch is CancellationError {
-                print("🚫 라이딩 가이드 API Task 취소됨")
-            } catch {
-                print("❌ 라이딩 가이드 API 에러: \(error)")
-            }
-        }
-    }
-    
 }
