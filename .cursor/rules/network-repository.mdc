@@ -1,0 +1,43 @@
+---
+description: Network/Repository/Mock 레이어 규칙
+globs: "Tourding_FE/{Network,Repository,Utils}/**/*.swift"
+alwaysApply: false
+---
+
+# Network & Repository
+
+## NetworkService
+
+- `enum NetworkService` — static async/await
+- `APIType`: `.main`, `.kakaoLocal`, `.custom(String)`
+- BASE_URL: `AppConfig.swift` → Info.plist
+
+## Repository
+
+1. protocol: `Repository/protocol/XxxRepositoryProtocol.swift`
+2. 구현: `Repository/XxxRepository.swift` (`shared` singleton)
+3. ViewModel은 **protocol 타입**만 의존
+
+## Riding API
+
+| Method | Path |
+|--------|------|
+| POST | /routes (응답: `RoutesModel` — 앱은 `EmptyResponse`로 무시) |
+| GET | /routes, /routes/path, /routes/location-name, /routes/guide |
+| GET | /routes/riding-recommend |
+| POST | /routes/toilet, /routes/convenience-store |
+
+`isUsed`: `false` 편집 / `true` 라이딩 — `RidingViewModel.flag`와 연동
+
+## Mock (구현됨)
+
+- `Repository/Mock/MockRouteRepository`, `MockKakaoRepository`
+- `Utils/FixtureLoader.swift` — `Resources/Fixtures/*.json` 로드
+- `Utils/MockAPIConfiguration.swift` — `-UseMockAPI` Launch Argument
+- `DependencyProvider.makeRouteRepository()` / `makeKakaoRepository()` DEBUG 분기
+- `MockRouteRepository.RouteScenario`: `.simple` (2스팟) / `.withWaypoints` (3스팟) — `POST /routes`의 `wayPoints`로 전환
+
+## 기술 부채
+
+- `UserRepository`만 NetworkService 미사용
+- `ErrorType` 이중화 (`NetworkService` vs `UserRepository`)

@@ -187,7 +187,7 @@ struct RecommendRouteView: View {
             )
             
             Button(action:{
-                navigationManager.push(.RidingView(isNotNomal: true, isStart: true))
+                navigationManager.push(.RidingView(isNotNormal: true, isStart: true))
             }){
                 HStack(spacing: 0){
                     

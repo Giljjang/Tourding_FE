@@ -1,0 +1,47 @@
+---
+description: Swift/SwiftUI 코딩 스타일 및 네이밍 규칙
+globs: "**/*.swift"
+alwaysApply: false
+---
+
+# Swift / SwiftUI Style
+
+## 타입·네이밍
+
+- ViewModel: `final class XxxViewModel: ObservableObject`
+- View/Model: `struct` + Codable
+- Repository: protocol + `final class` 구현 (`shared`)
+- API 메서드: `*API` 접미사 (`getRoutePathAPI`)
+- Model: `RequestRouteModel`, `RoutePathModel`, `GuideModel`
+- 큰 ViewModel: extension 분리 (`+API`, `+RouteReorder`, `+Lifecycle`, `+LocationTracking`, `+Utils`)
+
+## View 패턴
+
+```swift
+@StateObject private var viewModel: HomeViewModel
+init(viewModel: HomeViewModel) {
+    self._viewModel = StateObject(wrappedValue: viewModel)
+}
+private var header: some View { ... }
+```
+
+- RidingView처럼 부모 리렌더와 무관한 즉시 반영 → `@StateObject`
+- RidingView 라이프사이클: View는 위임만, 로직은 `RidingViewModel+Lifecycle`
+- MARK: `// MARK: -` (신규 코드)
+
+## 디자인 시스템
+
+- `.pretendardRegular/Medium/SemiBold(size:)`
+- `Color.gray1`~`gray6`, `Color.main`, `Color(hex:)`
+- `Extension/Color+Hex.swift`, `Extension/UIColor+Hex.swift`
+
+## DI
+
+- ViewModel 생성자는 `RouteRepositoryProtocol` 등 protocol 타입
+- `DependencyProvider` 경유 — `RouteRepository.shared` 직접 주입 금지
+
+## 금지
+
+- View에 API 호출·복잡한 오케스트레이션 추가
+- 관련 없는 파일 포맷팅 변경
+- `print` 남발 (향후 `AppLogger` 도입 예정)

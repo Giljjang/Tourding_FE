@@ -1,0 +1,36 @@
+---
+description: 테스트 및 Mock 사용 규칙
+globs: "Tourding_FETests/**/*.swift"
+alwaysApply: false
+---
+
+# Testing
+
+## 프레임워크
+
+- Swift Testing: `@Test`, `#expect`, `@testable import Tourding_FE`
+- NMapsMap 의존 로직은 pure Swift 분리 후 테스트
+
+## 구현됨
+
+- `FixtureLoaderTests` — fixture 디코딩, MockRouteRepository 가이드(type 9)
+- `Resources/Fixtures/` — user, routes, guide(simple/waypoints), path(258점), toilet, cs
+
+## Mock 실행
+
+Xcode Launch Argument: `-UseMockAPI`
+또는 DEBUG: `MockAPIConfiguration.enableMockAPI()`
+
+## 추가 테스트 예정
+
+1. `PathSimplifier` — 단순화 알고리즘
+2. `RidingViewModel+Utils` — Haversine, 좌표 파싱
+3. `RidingViewModel.makeMarkerIcons(for:)` — Start/WayPoint/Goal 아이콘 순번 (pure static)
+4. `RidingViewModel+LocationTracking` — 마커 통과
+5. `RidingViewModel+Lifecycle` — 편집 모드 경로 로드, 라이딩 시작/종료 (Mock API)
+6. RidingViewModel Mock 시나리오 (simple ↔ waypoints)
+
+## 변경 시 체크
+
+- protocol DI 유지, View에 비즈니스 로직 추가 금지
+- 새 fixture 추가 시 `FixtureLoaderTests`에 디코딩 검증 추가

@@ -22,12 +22,11 @@
 - **나침반 네비게이션**: 사용자가 바라보는 방향에 따라 카메라 자동 회전
 - **지나간 마커 자동 제거**: 30m 임계값으로 지나간 경로 마커 자동 삭제
 - **동적 카메라 피봇**: 바텀시트 높이에 따른 카메라 시점 자동 조정
-- **실시간 편의시설 표시**: 화장실, 편의점 등 주변 편의시설 실시간 검색 및 표시
+- **편의시설 표시**: 화장실, 편의점 등 주변 편의시설 검색 및 표시
 
-### 🎯 추천 코스 기능 (NEW!)
-- **AI 기반 추천**: 사용자 선호도와 지역 특성을 고려한 맞춤형 코스 추천
+### 🎯 추천 코스 기능
 - **다양한 테마**: 자연, 문화, 맛집, 힐링 등 다양한 테마별 추천 코스
-- **상세 정보 제공**: 코스별 난이도, 소요시간, 주요 포인트 정보
+- **상세 정보 제공**: 총 거리, 소요시간, 주요 포인트 정보
 - **원클릭 적용**: 추천 코스를 바로 내 코스로 적용 가능
 
 ### 🔍 스팟 탐색 및 추가
@@ -46,7 +45,6 @@
 
 ### Frontend
 - **SwiftUI** - iOS 네이티브 UI 프레임워크
-- **Combine** - 반응형 프로그래밍
 - **MVVM Architecture** - 깔끔한 코드 구조
 - **Dependency Injection** - 의존성 주입을 통한 테스트 가능한 구조
 
@@ -82,8 +80,8 @@ Tourding_FE/
 │   └── DependencyProvider.swift  # 의존성 주입 관리
 ├── Views/                         # SwiftUI 뷰 컴포넌트
 │   ├── Home/                     # 홈 화면
-│   ├── Riding/                   # 라이딩 화면 (네비게이션)
-│   ├── RecommendRoute/           # 추천 코스 화면 (NEW!)
+│   ├── Riding/                   # 라이딩 화면 (NMap/, BottomSheet/, DnD)
+│   ├── RecommendRoute/           # 추천 코스 화면
 │   ├── SpotSearch/              # 스팟 검색 및 필터링
 │   ├── SpotAdd/                 # 스팟 추가 (라이딩 중)
 │   ├── Detail/                  # 상세 정보 및 바텀시트
@@ -91,34 +89,45 @@ Tourding_FE/
 │   ├── MyPage/                  # 마이페이지
 │   └── Components/               # 재사용 가능한 컴포넌트
 ├── ViewModels/                   # MVVM 뷰모델
-│   ├── Riding/                  # 라이딩 관련 뷰모델
+│   ├── Riding/                  # 라이딩 관련 뷰모델 (extension 분리)
 │   │   ├── RidingViewModel.swift
 │   │   ├── RidingViewModel+API.swift
+│   │   ├── RidingViewModel+RouteReorder.swift   # 경유지 DnD
+│   │   ├── RidingViewModel+Lifecycle.swift     # appear, 라이딩 시작/종료, 위치 추적
 │   │   ├── RidingViewModel+LocationTracking.swift
-│   │   └── RidingViewModel+Utils.swift
-│   ├── RecommendRoute/          # 추천 코스 뷰모델 (NEW!)
+│   │   ├── RidingViewModel+Utils.swift
+│   │   └── NMap/                               # 지도 매니저 연동
+│   ├── RecommendRoute/          # 추천 코스 뷰모델
 │   ├── SpotSearch/              # 스팟 검색 뷰모델
 │   └── Components/              # 공통 컴포넌트 뷰모델
 ├── Model/                       # 데이터 모델
 │   ├── Riding/                  # 라이딩 관련 모델
-│   ├── RecommendRoute/         # 추천 코스 모델 (NEW!)
+│   ├── RecommendRoute/         # 추천 코스 모델 
 │   ├── Search/                  # 검색 관련 모델
 │   └── User/                    # 사용자 관련 모델
 ├── Network/                     # 네트워크 레이어
 │   ├── NetworkService.swift    # 통합 네트워크 서비스
 │   ├── KakaoLocalService.swift # 카카오 로컬 API
 │   └── NetworkMonitor.swift    # 네트워크 상태 모니터링
-├── Repository/                  # 데이터 저장소
+├── Repository/                  # 데이터 저장소 (protocol + DI)
+│   ├── protocol/               # Repository 프로토콜
+│   ├── Mock/                   # MockRouteRepository, MockKakaoRepository
 │   ├── RouteRepository.swift   # 경로 데이터 관리
-│   ├── TourRepository.swift    # 투어 데이터 관리 (NEW!)
-│   ├── UserRepository.swift    # 사용자 데이터 관리
+│   ├── TourRepository.swift    # 투어 데이터 관리
+│   ├── UserRepository.swift      # 사용자 데이터 관리
 │   └── KakaoRepository.swift   # 카카오 API 연동
+├── Extension/                   # Color+Hex, Font+CustomFont 등
 ├── Utils/                       # 유틸리티
-│   └── SafeAreaUtils.swift     # 안전 영역 관리
+│   ├── SafeAreaUtils.swift
+│   ├── FixtureLoader.swift       # Mock fixture 로더
+│   └── MockAPIConfiguration.swift
 └── Resources/                   # 리소스 파일
     ├── Assets.xcassets/        # 이미지 및 색상 리소스
+    ├── Fixtures/               # 서버 응답 캡처 JSON (Mock API용)
     ├── Font/                   # 커스텀 폰트 (Pretendard)
     └── GIF/                    # 애니메이션 리소스
+
+Tourding_FETests/                 # Swift Testing (FixtureLoaderTests 등)
 ```
 
 ## 🚀 시작하기
@@ -160,6 +169,8 @@ Tourding_FE/
 - **빠른 액세스**: 자주 사용하는 기능들에 대한 바로가기
 
 ### 🚴‍♂️ 라이딩 화면 (핵심 기능)
+- **편집 / 라이딩 모드**: 코스 편집(`flag=false`)과 실시간 네비게이션(`flag=true`) 분리
+- **경유지 드래그 앤 드롭**: 순서 변경 시 지도 마커·경로선 즉시 동기화
 - **실시간 네비게이션**: GPS 기반 정확한 길 안내
 - **나침반 모드**: 사용자 방향에 따른 카메라 자동 회전
 - **마커 자동 관리**: 지나간 경로 마커 자동 제거 (30m 임계값)
@@ -167,8 +178,7 @@ Tourding_FE/
 - **동적 카메라**: 바텀시트 높이에 따른 카메라 시점 자동 조정
 - **라이딩 중 스팟 추가**: 새로운 장소를 경로에 즉시 추가
 
-### 🎯 추천 코스 화면 (NEW!)
-- **AI 추천 시스템**: 사용자 선호도 기반 맞춤형 코스
+### 🎯 추천 코스 화면
 - **테마별 분류**: 자연, 문화, 맛집, 힐링 등 다양한 카테고리
 - **상세 정보**: 난이도, 소요시간, 주요 포인트 정보 제공
 - **원클릭 적용**: 추천 코스를 바로 내 코스로 적용
@@ -221,6 +231,34 @@ KAKAO_URL = https://dapi.kakao.com
 - **위치 권한**: `Info.plist`에서 위치 사용 권한 설명 설정
 - **네트워크 보안**: HTTPS 통신을 위한 보안 설정
 - **백그라운드 모드**: 위치 추적을 위한 백그라운드 실행 허용
+
+### Mock API (개발·테스트)
+
+백엔드 없이 라이딩 흐름을 검증할 수 있습니다.
+
+- **활성화**: Xcode Launch Argument `-UseMockAPI` 또는 DEBUG에서 `MockAPIConfiguration.enableMockAPI()`
+- **Fixture**: `Resources/Fixtures/` — 경로, 가이드, 편의시설 등 서버 응답 JSON
+- **시나리오**: `MockRouteRepository` — `.withWaypoints`(기본), `.simple`(출발·도착만)
+
+### 아키텍처 (Riding 모듈)
+
+```
+View → ViewModel → Repository(protocol)
+                      ├─ RouteRepository → NetworkService
+                      └─ MockRouteRepository → FixtureLoader (DEBUG)
+```
+
+`RidingViewModel`은 extension으로 역할을 분리합니다.
+
+| Extension | 역할 |
+|-----------|------|
+| `+API` | 서버/Mock API 호출 |
+| `+RouteReorder` | 경유지 DnD, 지도 동기화 |
+| `+Lifecycle` | appear, 라이딩 시작/종료, 포그라운드, 위치 콜백 |
+| `+LocationTracking` | 3m 이동 감지, 30m 마커 통과 |
+| `+Utils` | 좌표 파싱, 포맷 |
+
+자세한 개발 가이드는 [`CLAUDE.md`](CLAUDE.md)를 참고하세요.
 
 ## 🤝 기여하기
 

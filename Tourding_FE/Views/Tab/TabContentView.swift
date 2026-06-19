@@ -24,7 +24,7 @@ struct TabContentView: View {
         ZStack {
             
             switch navigationManager.currentTab {
-            case .HomewView:
+            case .HomeView:
                 HomeView(viewModel: viewModel.homeViewModel)
             case .SpotSearchView:
                 SpotSearchView(

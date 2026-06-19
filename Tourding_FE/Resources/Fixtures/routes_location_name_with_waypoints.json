@@ -1,0 +1,32 @@
+[
+  {
+    "sequenceNum": 1,
+    "name": "영일대 전망대",
+    "type": "Start",
+    "typeCode": "",
+    "contentId": "",
+    "contentTypeId": "",
+    "lon": "129.383051999155",
+    "lat": "36.0615645090088"
+  },
+  {
+    "sequenceNum": 2,
+    "name": "동해안 자전거길",
+    "type": "WayPoint",
+    "typeCode": "",
+    "contentId": "",
+    "contentTypeId": "",
+    "lon": "129.412515",
+    "lat": "36.079838"
+  },
+  {
+    "sequenceNum": 3,
+    "name": "칠포해수욕장",
+    "type": "Goal",
+    "typeCode": "",
+    "contentId": "",
+    "contentTypeId": "",
+    "lon": "129.399614982897",
+    "lat": "36.1320037397917"
+  }
+]
