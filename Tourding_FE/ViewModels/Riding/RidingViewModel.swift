@@ -64,6 +64,9 @@ final class RidingViewModel: ObservableObject {
     
     let routeRepository: RouteRepositoryProtocol
     let kakaoRepository: KakaoRepositoryProtocol
+
+    /// 경유지 드래그 디바운스 POST Task
+    var reorderPersistTask: Task<Void, Never>?
     
     init(routeRepository: RouteRepositoryProtocol,
          kakaoRepository: KakaoRepositoryProtocol
@@ -73,33 +76,32 @@ final class RidingViewModel: ObservableObject {
         self.userId = KeychainHelper.loadUid()
     }
     
-    // 드래그앤 드랍 후 마커 업데이트 메서드 추가
+    // MARK: - 지도 마커 (routeLocation 순서 반영)
+
     @MainActor
-    func updateMarkersAfterDragDrop(locationData: [LocationNameModel]) async {
-        // 마커 좌표 업데이트
+    func applyRouteLocationMarkers(from locationData: [LocationNameModel]) {
         markerCoordinates = locationData.compactMap { item in
-            if let lat = Double(item.lat), let lon = Double(item.lon) {
-                return NMGLatLng(lat: lat, lng: lon)
-            } else {
-                return nil
-            }
+            guard let lat = Double(item.lat), let lon = Double(item.lon) else { return nil }
+            return NMGLatLng(lat: lat, lng: lon)
         }
-        
-        // 마커 아이콘 순서 업데이트 (새로운 순서 반영)
-        markerIcons = locationData.enumerated().map { (index, item) in
+        markerIcons = Self.makeMarkerIcons(for: locationData)
+    }
+
+    static func makeMarkerIcons(for locationData: [LocationNameModel]) -> [NMFOverlayImage] {
+        var waypointNumber = 0
+        return locationData.map { item in
             switch item.type {
             case "Start":
                 return MarkerIcons.startMarker
             case "Goal":
                 return MarkerIcons.goalMarker
             case "WayPoint":
-                return MarkerIcons.numberMarker(index) // 새로운 순서의 index 사용
+                waypointNumber += 1
+                return MarkerIcons.numberMarker(waypointNumber)
             default:
                 return MarkerIcons.numberMarker(0)
             }
         }
-        
-        print("드래그앤 드랍 후 마커 순서 업데이트 완료: \(markerIcons.count)개")
     }
     
     // 지도 표시 새로고침 (앱 포그라운드 복귀 시 사용)
@@ -179,11 +181,11 @@ final class RidingViewModel: ObservableObject {
 extension RidingViewModel {
     
     // 편의점 토글
-    func toggleConvenienceStore(locaion: String){
+    func toggleConvenienceStore(location: String){
         showConvenienceStore.toggle()
         
         if showConvenienceStore {
-            updateConvenienceStoreMarkers(location: locaion)
+            updateConvenienceStoreMarkers(location: location)
         } else {
             // 편의점 마커  제거
             csMarkerCoordinates.removeAll()
@@ -228,11 +230,11 @@ extension RidingViewModel {
     }
 
     // 화장실 토글도 동일하게 수정
-    func toggleToilet(locaion: String){
+    func toggleToilet(location: String){
         showToilet.toggle()
         
         if showToilet {
-            updateToiletMarkers(location: locaion)
+            updateToiletMarkers(location: location)
         } else {
             // 화장실 마커 제거
             toiletMarkerCoordinates.removeAll()

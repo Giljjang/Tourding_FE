@@ -1,0 +1,82 @@
+---
+description: Riding 화면, NMapsMap, PathManager, 경유지 DnD 규칙
+globs: "Tourding_FE/{ViewModels/Riding,Views/Riding,Views/RecommendRoute}/**/*.swift"
+alwaysApply: false
+---
+
+# Riding & Map (NMapsMap)
+
+## 데이터 흐름
+
+```
+API/Mock → RidingViewModel+API → @Published pathCoordinates
+  → NMapView → MapViewRepresentable → MapViewController → PathManager
+```
+
+마커: `applyRouteLocationMarkers(from:)` → `markerCoordinates` + `markerIcons` → `refreshMapDisplay()`
+
+## MapViewRepresentable 연결
+
+`updateUIView`에서 ViewModel에 주입: `locationManager`, `mapView`, `markerManager`, `pathManager`, `mapViewController`
+
+## PathManager
+
+- Douglas-Peucker (`tolerance: 0.00001`), 이중 NMFPath
+- **예정**: `PathSimplifier` 분리 + `PathSimplificationMetrics` (pure Swift, 테스트 가능)
+
+## RidingViewModel extensions
+
+| 파일 | 역할 |
+|------|------|
+| `+API.swift` | 서버/Mock 호출, `postRouteDragNDropAPI` (POST만, 마커 갱신 없음) |
+| `+RouteReorder.swift` | 경유지 DnD 오케스트레이션 — `syncMapAfterRouteReorder`, `persistRouteOrderAfterReorder`, 디바운스 POST |
+| `+LocationTracking.swift` | 3m 이동, 30m 마커 통과 |
+| `+Utils.swift` | 좌표 파싱, 포맷 |
+| `+Lifecycle.swift` | appear, riding start/end, foreground, `setupRidingLocationCallback` |
+
+## RidingView 라이프사이클
+
+**흐름**:
+1. `onAppear` → `configureLocationManager` → `handleOnAppear`
+2. 편집 모드: `loadEditModeRouteData` (getRoutesTotal → getRouteLocation → getRoutePath)
+3. 라이딩 시작: `startRidingWithLoading` → `startRidingAPIProcess` → `setupRidingLocationCallback`
+4. `flag` true 전환: `activateRidingLocationTracking` — 콜백 재설정 + 위치·네비게이션 재시작
+5. 라이딩 종료: `endRiding` — 위치 추적 중지, 편의시설 마커 제거, 편집 모드 복귀
+6. 포그라운드: `handleForegroundRefresh` — 편집 모드에서만 경로 재로드
+
+**위치 콜백 단일화**: `setupRidingLocationCallback` — onAppear/onChange/startRiding 모두 이 메서드 경유. `onLocationUpdate`는 nil로 초기화 후 `onLocationUpdateNMGLatLng`만 설정.
+
+**View 책임**: UI, 바텀시트 카메라 피봇(`currentPosition`), 위치 권한 모달, ViewModel 위임  
+**금지**: View에 API 호출·위치 콜백 인라인 정의 추가
+
+## 경유지 드래그앤드롭
+
+**파일**: `RouteLocationDropDelegate.swift` + `SheetContentView` (경유지 `onDrag`/`onDrop`)
+
+**흐름**:
+1. `dropEntered` — `reorderedRoute`로 출발(0)·도착(last) 고정, 경유지만 재정렬
+2. `routeLocation = reordered` (재할당 필수 — in-place `move()`는 `@Published` 미트리거)
+3. `syncMapAfterRouteReorder` — 즉시 마커·지도 갱신
+4. `schedulePersistRouteOrderAfterReorder` — 0.4s 디바운스 POST (`performDrop` 미호출 대비)
+5. `performDrop` — `persistRouteOrderAfterReorder` 즉시 실행 (디바운스 Task 취소)
+6. `dropUpdated` — `DropProposal(operation: .move)` 반환 필수
+
+**POST 후 처리** (`persistRouteOrderAfterReorder`):
+- `postRouteDragNDropAPI` → `getRoutePathAPI` → `syncMapAfterRouteReorder`
+- `getRouteLocationAPI` **호출 금지** — 서버가 `sequenceNum` 순으로 반환해 드래그 순서 덮어씀
+
+**마커 아이콘**: `makeMarkerIcons(for:)` — WayPoint는 배열 index가 아닌 **경유지 순번 1, 2, 3…**
+
+**디버그**: `🛣️ [DragDrop]` 로그로 POST body 확인
+
+## 미해결 이슈
+
+- `MapViewController.locationManager` vs `RidingView` `@StateObject locationManager` 이중 GPS 인스턴스
+- `RidingView.onChange(currentPosition)` 바텀시트 카메라 피봇 — ViewModel 이전 검토
+
+## View / DnD / Lifecycle 수정 시
+
+- UI·제스처만 View/`DropDelegate`에, 오케스트레이션은 `+Lifecycle` / `+RouteReorder` / `+API`로
+- LocationManager 콜백은 `setupRidingLocationCallback` 한 곳에서만 설정
+- DnD 변경 시 리스트·마커·경로선 세 가지가 함께 갱신되는지 확인
+- Lifecycle 변경 시 편집/라이딩/비정상종료/SpotAdd복귀/포그라운드 시나리오 확인

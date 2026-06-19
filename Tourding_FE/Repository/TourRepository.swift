@@ -14,6 +14,24 @@ class TourRepository: TourRepositoryProtocol {
     private init() {}
     
     func searchLocationSpots(pageNum: Int, mapX: String, mapY: String, radius: String, typeCode: String) async throws -> [SpotData] {
+        // #region agent log
+        DebugSessionLogger.log(
+            location: "TourRepository.swift:searchLocationSpots",
+            message: "repository params",
+            hypothesisId: "A_C",
+            data: [
+                "pageNum": String(pageNum),
+                "mapX": mapX,
+                "mapY": mapY,
+                "mapX_len": String(mapX.count),
+                "mapY_len": String(mapY.count),
+                "mapX_trimmed_eq": String(mapX.trimmingCharacters(in: .whitespacesAndNewlines) == mapX),
+                "typeCode": typeCode,
+                "radius": radius
+            ]
+        )
+        // #endregion
+
         let requestBody = SpotSearchRequest(
             pageNum: pageNum,
             mapX: mapX,

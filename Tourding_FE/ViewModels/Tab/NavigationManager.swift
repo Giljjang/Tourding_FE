@@ -9,14 +9,14 @@ import Foundation
 
 enum ViewType : Hashable {
     case SplashView
-    case HomewView
+    case HomeView
     case SpotSearchView
     case MyPageView
     
     case LoginView
-    case RidingView(isNotNomal: Bool? = nil, // 비정상 종료일 때 true
+    case RidingView(isNotNormal: Bool? = nil, // 비정상 종료일 때 true
                     isStart: Bool = false) // 바로 라이딩 시작하면 true
-    case SpotAddView(lat: String, lon: String)
+    case SpotAddView(lat: String, lon: String, sessionId: UUID)
     case ServiceView
     case DestinationSearchView(isFromHome: Bool, isAddSpot: Bool)
     case DetailSpotView(isSpotAdd: Bool, detailId: ReqDetailModel)
@@ -26,7 +26,7 @@ enum ViewType : Hashable {
 
 final class NavigationManager: ObservableObject {
     @Published var path: [ViewType] = [] // 탭바 X -> stack
-    @Published var currentTab: ViewType = .HomewView // 탭바 O 상태관리
+    @Published var currentTab: ViewType = .HomeView // 탭바 O 상태관리
     
     func push(_ view: ViewType) {
         path.append(view)

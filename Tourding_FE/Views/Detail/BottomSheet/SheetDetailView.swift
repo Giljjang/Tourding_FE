@@ -116,7 +116,8 @@ struct SheetDetailView: View {
         Text(detailViewModel.detailData?.title ?? "")
             .foregroundColor(.gray6)
             .font(.pretendardSemiBold(size: 24))
-            .frame(height: 34)
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: false, vertical: true)
     }
     
     private var divider: some View {
