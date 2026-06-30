@@ -299,7 +299,19 @@ struct HomeView: View {
     
     private var routeContinue: some View {
         Button(action: {
-            navigationManager.push(.RidingView())
+            // #region agent log
+            DebugSessionLogger.log(
+                location: "HomeView.swift:routeContinue",
+                message: "recent route tapped",
+                hypothesisId: "H1_H4",
+                data: [
+                    "homeRecentFirst": viewModel.routeLocation.first?.name ?? "nil",
+                    "homeRecentLast": viewModel.routeLocation.last?.name ?? "nil",
+                    "homeRecentCount": String(viewModel.routeLocation.count)
+                ]
+            )
+            // #endregion
+            navigationManager.push(.RidingView(routeSource: .recentUsed))
         }) {
             HStack(alignment: .top, spacing: 0) {
                 Image("route")

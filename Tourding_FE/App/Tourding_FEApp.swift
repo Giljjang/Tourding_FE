@@ -72,9 +72,10 @@ struct Tourding_FEApp: App {
                                     LoginView()
                                 case .ServiceView:
                                     ServiceView()
-                                case .RidingView(let isNotNormal, let isStart):
+                                case .RidingView(let isNotNormal, let isStart, let routeSource):
                                     RidingView(ridingViewModel: ridingViewModel, isNotNormal: isNotNormal,
-                                        isStart: isStart
+                                        isStart: isStart,
+                                        routeSource: routeSource
                                     )
                                 case .SpotAddView(let lat, let lon, _):
                                     SpotAddView(
