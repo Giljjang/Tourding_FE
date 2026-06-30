@@ -26,6 +26,7 @@ extension RidingViewModel {
         locationManager: LocationManager,
         isNotNormal: Bool?,
         isStart: Bool,
+        routeSource: RidingRouteSource,
         onStartRiding: @escaping () -> Void
     ) {
         if let isNotNormal {
@@ -39,19 +40,22 @@ extension RidingViewModel {
         setupRidingNavigationOnAppear(locationManager: locationManager)
 
         Task { [weak self] in
-            await self?.loadEditModeRouteData(cameraOnlyWhenNotRiding: true)
+            await self?.loadEditModeRouteData(
+                cameraOnlyWhenNotRiding: true,
+                routeSource: routeSource
+            )
         }
     }
 
     @MainActor
-    func handleReturnFromChild(locationManager: LocationManager) {
+    func handleReturnFromChild(locationManager: LocationManager, routeSource: RidingRouteSource) {
         guard !flag else { return }
 
         print("🔄 자식 화면에서 복귀 - 편집 모드 유지")
         flag = false
 
         Task { [weak self] in
-            await self?.refreshEditModeRouteData()
+            await self?.refreshEditModeRouteData(routeSource: routeSource)
         }
     }
 
@@ -66,16 +70,36 @@ extension RidingViewModel {
 
     // MARK: - Edit mode route load (P1)
 
-    func loadEditModeRouteData(cameraOnlyWhenNotRiding: Bool) async {
+    func loadEditModeRouteData(
+        cameraOnlyWhenNotRiding: Bool,
+        routeSource: RidingRouteSource
+    ) async {
+        // #region agent log
+        await MainActor.run {
+            DebugSessionLogger.log(
+                location: "RidingViewModel+Lifecycle.swift:loadEditModeRouteData",
+                message: "riding edit load started",
+                hypothesisId: "H1_H4",
+                data: [
+                    "flag": String(flag),
+                    "routeSource": String(describing: routeSource),
+                    "isUsed": String(routeSource.isUsed),
+                    "existingFirst": routeLocation.first?.name ?? "nil",
+                    "existingLast": routeLocation.last?.name ?? "nil",
+                    "existingCount": String(routeLocation.count)
+                ]
+            )
+        }
+        // #endregion
         do {
             try Task.checkCancellation()
-            await getRoutesTotalAPI()
+            await getRoutesTotalAPI(isUsed: routeSource.isUsed)
 
             try Task.checkCancellation()
-            await getRouteLocationAPI()
+            await getRouteLocationAPI(isUsedOverride: routeSource.isUsed)
 
             try Task.checkCancellation()
-            await getRoutePathAPI()
+            await getRoutePathAPI(isUsed: routeSource.isUsed)
 
             try Task.checkCancellation()
             await MainActor.run {
@@ -88,16 +112,16 @@ extension RidingViewModel {
         }
     }
 
-    func refreshEditModeRouteData() async {
+    func refreshEditModeRouteData(routeSource: RidingRouteSource = .draft) async {
         do {
             try Task.checkCancellation()
-            await getRoutesTotalAPI()
+            await getRoutesTotalAPI(isUsed: routeSource.isUsed)
 
             try Task.checkCancellation()
-            await getRouteLocationAPI()
+            await getRouteLocationAPI(isUsedOverride: routeSource.isUsed)
 
             try Task.checkCancellation()
-            await getRoutePathAPI()
+            await getRoutePathAPI(isUsed: routeSource.isUsed)
 
             try Task.checkCancellation()
             await MainActor.run {

@@ -27,11 +27,18 @@ struct RidingView: View {
     
     let isNotNormal: Bool? // 비정상 종료일 때 true를 받음
     let isStart: Bool // 바로 라이딩 시작하면 true
+    let routeSource: RidingRouteSource
     
-    init(ridingViewModel: RidingViewModel, isNotNormal: Bool?, isStart: Bool) {
+    init(
+        ridingViewModel: RidingViewModel,
+        isNotNormal: Bool?,
+        isStart: Bool,
+        routeSource: RidingRouteSource
+    ) {
         self._ridingViewModel = StateObject(wrappedValue: ridingViewModel)
         self.isNotNormal = isNotNormal
         self.isStart = isStart
+        self.routeSource = routeSource
     }
     
     //라이딩 중 비정상 종료 감지
@@ -195,10 +202,14 @@ struct RidingView: View {
                     locationManager: locationManager,
                     isNotNormal: isNotNormal,
                     isStart: isStart,
+                    routeSource: routeSource,
                     onStartRiding: startRidingWithLoading
                 )
             } else {
-                ridingViewModel.handleReturnFromChild(locationManager: locationManager)
+                ridingViewModel.handleReturnFromChild(
+                    locationManager: locationManager,
+                    routeSource: routeSource
+                )
             }
         }
         .onChange(of: ridingViewModel.flag) { newValue in
