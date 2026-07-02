@@ -7,6 +7,20 @@
 
 import Foundation
 
+enum RidingRouteSource: Hashable {
+    case draft
+    case recentUsed
+
+    var isUsed: Bool {
+        switch self {
+        case .draft:
+            return false
+        case .recentUsed:
+            return true
+        }
+    }
+}
+
 enum ViewType : Hashable {
     case SplashView
     case HomeView
@@ -15,7 +29,8 @@ enum ViewType : Hashable {
     
     case LoginView
     case RidingView(isNotNormal: Bool? = nil, // 비정상 종료일 때 true
-                    isStart: Bool = false) // 바로 라이딩 시작하면 true
+                    isStart: Bool = false, // 바로 라이딩 시작하면 true
+                    routeSource: RidingRouteSource = .draft)
     case SpotAddView(lat: String, lon: String, sessionId: UUID)
     case ServiceView
     case DestinationSearchView(isFromHome: Bool, isAddSpot: Bool)

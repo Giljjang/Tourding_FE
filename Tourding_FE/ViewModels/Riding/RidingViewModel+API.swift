@@ -11,7 +11,7 @@ import NMapsMap
 extension RidingViewModel {
     //MARK: - 라이딩 시작하기 전 API 호출
     @MainActor
-    func getRoutesTotalAPI() async {
+    func getRoutesTotalAPI(isUsed: Bool = false) async {
         guard let userId = userId else {
             print("❌ userId가 nil입니다")
             return
@@ -20,8 +20,20 @@ extension RidingViewModel {
         isLoading = true
         
         do {
-            let response = try await routeRepository.getRoutes(userId: userId, isUsed: false)
+            let response = try await routeRepository.getRoutes(userId: userId, isUsed: isUsed)
             routeTotal = response
+            // #region agent log
+            DebugSessionLogger.log(
+                location: "RidingViewModel+API.swift:getRoutesTotalAPI",
+                message: "riding total loaded",
+                hypothesisId: "H1",
+                data: [
+                    "isUsed": String(isUsed),
+                    "distance": String(response.distance),
+                    "duration": String(response.duration)
+                ]
+            )
+            // #endregion
             
         } catch {
             print("ERRO: GET - \(error)")
@@ -32,7 +44,7 @@ extension RidingViewModel {
     }
     
     @MainActor
-    func getRouteLocationAPI(isRecommend: Bool? = nil) async {
+    func getRouteLocationAPI(isRecommend: Bool? = nil, isUsedOverride: Bool? = nil) async {
         guard let userId = userId else {
             print("❌ userId가 nil입니다")
             return
@@ -47,11 +59,25 @@ extension RidingViewModel {
         while retryCount < maxRetries {
             do {
                 // isRecommend가 nil이 아닐 때는 !isRecommend, nil일 때는 self.flag 사용
-                let isUsed = isRecommend != nil ? !isRecommend! : self.flag
+                let isUsed = isUsedOverride ?? (isRecommend != nil ? !isRecommend! : self.flag)
                 
                 let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: isUsed)
                 routeLocation = response
                 applyRouteLocationMarkers(from: response)
+                // #region agent log
+                DebugSessionLogger.log(
+                    location: "RidingViewModel+API.swift:getRouteLocationAPI",
+                    message: "riding route locations loaded",
+                    hypothesisId: "H1_H4",
+                    data: [
+                        "isUsed": String(isUsed),
+                        "flag": String(flag),
+                        "first": response.first?.name ?? "nil",
+                        "last": response.last?.name ?? "nil",
+                        "count": String(response.count)
+                    ]
+                )
+                // #endregion
                 
                 // 성공하면 루프 종료
                 break
@@ -74,7 +100,7 @@ extension RidingViewModel {
     
     //초기 출발지, 도착지만 입력시 POST
     @MainActor
-    func getRoutePathAPI() async {
+    func getRoutePathAPI(isUsed: Bool? = nil) async {
         guard let userId = userId else {
             print("❌ userId가 nil입니다")
             return
@@ -88,8 +114,20 @@ extension RidingViewModel {
         
         while retryCount < maxRetries {
             do {
-                let response = try await routeRepository.getRoutesPath(userId: userId, isUsed: self.flag)
+                let routeIsUsed = isUsed ?? self.flag
+                let response = try await routeRepository.getRoutesPath(userId: userId, isUsed: routeIsUsed)
                 routeMapPaths = response
+                // #region agent log
+                DebugSessionLogger.log(
+                    location: "RidingViewModel+API.swift:getRoutePathAPI",
+                    message: "riding path loaded",
+                    hypothesisId: "H1",
+                    data: [
+                        "isUsed": String(routeIsUsed),
+                        "pathCount": String(response.count)
+                    ]
+                )
+                // #endregion
                 
                 pathCoordinates = routeMapPaths.compactMap { item in
                     if let lat = Double(item.lat),

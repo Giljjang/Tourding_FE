@@ -49,6 +49,20 @@ final class HomeViewModel: ObservableObject {
             contentTypeId: "",
             isUsed: false
         )
+        // #region agent log
+        DebugSessionLogger.log(
+            location: "HomeViewModel.swift:postRouteAPI",
+            message: "home course created as draft",
+            hypothesisId: "H2",
+            data: [
+                "startName": start.name,
+                "endName": end.name,
+                "start": requestBody.start,
+                "goal": requestBody.goal,
+                "isUsed": String(requestBody.isUsed)
+            ]
+        )
+        // #endregion
         do {
             try await routeRepository.postRoutes(requestBody: requestBody)
         } catch {
@@ -68,6 +82,19 @@ final class HomeViewModel: ObservableObject {
         do {
             let response = try await routeRepository.getRoutesLocationName(userId: uid, isUsed: true)
             routeLocation = response
+            // #region agent log
+            DebugSessionLogger.log(
+                location: "HomeViewModel.swift:getRouteLocationAPI",
+                message: "home recent route loaded",
+                hypothesisId: "H1",
+                data: [
+                    "isUsed": "true",
+                    "first": response.first?.name ?? "nil",
+                    "last": response.last?.name ?? "nil",
+                    "count": String(response.count)
+                ]
+            )
+            // #endregion
         } catch {
             print("GET ERROR:", error)
         }
