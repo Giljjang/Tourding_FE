@@ -14,13 +14,14 @@ struct LocalSearchResultsListComponent: View {
     let onLoadMore: (Int) -> Void
     let onRefresh: () -> Void
 
+    private var filteredResults: [SpotData] {
+        let allowedTypeCodes: Set<String> = ["A01", "A02", "A03", "A04", "A05", "B02"]
+        return results.filter { allowedTypeCodes.contains(displayTypeCode(for: $0)) }
+    }
+
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
-                // 허용된 카테고리 코드만 노출 (unknown/기타 제외)
-                let allowedTypeCodes: Set<String> = ["A01", "A02", "A03", "A04", "A05", "B02"]
-                let filteredResults = results.filter { allowedTypeCodes.contains($0.typeCode.uppercased()) }
-
                 ForEach(Array(filteredResults.enumerated()), id: \.element.contentid) { index, spot in
                     LocalSpotRowItemComponent(spot: spot)
                         .contentShape(Rectangle())
@@ -35,5 +36,42 @@ struct LocalSearchResultsListComponent: View {
         }
         .scrollDismissesKeyboard(.immediately)
         .refreshable { onRefresh() }
+        .onChange(of: results) { newResults in
+            // #region agent log
+            DebugSessionLogger.log(
+                location: "LocalSearchResultsListComponent.swift:body",
+                message: "local results display filter",
+                hypothesisId: "H",
+                data: [
+                    "sourceCount": String(newResults.count),
+                    "displayCount": String(filteredResults.count),
+                    "emptyTypeCodeCount": String(newResults.filter { $0.typeCode.isEmpty }.count),
+                    "contentTypeIds": Array(Set(newResults.map { $0.contenttypeid })).sorted().joined(separator: ",")
+                ]
+            )
+            // #endregion
+        }
+    }
+
+    private func displayTypeCode(for spot: SpotData) -> String {
+        let typeCode = spot.typeCode.uppercased()
+        if !typeCode.isEmpty {
+            return typeCode
+        }
+
+        switch spot.contenttypeid {
+        case "28":
+            return "A03"
+        case "32":
+            return "B02"
+        case "38":
+            return "A04"
+        case "39":
+            return "A05"
+        case "12", "14", "15":
+            return "A02"
+        default:
+            return ""
+        }
     }
 }

@@ -10,6 +10,28 @@ import SwiftUI
 struct LocalSpotRowItemComponent: View {
     let spot: SpotData
 
+    private var displayTypeCode: String {
+        let typeCode = spot.typeCode.uppercased()
+        if !typeCode.isEmpty {
+            return typeCode
+        }
+
+        switch spot.contenttypeid {
+        case "28":
+            return "A03"
+        case "32":
+            return "B02"
+        case "38":
+            return "A04"
+        case "39":
+            return "A05"
+        case "12", "14", "15":
+            return "A02"
+        default:
+            return ""
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 0) {
@@ -17,7 +39,7 @@ struct LocalSpotRowItemComponent: View {
                 VStack(alignment: .leading, spacing: 0) {
 
                     // 카테고리 칩 - typeCode를 사용하여 카테고리 결정
-                    CategoryChip(typeCode: spot.typeCode)
+                    CategoryChip(typeCode: displayTypeCode)
                         .padding(.bottom, 6)
 
                     // 타이틀
