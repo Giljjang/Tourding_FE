@@ -6,7 +6,6 @@
 import Foundation
 
 final class MockRouteRepository: RouteRepositoryProtocol {
-    static let shared = MockRouteRepository()
 
     enum RouteScenario {
         case simple
@@ -16,7 +15,7 @@ final class MockRouteRepository: RouteRepositoryProtocol {
     private(set) var scenario: RouteScenario = .withWaypoints
     var simulatedDelayNanoseconds: UInt64 = 300_000_000
 
-    private init() {}
+    init() {}
 
     func reset(scenario: RouteScenario = .withWaypoints) {
         self.scenario = scenario

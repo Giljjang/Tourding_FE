@@ -6,11 +6,10 @@
 import Foundation
 
 final class MockKakaoRepository: KakaoRepositoryProtocol {
-    static let shared = MockKakaoRepository()
 
     var simulatedDelayNanoseconds: UInt64 = 300_000_000
 
-    private init() {}
+    init() {}
 
     func postRouteToilet(requestBody: ReqFacilityInfoModel) async throws -> [FacilityInfoModel] {
         try await simulateNetworkDelay()

@@ -9,9 +9,7 @@ import Foundation
 
 final class UserRepository: UserRepositoryProtocol {
 
-    static let shared = UserRepository()
-    
-    private init() {}
+    init() {}
     
     // MARK: - Async/Await 버전
     func createUser(_ request: CreateUserRequest) async throws -> CreateUserResponse {

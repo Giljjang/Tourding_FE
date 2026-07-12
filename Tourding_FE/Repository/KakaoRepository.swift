@@ -9,9 +9,7 @@ import Foundation
 
 final class KakaoRepository: KakaoRepositoryProtocol {
     
-    static let shared = KakaoRepository()
-    
-    private init() {}
+    init() {}
     
     func postRouteToilet(requestBody: ReqFacilityInfoModel) async throws -> [FacilityInfoModel]{
         let response: [FacilityInfoModel] = try await NetworkService.request(
