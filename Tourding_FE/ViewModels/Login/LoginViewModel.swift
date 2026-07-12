@@ -20,7 +20,7 @@ class LoginViewModel: NSObject, ObservableObject {
     
     private let userRepository: UserRepositoryProtocol
     
-    init(userRepository: UserRepositoryProtocol = UserRepository.shared) {
+    init(userRepository: UserRepositoryProtocol = UserRepository()) {
         self.userRepository = userRepository
         super.init()
         checkExistingLogin()

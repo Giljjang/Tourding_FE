@@ -9,9 +9,7 @@ import Foundation
 
 class TourRepository: TourRepositoryProtocol {
     
-    static let shared = TourRepository()
-    
-    private init() {}
+    init() {}
     
     func searchLocationSpots(pageNum: Int, mapX: String, mapY: String, radius: String, typeCode: String) async throws -> [SpotData] {
         // #region agent log
