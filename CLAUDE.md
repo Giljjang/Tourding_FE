@@ -72,6 +72,7 @@ private static func makeRouteRepository() -> RouteRepositoryProtocol {
 | 프로퍼티 | 의미 |
 |----------|------|
 | `flag` | `false` 편집 / `true` 라이딩 중 |
+| `routeSource` | `.draft` / `.recentUsed` — `isUsed` 판정의 **단일 소스**. `handleInitialEntry`에서 1회 저장 |
 | `routeLocation`, `pathCoordinates`, `guideList` | 지도·가이드 데이터 |
 | `markerCoordinates`, `markerIcons` | `applyRouteLocationMarkers(from:)`로 갱신 |
 | `reorderPersistTask` | 경유지 DnD 디바운스 POST Task |
@@ -133,6 +134,15 @@ NMapView → MapViewRepresentable → MapViewController
 ```
 
 `MapViewRepresentable.updateUIView`에서 ViewModel에 `pathManager` 포함 전체 매니저 연결.
+
+### 지도 참조 소유권 (중요)
+
+`RidingViewModel`의 지도 관련 프로퍼티는 **전부 `weak`**다.
+소유자는 화면(`MapViewController` / `RidingView`의 `@StateObject`)이고 ViewModel은 앱 수명이므로,
+strong으로 잡으면 화면을 떠난 뒤에도 `MapViewController`와 그 `CLLocationManager`가 살아 GPS가 계속 돈다.
+`MapViewController.ridingViewModel`도 같은 이유로 `weak`.
+
+**새 지도 참조를 추가할 때도 `weak`을 유지할 것.** 회귀 방지 테스트: `MapBindingLifetimeTests`
 
 ### 미해결 이슈
 
@@ -216,6 +226,14 @@ xcodebuild test -scheme Tourding_FE \
 - [x] 경유지 드래그앤드롭 — 지도 마커·경로 동기화 (`+RouteReorder`, `RouteLocationDropDelegate`)
 - [x] 첫 로그인 추천 코스 표시 (`HomeViewModel.getRouteRecommendAPI` uid guard 제거)
 - [x] `RidingViewModel+Lifecycle` — View 오케스트레이션 이전, 위치 콜백 단일화 (`setupRidingLocationCallback`)
+- [x] **P0 7건 수정 (TDD)** — 테스트 24개 통과
+  - DI 그래프 앱 수명 고정 (`AppContainer` — 공유 ViewModel만)
+  - 지도 참조 weak 전환 (순환 참조·GPS 잔존 해소)
+  - 위치 콜백 클로저 `[weak userLocationManager]`
+  - `DebugSessionLogger` 릴리즈 no-op (`#if DEBUG`)
+  - `isLoading` `defer` 통일 (Riding 3곳 + Detail 2곳)
+  - 디바운스 DnD Task self-cancel 해소
+  - `routeSource` 상태 승격 — DnD·삭제·경로선 재조회·포그라운드
 
 ### 다음
 - [ ] `PathSimplifier` + `PathSimplificationMetrics` + perf A/B 로깅

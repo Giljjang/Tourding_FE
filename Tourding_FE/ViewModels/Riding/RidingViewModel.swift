@@ -13,6 +13,10 @@ final class RidingViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var isStartingRiding: Bool = false // 라이딩 시작하기 전용 로딩 상태
     @Published var flag: Bool = false // 라이딩 전 <-> 라이딩 후 화면 변경
+
+    /// 이 화면이 다루는 경로의 출처. 편집 모드 API·재정렬 POST의 `isUsed` 판정 단일 소스.
+    /// `handleInitialEntry`에서 1회 저장한다.
+    @Published var routeSource: RidingRouteSource = .draft
     
     //라이딩 시작 전
     @Published var routeLocation: [LocationNameModel] = []
@@ -30,12 +34,16 @@ final class RidingViewModel: ObservableObject {
     @Published var csList: [FacilityInfoModel] = []
     
     // MARK: - 지도 관련 프로퍼티
-    var locationManager: LocationManager?
-    var userLocationManager: LocationManager?
-    var mapView: NMFMapView?
-    var markerManager: MarkerManager?
-    var pathManager: PathManager?
-    var mapViewController: MapViewController?
+    //
+    // 전부 weak — 소유자는 화면(MapViewController / RidingView의 @StateObject)이고
+    // RidingViewModel은 앱 수명 동안 살아 있다. strong으로 잡으면 화면을 떠난 뒤에도
+    // MapViewController와 그 CLLocationManager가 해제되지 않아 GPS·지도가 계속 살아남는다.
+    weak var locationManager: LocationManager?
+    weak var userLocationManager: LocationManager?
+    weak var mapView: NMFMapView?
+    weak var markerManager: MarkerManager?
+    weak var pathManager: PathManager?
+    weak var mapViewController: MapViewController?
     
     
     // MARK: - 지도 관련 프로퍼티

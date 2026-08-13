@@ -164,15 +164,16 @@ extension RidingViewModel {
             print("❌ userId가 nil입니다")
             return
         }
-        
+
         guard let start = originalData.first,
               let end = originalData.last else {
             print("❌ 경로 데이터가 부족합니다")
             return
         }
-        
+
         isLoading = true
-        
+        defer { isLoading = false }
+
         // wayPoints (0, last 제외 + 선택된 데이터 삭제)
         let middlePoints = originalData.dropFirst().dropLast().filter { $0.sequenceNum != selectedData.sequenceNum }
         let wayPointsArray = middlePoints.map { "\($0.lon),\($0.lat)" }
@@ -207,35 +208,34 @@ extension RidingViewModel {
             typeCode: typeCode,
             contentId: contentids,
             contentTypeId: contentTypeids,
-            isUsed: self.flag
+            isUsed: routeSource.isUsed
         )
         
         print("requestBody.contentId: \(requestBody.contentId)")
         
         do {
-            let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
-            
-            isLoading = false
+            try await routeRepository.postRoutes(requestBody: requestBody)
         } catch {
             print("POST ERROR: /routes \(error)")
         }
     }
-    
+
     @MainActor
     func postRouteDragNDropAPI(locationData: [LocationNameModel]) async {
         guard let userId = userId else {
             print("❌ userId가 nil입니다")
             return
         }
-        
+
         guard let start = locationData.first,
               let end = locationData.last else {
             print("❌ 경로 데이터가 부족합니다")
             return
         }
-        
+
         isLoading = true
-        
+        defer { isLoading = false }
+
         // wayPoints (0, last 제외)
         let middlePoints = locationData.dropFirst().dropLast()
         let wayPointsArray = middlePoints.map { "\($0.lon),\($0.lat)" }
@@ -268,17 +268,17 @@ extension RidingViewModel {
             typeCode: typeCode,
             contentId: contentsIds,
             contentTypeId: contentsTypeIds,
-            isUsed: self.flag
+            // 편집 중인 경로의 출처를 따른다. flag는 라이딩 여부일 뿐이라
+            // 최근 사용 경로(.recentUsed)를 편집할 때 draft를 덮어쓴다.
+            isUsed: routeSource.isUsed
         )
 
         logDragDropPostBody(locationData: locationData, requestBody: requestBody)
 
         do {
-            let _: () = try await routeRepository.postRoutes(requestBody: requestBody)
-            isLoading = false
+            try await routeRepository.postRoutes(requestBody: requestBody)
         } catch {
             print("POST ERROR: /routes \(error)")
-            isLoading = false
         }
     }
 
@@ -301,15 +301,16 @@ extension RidingViewModel {
             print("❌ userId가 nil입니다")
             return
         }
-        
+
         guard let start = locationData.first,
               let end = locationData.last else {
             print("❌ 경로 데이터가 부족합니다")
             return
         }
-        
+
         isLoading = true
-        
+        defer { isLoading = false }
+
         // wayPoints (0, last 제외)
         let middlePoints = locationData.dropFirst().dropLast()
         let wayPointsArray = middlePoints.map { "\($0.lon),\($0.lat)" }
@@ -348,9 +349,7 @@ extension RidingViewModel {
         print("requestBody.contentId: \(requestBody.contentId)")
         
         do {
-            let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
-            
-            isLoading = false
+            try await routeRepository.postRoutes(requestBody: requestBody)
         } catch {
             print("로그 확인: \(requestBody)")
             print("POST ERROR: /routes \(error)")
