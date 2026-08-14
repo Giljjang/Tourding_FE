@@ -37,4 +37,17 @@ final class AppContainer: ObservableObject {
         filterBarViewModel = DependencyProvider.makeFilterBarViewModel()
         recentSearchViewModel = DependencyProvider.makeRecentSearchViewModel()
     }
+
+    /// 로그아웃·회원탈퇴 시 이전 사용자의 화면 상태를 비운다.
+    /// View의 로그아웃 처리에 ViewModel마다 줄을 추가하는 방식은 하나만 빠뜨려도 데이터가 남는다.
+    ///
+    /// 새로 사용자 종속 상태를 갖는 ViewModel을 추가하면 여기 목록에도 넣을 것.
+    func clearSessionState() {
+        let sessionScoped: [SessionScopedState] = [
+            tabViewModels.homeViewModel,
+            tabViewModels.recentSearchViewModel,
+            recentSearchViewModel   // DestinationSearchView용 별도 인스턴스
+        ]
+        sessionScoped.forEach { $0.clearSessionState() }
+    }
 }

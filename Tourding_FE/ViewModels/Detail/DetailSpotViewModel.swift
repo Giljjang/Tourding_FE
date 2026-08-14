@@ -18,12 +18,15 @@ final class DetailSpotViewModel: ObservableObject {
     
     private let tourRepository: TourRepositoryProtocol
     private let routeRepository: RouteRepositoryProtocol
-    
+    private let userSession: UserSessionProviding
+
     init(
         tourRepository: TourRepositoryProtocol,
-        routeRepository: RouteRepositoryProtocol) {
+        routeRepository: RouteRepositoryProtocol,
+        userSession: UserSessionProviding) {
             self.tourRepository = tourRepository
             self.routeRepository = routeRepository
+            self.userSession = userSession
     }
     
     //MARK: - Utils
@@ -126,7 +129,7 @@ final class DetailSpotViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        guard let userId = KeychainHelper.loadUid()  else {
+        guard let userId = userSession.userId else {
             print("⏭️ postRouteAPI skipped: userId is nil")
             return
         }
@@ -148,7 +151,7 @@ final class DetailSpotViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        guard let userId = KeychainHelper.loadUid()  else {
+        guard let userId = userSession.userId else {
             print("⏭️ postRouteAPI skipped: userId is nil")
             return
         }
@@ -176,14 +179,14 @@ final class DetailSpotViewModel: ObservableObject {
         }
         let locateName = locateNames.joined(separator: ",")
 
-        // typeCode (0번, 마지막 제외 + updatedData.typeCode를 마지막 앞에 삽입)
-        var typeCodes = originalData.dropFirst().dropLast().map { $0.typeCode }
-        if typeCodes.count >= 1 {
-            typeCodes.insert(updatedData.typeCode, at: typeCodes.count - 1)
-        } else {
-            typeCodes.append(updatedData.typeCode)
-        }
-        let typeCode = typeCodes.joined(separator: ",")
+        // typeCode (0, last 제외 + updatedData 마지막에 추가)
+        //
+        // wayPoints·contentId와 같은 "끝에 붙이기" 규칙이어야 한다.
+        // locateName은 도착지가 배열에 남아 있어 count-1이 "도착지 앞"이지만,
+        // 여기는 dropLast()로 도착지를 이미 뺐으므로 count-1이 "마지막 경유지 앞"이 되어
+        // 새 스팟과 마지막 경유지의 카테고리가 서로 뒤바뀐다.
+        let typeCodes = originalData.dropFirst().dropLast().map { $0.typeCode }
+        let typeCode = (typeCodes + [updatedData.typeCode]).joined(separator: ",")
         
         // contentId (0, last 제외 + updatedData 마지막에 추가)
         let contentIds = originalData.dropFirst().dropLast()
@@ -194,11 +197,12 @@ final class DetailSpotViewModel: ObservableObject {
         let contents = (contentIdList + [updatedContentId]).joined(separator: ",")
         
         // contentTypeId (0, last 제외 + updatedData 마지막에 추가)
-        let contentTypeId = originalData.dropFirst().dropLast()
-        let contentTypeIdList = contentTypeId.map {
-            "\($0.contentId)"
+        // 관광타입(12/14/32/39…)이 들어가는 자리다. contentId를 넣으면 안 된다.
+        let contentTypeIds = originalData.dropFirst().dropLast()
+        let contentTypeIdList = contentTypeIds.map {
+            "\($0.contentTypeId)"
         }
-        let updatedContentTypeId = "\(updatedData.contentid)"
+        let updatedContentTypeId = "\(updatedData.contenttypeid)"
         let contentTypes = (contentTypeIdList + [updatedContentTypeId]).joined(separator: ",")
 
         let requestBody = RequestRouteModel(

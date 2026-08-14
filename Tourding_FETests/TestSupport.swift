@@ -51,18 +51,29 @@ final class FakeRouteRepository: RouteRepositoryProtocol {
         return paths
     }
 
-    func getRoutesLocationName(userId: Int, isUsed: Bool) async throws -> [LocationNameModel] { locationNames }
+    /// 재조회가 어느 경로(draft / 사용 완료)를 읽었는지 검증용
+    private(set) var capturedLocationNameRequests: [(userId: Int, isUsed: Bool)] = []
+    private(set) var capturedRoutesRequests: [(userId: Int, isUsed: Bool)] = []
+
+    func getRoutesLocationName(userId: Int, isUsed: Bool) async throws -> [LocationNameModel] {
+        capturedLocationNameRequests.append((userId: userId, isUsed: isUsed))
+        return locationNames
+    }
 
     func getRoutesGuide(userId: Int, isUsed: Bool) async throws -> [GuideModel] { guides }
 
     func getRoutes(userId: Int, isUsed: Bool) async throws -> RoutesModel {
+        capturedRoutesRequests.append((userId: userId, isUsed: isUsed))
         guard let routes else { throw FakeError.notConfigured }
         return routes
     }
 
     func getRoutesRidingRecommend(pageNum: Int) async throws -> [RouteRidingRecommendModel] { [] }
 
+    private(set) var capturedByNameRequests: [ReqRoutesByNameModel] = []
+
     func postRoutesByName(requestBody: ReqRoutesByNameModel) async throws -> RoutesModel {
+        capturedByNameRequests.append(requestBody)
         guard let routes else { throw FakeError.notConfigured }
         return routes
     }
@@ -94,6 +105,12 @@ final class FakeKakaoRepository: KakaoRepositoryProtocol {
     func postRouteToilet(requestBody: ReqFacilityInfoModel) async throws -> [FacilityInfoModel] { toilets }
 
     func postRouteConvenienceStore(requestBody: ReqFacilityInfoModel) async throws -> [FacilityInfoModel] { stores }
+}
+
+// MARK: - Fake Session
+
+struct FakeUserSession: UserSessionProviding {
+    let userId: Int?
 }
 
 // MARK: - Fixture Builders
@@ -185,10 +202,8 @@ func makeTestRidingViewModel(
 ) -> RidingViewModel {
     let viewModel = RidingViewModel(
         routeRepository: repository,
-        kakaoRepository: kakaoRepository
+        kakaoRepository: kakaoRepository,
+        userSession: FakeUserSession(userId: userId)
     )
-    // init이 KeychainHelper.loadUid()를 직접 호출하므로 테스트에서 덮어쓴다.
-    // 이건 우회지 이음새가 아니다 — 선행 리팩토링(UserSessionProviding) 대상.
-    viewModel.userId = userId
     return viewModel
 }

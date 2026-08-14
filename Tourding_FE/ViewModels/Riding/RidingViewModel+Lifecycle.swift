@@ -72,6 +72,17 @@ extension RidingViewModel {
         print("📍 onAppear - 콜백 설정은 startRidingAPIProcess에서 처리됨")
     }
 
+    // MARK: - 경유지 삭제
+
+    /// 삭제 POST와 이어지는 재조회가 **같은 경로**를 가리키도록 한 곳에서 오케스트레이션한다.
+    @MainActor
+    func deleteWaypointAndRefresh(_ item: LocationNameModel) async {
+        let source = isUsedRoute
+        await postRouteDeleteAPI(originalData: routeLocation, selectedData: item)
+        await getRouteLocationAPI(isUsedOverride: source)
+        await getRoutePathAPI(isUsed: source)
+    }
+
     // MARK: - Edit mode route load (P1)
 
     func loadEditModeRouteData(
@@ -243,6 +254,10 @@ extension RidingViewModel {
 
     @MainActor
     func endRiding(isStart: Bool, locationManager: LocationManager) async {
+        // 진행 중인 편의시설 요청을 먼저 끊는다.
+        // 아래 API들을 await하는 동안 뒤늦게 끝나면 지운 마커가 되살아난다.
+        cancelFacilityMarkerTasks()
+
         locationManager.stopLocationUpdates()
         locationManager.stopNavigationMode()
         locationManager.cancelAutoTrackingTimer()

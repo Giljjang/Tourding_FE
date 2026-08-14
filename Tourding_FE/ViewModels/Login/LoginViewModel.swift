@@ -310,14 +310,9 @@ class LoginViewModel: NSObject, ObservableObject {
                     print("✅ 카카오 로그아웃 성공")
                 }
             }
-            clearKakaoTokens()
         } else if loginProvider == "apple" {
             print("🍎 애플 로그아웃 시작")
-            // 애플 로그아웃 (이름과 이메일은 보존, 서버 관련 정보만 삭제)
-            KeychainHelper.delete(key: "appleUserId")
-            KeychainHelper.delete(key: "appleAuthorizationCode")
-            // loginProvider도 삭제하여 로그인 상태 해제
-            KeychainHelper.delete(key: "loginProvider")
+            // 애플은 별도 SDK 로그아웃이 없다. 세션 정리는 아래 clearSession()이 담당한다.
         } else {
             print("❌ 알 수 없는 provider: '\(loginProvider)'")
             // provider가 설정되지 않은 경우 키체인에서 다시 확인
@@ -333,18 +328,15 @@ class LoginViewModel: NSObject, ObservableObject {
                             print("✅ 카카오 로그아웃 성공")
                         }
                     }
-                    clearKakaoTokens()
                 } else if savedProvider == "apple" {
                     print("🍎 애플 로그아웃 시작 (재설정)")
-                    KeychainHelper.delete(key: "appleUserId")
-                    KeychainHelper.delete(key: "appleAuthorizationCode")
-                    KeychainHelper.delete(key: "loginProvider")
                 }
             }
         }
-        
-        // 공통 로그아웃 처리
-        KeychainHelper.deleteUid()
+
+        // 공통 로그아웃 처리 — 세션 흔적을 한 번에 지운다.
+        // 개별 삭제로 흩어져 있으면 provider 분기 하나가 빠질 때 자동 재로그인이 살아난다.
+        KeychainHelper.clearSession()
         isLoggedIn = false
         userNickname = "홍길동"
         userEmail = "Tourding@example.com"
@@ -402,9 +394,8 @@ class LoginViewModel: NSObject, ObservableObject {
                 }
                 
                 // 3. 로컬 데이터 정리
-                clearKakaoTokens()
-                KeychainHelper.deleteUid()
-                
+                KeychainHelper.clearSession()
+
                 await MainActor.run {
                     isLoggedIn = false
                     userNickname = "홍길동"
@@ -437,12 +428,8 @@ class LoginViewModel: NSObject, ObservableObject {
                 
                 // 2. 로컬 데이터 정리 (이름과 이메일은 보존)
                 // 애플 로그인 특성상 기기에서 계속 기억하므로, 이름과 이메일은 유지
-                KeychainHelper.delete(key: "appleUserId")
-                KeychainHelper.delete(key: "appleAuthorizationCode")
-                KeychainHelper.deleteUid()
-                // loginProvider도 삭제하여 로그인 상태 해제
-                KeychainHelper.delete(key: "loginProvider")
-                
+                KeychainHelper.clearSession()
+
                 await MainActor.run {
                     isLoggedIn = false
                     userNickname = "홍길동"

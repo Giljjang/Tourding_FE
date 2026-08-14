@@ -38,7 +38,8 @@ struct DependencyProvider {
         let routeRepository = makeRouteRepository()
         let tourRepository = TourRepository()
 
-        let homeViewModel = HomeViewModel(routeRepository: routeRepository)
+        let homeViewModel = HomeViewModel(routeRepository: routeRepository,
+                                          userSession: makeUserSession())
         let myPageViewModel = MyPageViewModel()
         let spotSearchViewModel = SpotSearchViewModel(tourRepository: tourRepository)
         let dsViewModel = DestinationSearchViewModel()
@@ -53,10 +54,15 @@ struct DependencyProvider {
         )
     }
 
+    private static func makeUserSession() -> UserSessionProviding {
+        return KeychainUserSession()
+    }
+
     @MainActor static func makeRidingViewModel() -> RidingViewModel {
         let ridingViewModel = RidingViewModel(
             routeRepository: makeRouteRepository(),
-            kakaoRepository: makeKakaoRepository()
+            kakaoRepository: makeKakaoRepository(),
+            userSession: makeUserSession()
         )
         return ridingViewModel
     }
@@ -71,7 +77,8 @@ struct DependencyProvider {
 
         let spotAddViewModel = SpotAddViewModel(
             tourRepository: tourRepository,
-            routeRepository: routeRepository)
+            routeRepository: routeRepository,
+            userSession: makeUserSession())
         return spotAddViewModel
     }
 
@@ -91,7 +98,8 @@ struct DependencyProvider {
 
         return DetailSpotViewModel(
             tourRepository: tourRepository,
-            routeRepository: routeRepository)
+            routeRepository: routeRepository,
+            userSession: makeUserSession())
     }
 
     static func makeRecommendViewModel() -> RecommendRouteViewModel {

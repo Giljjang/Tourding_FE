@@ -268,12 +268,7 @@ struct SheetContentView: View {
                     onActive: {
                         print("삭제됨")
                         Task{
-                            await ridingViewModel.postRouteDeleteAPI(
-                                originalData: ridingViewModel.routeLocation,
-                                selectedData: item
-                            )
-                            await ridingViewModel.getRouteLocationAPI()
-                            await ridingViewModel.getRoutePathAPI()
+                            await ridingViewModel.deleteWaypointAndRefresh(item)
                         }
                     }
                 )

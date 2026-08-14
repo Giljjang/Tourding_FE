@@ -111,18 +111,20 @@ AI 기능은 순수 로직(빌더·파서) 비중이 커서 이 비용이 가장
 
 이건 큰 변경이니 **사람에게 물어보고** 진행한다. 하지 않기로 했다면 위 명령의 사이클 비용을 받아들이되, 그것이 테스트를 몰아 쓰는 근거가 되지는 않는다.
 
-## AI 기능 전 선행 리팩토링 (필수)
+## AI 기능 전 선행 리팩토링 — 완료됨
 
-"언젠가 할 일"이 아니라 **첫 AI 테스트를 쓰기 전에 끝내야 하는 것**이다. 1번 없이는 ViewModel 테스트가
-전부 guard에 막혀 의미 있는 어서션을 쓸 수 없다.
+세 가지 모두 처리됐다. AI 코드는 아래 이음새를 **그대로 따라 쓴다**.
 
-1. `RidingViewModel.init`의 `KeychainHelper.loadUid()` 직접 호출 → 주입 가능하게 (`UserSessionProviding`)
-2. `Task { }` 내부 생성 → `Task` 프로퍼티 보관 (완료 await 가능하게)
-3. 마커 번호 계산을 `NMFOverlayImage`가 아닌 순수 값(`enum RouteMarkerKind` / `[Int]`) 반환으로 분리
+1. **`UserSessionProviding`** — `userId`는 주입받는다. `KeychainHelper`를 ViewModel에서 직접 호출하지 마라.
+   테스트는 `FakeUserSession(userId:)`로 "uid 있음/없음"을 모두 고정할 수 있다.
+2. **Task 프로퍼티 노출** — 비동기 갱신은 `Task`를 프로퍼티에 보관하고, 새 요청 시 이전 것을 `cancel()`한다.
+   `reorderPersistTask`, `toiletMarkerTask`, `convenienceStoreMarkerTask`가 선례다.
+   화면 종료 경로(`endRiding`)에서 반드시 취소한다. AI 요약/추천 Task도 같은 규약을 따를 것.
+3. **`markerKinds(for:) -> [RouteMarkerKind]`** — 지도 SDK 타입이 아닌 순수 값으로 계산하고,
+   `NMFOverlayImage` 변환은 마지막 단계에서만 한다.
 
-**이 리팩토링 자체의 순서**: 동작을 바꾸지 않는 구조 변경이므로, 기존 동작을 고정하는 특성화 테스트를 먼저 쓰고
-(그것이 RED가 아니라 처음부터 GREEN이어도 된다 — 이건 안전망이지 새 기능이 아니다) 그 다음 구조를 바꾼다.
-바꾸는 도중 그 테스트가 빨개지면 리팩토링이 아니라 동작 변경이다.
+**상태 갱신은 `apply*()` 동기 메서드로 분리한다** (`applyToiletMarkers` 참고).
+await 없이 직접 테스트할 수 있고, 좌표·아이콘처럼 짝을 이루는 배열의 길이가 구조적으로 어긋나지 않는다.
 
 ## 두 가지 사소한 규정
 

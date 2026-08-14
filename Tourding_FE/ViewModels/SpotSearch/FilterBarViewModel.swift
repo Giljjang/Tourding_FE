@@ -165,16 +165,11 @@ class FilterBarViewModel: NSObject, ObservableObject {
         
         // MARK: - Private Conversion Methods
         
-        private func convertRegionToAreaCode(_ region: String?) -> Int? {
-            guard let region = region else { return nil }
-            
-            let regionMap: [String: Int] = [
-                "서울": 1, "인천": 2, "경기": 31, "대전": 3, "세종": 8,
-                "충청": 33, "대구": 4, "경상": 35, "울산": 7, "부산": 6,
-                "광주": 5, "전라": 37, "강원": 32, "제주": 39
-            ]
-            
-            return regionMap[region]
+        /// 칩 라벨 → TourAPI areaCode. 매핑의 단일 소스는 `SearchRegion`이다.
+        /// (테스트에서 직접 검증하기 위해 internal — 로직은 SearchRegion에 있다)
+        func convertRegionToAreaCode(_ region: String?) -> Int? {
+            guard let region else { return nil }
+            return SearchRegion(rawValue: region)?.areaCode
         }
         
         private func convertThemeToTypeCode(_ theme: String?) -> String? {
