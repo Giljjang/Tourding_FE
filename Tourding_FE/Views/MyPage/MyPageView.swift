@@ -53,18 +53,11 @@ struct MyPageView: View {
                             print("취소됨")
                         },
                         onActive: {
-                            if let provider = KeychainHelper.load(key: "loginProvider") {
-                                
-                                if provider == "kakao" {
-                                    myPageViewModel.logout(globalLoginViewModel: loginViewModel)
-                                } else {
-                                    
-                                    myPageViewModel.AppleLogout(globalLoginViewModel: loginViewModel)
-                                }
-                                navigationManager.currentTab = .HomeView
-                                routeSharedManager.clearRoute()
-                                print("로그아웃됨")
-                            }
+                            // 세션 정리는 LoginViewModel 한 곳에서만 한다 (provider 분기 포함)
+                            loginViewModel.logout()
+                            navigationManager.currentTab = .HomeView
+                            routeSharedManager.clearRoute()
+                            print("로그아웃됨")
                         }
                     )
                 }
@@ -89,7 +82,6 @@ struct MyPageView: View {
                             print("취소됨")
                         },
                         onActive: {
-//                            myPageViewModel.withdraw(globalLoginViewModel: loginViewModel)
                             recentSearchViewModel.clear()
                             navigationManager.currentTab = .HomeView
                             routeSharedManager.clearRoute()

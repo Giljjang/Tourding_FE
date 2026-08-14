@@ -6,46 +6,13 @@
 //
 
 import Foundation
-import KakaoSDKUser
 import SwiftUI
 
+/// 세션 관련 동작(로그아웃·회원탈퇴)은 `LoginViewModel`이 전담한다.
+///
+/// 이전에는 여기에 두 번째 구현(`logout` / `AppleLogout` / `withdraw`)이 있었고,
+/// `AppleLogout`이 플래그만 내리고 Keychain을 남겨 앱 재실행 시 자동 재로그인이 됐다.
+/// 세션 정리 지점이 둘로 갈리면 한쪽이 빠져도 드러나지 않으므로 다시 추가하지 말 것.
 final class MyPageViewModel: ObservableObject {
     @Published var logoutCompleted: Bool = false  // 로그아웃 완료 상태
-    
-    func logout(globalLoginViewModel: LoginViewModel) {
-        UserApi.shared.logout { error in
-            if let error = error {
-                print("❌ 로그아웃 실패: \(error)")
-            } else {
-                print("✅ 로그아웃 성공")
-                clearKakaoTokens()
-                DispatchQueue.main.async {
-                    globalLoginViewModel.isLoggedIn = false  // 로그인 상태 초기화 (로그아웃)
-                    self.logoutCompleted = true
-                }
-            }
-        }
-    }
-    
-    func AppleLogout(globalLoginViewModel: LoginViewModel) {
-        DispatchQueue.main.async {
-            globalLoginViewModel.isLoggedIn = false  // 로그인 상태 초기화 (로그아웃)
-            self.logoutCompleted = true
-        }
-    }
-
-    func withdraw(globalLoginViewModel: LoginViewModel) {
-        UserApi.shared.unlink { error in
-            if let error = error {
-                print("❌ 회원탈퇴 실패: \(error)")
-            } else {
-                print("✅ 회원탈퇴 성공")
-                clearKakaoTokens()
-                DispatchQueue.main.async {
-                    globalLoginViewModel.isLoggedIn = false  // 로그인 상태 초기화 (탈퇴)
-                    self.logoutCompleted = true
-                }
-            }
-        }
-    }
 }
