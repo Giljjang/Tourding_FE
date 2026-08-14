@@ -53,10 +53,15 @@ struct DependencyProvider {
         )
     }
 
+    private static func makeUserSession() -> UserSessionProviding {
+        return KeychainUserSession()
+    }
+
     @MainActor static func makeRidingViewModel() -> RidingViewModel {
         let ridingViewModel = RidingViewModel(
             routeRepository: makeRouteRepository(),
-            kakaoRepository: makeKakaoRepository()
+            kakaoRepository: makeKakaoRepository(),
+            userSession: makeUserSession()
         )
         return ridingViewModel
     }
@@ -71,7 +76,8 @@ struct DependencyProvider {
 
         let spotAddViewModel = SpotAddViewModel(
             tourRepository: tourRepository,
-            routeRepository: routeRepository)
+            routeRepository: routeRepository,
+            userSession: makeUserSession())
         return spotAddViewModel
     }
 

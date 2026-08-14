@@ -35,15 +35,19 @@ final class SpotAddViewModel: ObservableObject {
     private var nearbySearchSerialTask: Task<Void, Never>?
     private var nearbySearchGeneration = 0
     
+    private let userSession: UserSessionProviding
+
     init(
         tourRepository: TourRepositoryProtocol,
-        routeRepository: RouteRepositoryProtocol) {
+        routeRepository: RouteRepositoryProtocol,
+        userSession: UserSessionProviding) {
             self.tourRepository = tourRepository
             self.routeRepository = routeRepository
-            
+            self.userSession = userSession
+
             // UserDefaults에서 저장된 필터 상태 복원
             self.clickFliter = UserDefaults.standard.string(forKey: "SpotAddClickFilter") ?? "전체"
-            self.userId = KeychainHelper.loadUid()
+            self.userId = userSession.userId
     }
     
     

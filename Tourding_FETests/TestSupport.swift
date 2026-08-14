@@ -96,6 +96,12 @@ final class FakeKakaoRepository: KakaoRepositoryProtocol {
     func postRouteConvenienceStore(requestBody: ReqFacilityInfoModel) async throws -> [FacilityInfoModel] { stores }
 }
 
+// MARK: - Fake Session
+
+struct FakeUserSession: UserSessionProviding {
+    let userId: Int?
+}
+
 // MARK: - Fixture Builders
 
 enum TestRoute {
@@ -185,10 +191,8 @@ func makeTestRidingViewModel(
 ) -> RidingViewModel {
     let viewModel = RidingViewModel(
         routeRepository: repository,
-        kakaoRepository: kakaoRepository
+        kakaoRepository: kakaoRepository,
+        userSession: FakeUserSession(userId: userId)
     )
-    // init이 KeychainHelper.loadUid()를 직접 호출하므로 테스트에서 덮어쓴다.
-    // 이건 우회지 이음새가 아니다 — 선행 리팩토링(UserSessionProviding) 대상.
-    viewModel.userId = userId
     return viewModel
 }

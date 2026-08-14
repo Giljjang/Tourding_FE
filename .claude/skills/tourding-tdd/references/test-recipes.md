@@ -120,8 +120,8 @@ struct RidingViewModelLoadTests {
                               contentId: "1", contentTypeId: "12", lon: "127.0", lat: "37.0")
         ]
         let viewModel = RidingViewModel(routeRepository: repository,
-                                        kakaoRepository: FakeKakaoRepository())
-        viewModel.userId = 3   // init에서 Keychain을 직접 읽으므로 테스트에서 덮어쓴다
+                                        kakaoRepository: FakeKakaoRepository(),
+                                        userSession: FakeUserSession(userId: 3))
 
         await viewModel.getRouteLocationAPI()
 
@@ -131,7 +131,9 @@ struct RidingViewModelLoadTests {
 }
 ```
 
-`userId` 대입은 **우회지 이음새가 아니다**. 새 코드에는 주입 가능한 형태를 쓰고, 기존 코드는 리팩토링 대상으로 남긴다.
+`userId`는 `UserSessionProviding`으로 주입한다. **`viewModel.userId = 3`으로 덮어쓰지 마라** —
+그건 우회지 이음새가 아니고, "uid 미확정" 시나리오를 재현할 수 없다.
+`makeTestRidingViewModel(userId:)` 헬퍼가 세션을 대신 주입한다.
 
 ## 6. 시간에 의존하지 않기
 
@@ -188,7 +190,7 @@ let guides: [GuideModel] = try FixtureLoader.load("routes_guide_with_waypoints.j
 | `LocationManager` | `init()`이 `requestWhenInUseAuthorization()`을 호출한다. 인스턴스 생성만으로 권한 프롬프트가 뜨고, 위치 이벤트 주입 지점이 없다 |
 | `RidingViewModel+Lifecycle` 전반 | 구상 타입 `LocationManager`를 파라미터로 받는다. 프로토콜이 아니라 fake 주입 불가 |
 | `PathManager` | `init(mapView: NMFMapView)` — 살아있는 지도 없이 인스턴스화 불가. Douglas-Peucker 로직이 여기 묶여 있다 |
-| `makeMarkerIcons(for:)` | `NMFOverlayImage`를 반환해 `numberMarker(1)`과 `numberMarker(2)`를 값으로 구분할 수 없다. **경유지 번호 계산은 `[Int]`/enum을 반환하는 순수 함수로 분리해야 검증 가능** |
+| ~~`makeMarkerIcons(for:)`~~ | **해결됨** — 순번 계산이 `markerKinds(for:) -> [RouteMarkerKind]`로 분리됐다. 마커 번호 규칙은 이 순수 함수로 검증한다 (`RouteMarkerKindTests`) |
 | `NetworkService` | `URLSession.shared` 하드코딩. 실제 Repository의 엔드포인트/파라미터 조립은 검증 불가. 테스트 경계는 Repository 프로토콜이다 |
 ## `private` 멤버는 대부분 장벽이 아니다
 

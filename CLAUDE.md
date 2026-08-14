@@ -75,7 +75,9 @@ private static func makeRouteRepository() -> RouteRepositoryProtocol {
 | `routeSource` | `.draft` / `.recentUsed` — `isUsed` 판정의 **단일 소스**. `handleInitialEntry`에서 1회 저장 |
 | `routeLocation`, `pathCoordinates`, `guideList` | 지도·가이드 데이터 |
 | `markerCoordinates`, `markerIcons` | `applyRouteLocationMarkers(from:)`로 갱신 |
+| `userSession` | `UserSessionProviding` — `userId` 공급자. ViewModel에서 `KeychainHelper` 직접 호출 금지 |
 | `reorderPersistTask` | 경유지 DnD 디바운스 POST Task |
+| `toiletMarkerTask` / `convenienceStoreMarkerTask` | 편의시설 마커 갱신 Task. 새 요청·토글 OFF·`endRiding`에서 취소 |
 | `isUsed` (API) | 서버 경로 사용 여부 |
 
 ### ViewModel extensions
@@ -234,6 +236,11 @@ xcodebuild test -scheme Tourding_FE \
   - `isLoading` `defer` 통일 (Riding 3곳 + Detail 2곳)
   - 디바운스 DnD Task self-cancel 해소
   - `routeSource` 상태 승격 — DnD·삭제·경로선 재조회·포그라운드
+
+- [x] **AI 선행 리팩토링 3건 (TDD)** — 테스트 45개 통과
+  - `UserSessionProviding` 주입 (`RidingViewModel`, `SpotAddViewModel`)
+  - 편의시설 마커 `Task` 프로퍼티 노출 + `apply*()` 분리 + 취소 배선
+  - `markerKinds(for:) -> [RouteMarkerKind]` 순수 함수 분리
 
 ### 다음
 - [ ] `PathSimplifier` + `PathSimplificationMetrics` + perf A/B 로깅

@@ -243,6 +243,10 @@ extension RidingViewModel {
 
     @MainActor
     func endRiding(isStart: Bool, locationManager: LocationManager) async {
+        // 진행 중인 편의시설 요청을 먼저 끊는다.
+        // 아래 API들을 await하는 동안 뒤늦게 끝나면 지운 마커가 되살아난다.
+        cancelFacilityMarkerTasks()
+
         locationManager.stopLocationUpdates()
         locationManager.stopNavigationMode()
         locationManager.cancelAutoTrackingTimer()
