@@ -12,7 +12,7 @@ SwiftUI + NMapsMap 자전거 라이딩/관광 iOS 앱.
 | 지도 | NMapsMap |
 | DI | `DependencyProvider` |
 | 네비게이션 | `NavigationManager` + `ViewType` stack |
-| 인증 | Kakao SDK + Keychain (`KeychainHelper.loadUid()`) |
+| 인증 | Kakao SDK + Keychain. `userId`는 `UserSessionProviding` 주입, 세션 정리는 `KeychainHelper.clearSession()` 한 곳 |
 | 개발 방식 | **TDD 필수** — `.claude/skills/tourding-tdd/` |
 | 테스트 | Swift Testing — `Tourding_FETests` (호스팅 유닛테스트) |
 | Mock | `MockRouteRepository`, `MockKakaoRepository` + `Resources/Fixtures/` |
@@ -238,6 +238,11 @@ xcodebuild test -scheme Tourding_FE \
   - 디바운스 DnD Task self-cancel 해소
   - `routeSource` 상태 승격 — DnD·삭제·경로선 재조회·포그라운드
 
+- [x] **보안 3건 (TDD)** — 테스트 74개 통과
+  - 로그아웃이 Keychain 세션을 남겨 자동 재로그인되던 문제 → `KeychainHelper.clearSession()` 단일 진입점
+  - Keychain 저장에 `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` 적용 (백업으로 타 기기 복원 차단)
+  - `accessToken` 전문 콘솔 출력 제거
+- [x] **지역 필터에서 충남·경남·전남이 검색되지 않던 문제 (TDD)** — `SearchRegion` 단일 소스
 - [x] **최근 경로에서 경유지 삭제가 반영되지 않던 문제 (TDD)** — 테스트 62개 통과
   - 삭제 POST는 사용 완료 경로에, 직후 재조회는 draft를 읽어 목록이 원상복구되던 문제
   - `isUsedRoute = flag || routeSource.isUsed`로 판정 통일, 모든 `get*API` 기본값에 적용
