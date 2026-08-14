@@ -18,7 +18,9 @@ final class MapViewController: UIViewController {
     private var mapView: NMFNaverMapView?
     let locationManager = LocationManager()
     private let locationButton = UIButton(type: .custom)
-    var ridingViewModel: RidingViewModel?
+    // ViewModel은 앱 수명, 이 컨트롤러는 화면 수명이다. strong으로 잡으면 순환이 생겨
+    // deinit이 실행되지 않고 CLLocationManager가 화면을 떠난 뒤에도 계속 돈다.
+    weak var ridingViewModel: RidingViewModel?
     var userLocationManager: LocationManager?
     
     // MARK: - Data Properties
@@ -123,12 +125,14 @@ final class MapViewController: UIViewController {
         self.userLocationManager = userLocationManager
         
         // 헤딩 업데이트 콜백 설정 (네비게이션 모드용)
-        userLocationManager.onHeadingUpdate = { [weak self] heading in
+        // userLocationManager를 강하게 캡처하면 자기 콜백이 자기 자신을 붙잡아 절대 해제되지 않는다
+        userLocationManager.onHeadingUpdate = { [weak self, weak userLocationManager] heading in
             guard let self = self,
+                  let userLocationManager,
                   let mapView = self.mapView?.mapView,
-                  userLocationManager.isNavigationMode else { 
+                  userLocationManager.isNavigationMode else {
 //                print("❌ MapViewController: 헤딩 콜백 조건 불만족")
-                return 
+                return
             }
             
 //            print("🗺️ MapViewController: 헤딩 콜백 호출됨 - \(heading.magneticHeading)도")
@@ -143,11 +147,12 @@ final class MapViewController: UIViewController {
         }
         
         // 위치 업데이트 콜백 설정 (네비게이션 모드용)
-        userLocationManager.onLocationUpdate = { [weak self] location in
+        userLocationManager.onLocationUpdate = { [weak self, weak userLocationManager] location in
             guard let self = self,
+                  let userLocationManager,
                   let mapView = self.mapView?.mapView,
-                  userLocationManager.isNavigationMode else { 
-                return 
+                  userLocationManager.isNavigationMode else {
+                return
             }
             
 //            print("🗺️ MapViewController: 위치 업데이트 콜백 호출됨 - 네비게이션 모드")

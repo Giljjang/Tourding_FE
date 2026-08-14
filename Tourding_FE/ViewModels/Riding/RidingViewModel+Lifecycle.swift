@@ -29,6 +29,9 @@ extension RidingViewModel {
         routeSource: RidingRouteSource,
         onStartRiding: @escaping () -> Void
     ) {
+        // 이후 재정렬 POST·경로선 재조회·포그라운드 새로고침이 모두 이 값을 참조한다
+        self.routeSource = routeSource
+
         if let isNotNormal {
             flag = isNotNormal
             print("🔄 비정상 종료 감지 - 라이딩 모드로 복구")
@@ -53,6 +56,7 @@ extension RidingViewModel {
 
         print("🔄 자식 화면에서 복귀 - 편집 모드 유지")
         flag = false
+        self.routeSource = routeSource
 
         Task { [weak self] in
             await self?.refreshEditModeRouteData(routeSource: routeSource)
@@ -168,7 +172,8 @@ extension RidingViewModel {
         if routeLocation.isEmpty || pathCoordinates.isEmpty {
             print("🔄 경로 데이터가 비어있음 - API 재호출 시작")
             Task { [weak self] in
-                await self?.refreshEditModeRouteData()
+                guard let self else { return }
+                await self.refreshEditModeRouteData(routeSource: self.routeSource)
             }
         } else {
             refreshMapDisplay()

@@ -122,14 +122,15 @@ final class DetailSpotViewModel: ObservableObject {
     
     @MainActor
     func getRouteLocationAPI() async {
-        
+
         isLoading = true
-        
+        defer { isLoading = false }
+
         guard let userId = KeychainHelper.loadUid()  else {
             print("⏭️ postRouteAPI skipped: userId is nil")
             return
         }
-        
+
         do {
             let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: false)
             routeLocation = response
@@ -139,26 +140,25 @@ final class DetailSpotViewModel: ObservableObject {
         } catch {
             print("GET ERROR: /routes/location-name \(error)")
         }
-        isLoading = false
     }
     
     @MainActor
     func postRouteAPI(originalData: [LocationNameModel], updatedData: SpotData) async {
-        
+
         isLoading = true
-        
+        defer { isLoading = false }
+
         guard let userId = KeychainHelper.loadUid()  else {
             print("⏭️ postRouteAPI skipped: userId is nil")
             return
         }
-        
+
         guard let start = originalData.first,
               let end = originalData.last else {
             print("❌ originalData가 비어있거나 start/end가 없음")
-            isLoading = false
             return
         }
-        
+
         print("🔵 start: \(start), end: \(end)")
 
         // wayPoints (0, last 제외 + updatedData 마지막에 추가)
@@ -215,13 +215,10 @@ final class DetailSpotViewModel: ObservableObject {
         
         do {
             print("🔵 API 호출 시작")
-            let _: () = try await routeRepository.postRoutes(requestBody: requestBody)
+            try await routeRepository.postRoutes(requestBody: requestBody)
             print("🔵 API 호출 성공")
-
-            isLoading = false
         } catch {
             print("❌ POST ERROR: /routes \(error)")
-            isLoading = false
         }
     }
 }

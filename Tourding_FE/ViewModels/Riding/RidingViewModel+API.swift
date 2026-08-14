@@ -164,40 +164,52 @@ extension RidingViewModel {
             print("❌ userId가 nil입니다")
             return
         }
-        
+
         guard let start = originalData.first,
               let end = originalData.last else {
             print("❌ 경로 데이터가 부족합니다")
             return
         }
-        
+
         isLoading = true
-        
-        // wayPoints (0, last 제외 + 선택된 데이터 삭제)
-        let middlePoints = originalData.dropFirst().dropLast().filter { $0.sequenceNum != selectedData.sequenceNum }
-        let wayPointsArray = middlePoints.map { "\($0.lon),\($0.lat)" }
-        let wayPoints = wayPointsArray.joined(separator: "|")
-        
-        // locateName (전체 이름 중 선택된 데이터 삭제)
-        let locateNames = originalData.map { $0.name }.filter { $0 != selectedData.name }
-        let locateName = locateNames.joined(separator: ",")
-        
-        // typeCode (0번, 마지막 제외 + 선택된 데이터 삭제)
-        let typeCodes = originalData.dropFirst().dropLast()
-            .filter { $0.sequenceNum != selectedData.sequenceNum }
+        defer { isLoading = false }
+
+        // 삭제 후 남는 항목을 **한 번만** 골라낸다.
+        //
+        // 이전에는 목록마다 다른 기준으로 걸렀다 — locateName은 name, contentId는 contentId,
+        // contentTypeId는 contentTypeId 값으로. 경유지들이 같은 값을 공유하면
+        // (추천 코스는 서버가 contentTypeId를 전부 빈 문자열로 내려준다)
+        // 선택하지 않은 항목까지 함께 사라져 배열 길이가 어긋났고,
+        // 서버가 그 경로를 저장한 뒤 GET /routes/location-name이 500을 반환했다.
+        // sequenceNum이 이 경로에서 항목을 식별하는 유일한 키다.
+        let survivors = originalData.filter { $0.sequenceNum != selectedData.sequenceNum }
+        let remainingWayPoints = survivors.dropFirst().dropLast()
+
+        // wayPoints (0, last 제외)
+        let wayPoints = remainingWayPoints
+            .map { "\($0.lon),\($0.lat)" }
+            .joined(separator: "|")
+
+        // locateName (출발·도착 포함 전체)
+        let locateName = survivors
+            .map { $0.name }
+            .joined(separator: ",")
+
+        // typeCode (0, last 제외)
+        let typeCode = remainingWayPoints
             .map { $0.typeCode }
-        let typeCode = typeCodes.joined(separator: ",")
-        
-        // contentIds (0, last 제외 + 선택된 데이터 삭제)
-        let middleContentsid = originalData.dropFirst().dropLast().filter { $0.contentId != selectedData.contentId }
-        let contentIdArray = middleContentsid.map { "\($0.contentId)" }
-        let contentids = contentIdArray.joined(separator: ",")
-        
-        // contentTypeId (0, last 제외 + 선택된 데이터 삭제)
-        let middleContentTypeid = originalData.dropFirst().dropLast().filter { $0.contentTypeId != selectedData.contentTypeId }
-        let contentTypeIdArray = middleContentTypeid.map { "\($0.contentTypeId)" }
-        let contentTypeids = contentTypeIdArray.joined(separator: ",")
-        
+            .joined(separator: ",")
+
+        // contentIds (0, last 제외)
+        let contentids = remainingWayPoints
+            .map { $0.contentId }
+            .joined(separator: ",")
+
+        // contentTypeId (0, last 제외)
+        let contentTypeids = remainingWayPoints
+            .map { $0.contentTypeId }
+            .joined(separator: ",")
+
         let requestBody = RequestRouteModel(
             userId: userId,
             start: "\(start.lon),\(start.lat)",
@@ -207,35 +219,34 @@ extension RidingViewModel {
             typeCode: typeCode,
             contentId: contentids,
             contentTypeId: contentTypeids,
-            isUsed: self.flag
+            isUsed: routeSource.isUsed
         )
         
         print("requestBody.contentId: \(requestBody.contentId)")
         
         do {
-            let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
-            
-            isLoading = false
+            try await routeRepository.postRoutes(requestBody: requestBody)
         } catch {
             print("POST ERROR: /routes \(error)")
         }
     }
-    
+
     @MainActor
     func postRouteDragNDropAPI(locationData: [LocationNameModel]) async {
         guard let userId = userId else {
             print("❌ userId가 nil입니다")
             return
         }
-        
+
         guard let start = locationData.first,
               let end = locationData.last else {
             print("❌ 경로 데이터가 부족합니다")
             return
         }
-        
+
         isLoading = true
-        
+        defer { isLoading = false }
+
         // wayPoints (0, last 제외)
         let middlePoints = locationData.dropFirst().dropLast()
         let wayPointsArray = middlePoints.map { "\($0.lon),\($0.lat)" }
@@ -268,17 +279,17 @@ extension RidingViewModel {
             typeCode: typeCode,
             contentId: contentsIds,
             contentTypeId: contentsTypeIds,
-            isUsed: self.flag
+            // 편집 중인 경로의 출처를 따른다. flag는 라이딩 여부일 뿐이라
+            // 최근 사용 경로(.recentUsed)를 편집할 때 draft를 덮어쓴다.
+            isUsed: routeSource.isUsed
         )
 
         logDragDropPostBody(locationData: locationData, requestBody: requestBody)
 
         do {
-            let _: () = try await routeRepository.postRoutes(requestBody: requestBody)
-            isLoading = false
+            try await routeRepository.postRoutes(requestBody: requestBody)
         } catch {
             print("POST ERROR: /routes \(error)")
-            isLoading = false
         }
     }
 
@@ -301,15 +312,16 @@ extension RidingViewModel {
             print("❌ userId가 nil입니다")
             return
         }
-        
+
         guard let start = locationData.first,
               let end = locationData.last else {
             print("❌ 경로 데이터가 부족합니다")
             return
         }
-        
+
         isLoading = true
-        
+        defer { isLoading = false }
+
         // wayPoints (0, last 제외)
         let middlePoints = locationData.dropFirst().dropLast()
         let wayPointsArray = middlePoints.map { "\($0.lon),\($0.lat)" }
@@ -348,9 +360,7 @@ extension RidingViewModel {
         print("requestBody.contentId: \(requestBody.contentId)")
         
         do {
-            let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
-            
-            isLoading = false
+            try await routeRepository.postRoutes(requestBody: requestBody)
         } catch {
             print("로그 확인: \(requestBody)")
             print("POST ERROR: /routes \(error)")

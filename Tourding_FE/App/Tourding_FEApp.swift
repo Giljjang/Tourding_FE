@@ -13,6 +13,9 @@ import KakaoSDKUser
 
 @main
 struct Tourding_FEApp: App {
+    // 의존성 그래프는 앱 수명당 1회만 구성한다 (body에서 만들면 렌더마다 재생성됨)
+    @StateObject private var container = AppContainer()
+
     @StateObject private var navigationManager = NavigationManager()
     @StateObject private var loginViewModel = LoginViewModel()
     @StateObject private var modalManager = ModalManager()
@@ -34,16 +37,18 @@ struct Tourding_FEApp: App {
     }
     
     var body: some Scene {
-        
-        // 레파지토리 및 뷰모델 의존성 주입
-        let viewModels = DependencyProvider.makeTabViewModels()
+
+        // 화면 간 공유가 필요한 의존성 — AppContainer가 앱 수명당 1회만 생성한다
+        let viewModels = container.tabViewModels
+        let filterViewModel = container.filterBarViewModel
+        let RecentSearchViewModel = container.recentSearchViewModel
+
+        // push마다 새 인스턴스를 받는 화면들 (@StateObject(wrappedValue:))
         let ridingViewModel = DependencyProvider.makeRidingViewModel()
         let spotAddViewModel = DependencyProvider.makeSpotAddViewModel()
-        let filterViewModel = DependencyProvider.makeFilterBarViewModel()
         let detailViewModel = DependencyProvider.makeDetailViewModel()
-        let RecentSearchViewModel = DependencyProvider.makeRecentSearchViewModel()
         let recommendRouteViewModel = DependencyProvider.makeRecommendViewModel()
-        
+
         WindowGroup {
             if showSplash {
                 SplashView()
