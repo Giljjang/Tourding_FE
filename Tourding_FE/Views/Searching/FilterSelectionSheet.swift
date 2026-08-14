@@ -17,7 +17,9 @@ struct FilterModal: View {
     @State private var tempSelectedRegion: String?
     @State private var tempSelectedTheme: String?
     
-    let regions = ["서울", "인천", "경기", "대전", "세종", "충청", "대구", "경상", "울산", "부산", "광주", "전라", "강원", "제주"]
+    // 칩 라벨과 areaCode 매핑의 단일 소스는 SearchRegion이다.
+    // 여기에 문자열을 직접 적으면 매핑과 어긋나 해당 지역이 검색되지 않는다.
+    let regions = SearchRegion.chipLabels
     let themes = ["자연", "인문(문화/예술/역사)", "레포츠", "쇼핑", "음식", "숙박"]
     
     var body: some View {
