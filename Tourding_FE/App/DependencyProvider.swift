@@ -38,7 +38,8 @@ struct DependencyProvider {
         let routeRepository = makeRouteRepository()
         let tourRepository = TourRepository()
 
-        let homeViewModel = HomeViewModel(routeRepository: routeRepository)
+        let homeViewModel = HomeViewModel(routeRepository: routeRepository,
+                                          userSession: makeUserSession())
         let myPageViewModel = MyPageViewModel()
         let spotSearchViewModel = SpotSearchViewModel(tourRepository: tourRepository)
         let dsViewModel = DestinationSearchViewModel()

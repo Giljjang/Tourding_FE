@@ -118,6 +118,7 @@ struct Tourding_FEApp: App {
                 .environmentObject(modalManager)
                 .environmentObject(loginViewModel)
                 .environmentObject(routeManager)
+                .environmentObject(container)
                 .onOpenURL { url in
                     if AuthApi.isKakaoTalkLoginUrl(url) {
                         _ = AuthController.handleOpenUrl(url: url)

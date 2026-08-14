@@ -70,7 +70,10 @@ final class FakeRouteRepository: RouteRepositoryProtocol {
 
     func getRoutesRidingRecommend(pageNum: Int) async throws -> [RouteRidingRecommendModel] { [] }
 
+    private(set) var capturedByNameRequests: [ReqRoutesByNameModel] = []
+
     func postRoutesByName(requestBody: ReqRoutesByNameModel) async throws -> RoutesModel {
+        capturedByNameRequests.append(requestBody)
         guard let routes else { throw FakeError.notConfigured }
         return routes
     }

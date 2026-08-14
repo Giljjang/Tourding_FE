@@ -18,9 +18,12 @@ final class HomeViewModel: ObservableObject {
     @Published var abnormalEndFlag: Bool = true
     
     private let routeRepository: RouteRepositoryProtocol
-    
-    init(routeRepository: RouteRepositoryProtocol) {
+    private let userSession: UserSessionProviding
+
+    init(routeRepository: RouteRepositoryProtocol,
+         userSession: UserSessionProviding) {
         self.routeRepository = routeRepository
+        self.userSession = userSession
     }
     
     // MARK: - Home 화면 전용 비즈니스 로직
@@ -33,7 +36,7 @@ final class HomeViewModel: ObservableObject {
     //MARK: - API 호출
     @MainActor
     func postRouteAPI(start: LocationData, end: LocationData) async {
-        guard let uid = KeychainHelper.loadUid()  else {
+        guard let uid = userSession.userId else {
             print("⏭️ postRouteAPI skipped: userId is nil")
             return
         }
@@ -74,11 +77,14 @@ final class HomeViewModel: ObservableObject {
     @MainActor
     func getRouteLocationAPI() async {
         
-        guard let uid = KeychainHelper.loadUid() else {
+        guard let uid = userSession.userId else {
             print("⏭️ getRouteLocationAPI skipped: userId is nil")
+            // 사용자가 없으면 보여줄 최근 경로도 없다.
+            // 이전 값을 남기면 로그아웃·탈퇴 후에도 직전 계정의 경로가 홈에 계속 보인다.
+            routeLocation = []
             return
         }
-        
+
         do {
             let response = try await routeRepository.getRoutesLocationName(userId: uid, isUsed: true)
             routeLocation = response
@@ -117,7 +123,7 @@ final class HomeViewModel: ObservableObject {
     
     @MainActor
     func postRouteByNameAPI(start: String, goal: String) async {
-        guard let uid = KeychainHelper.loadUid() else {
+        guard let uid = userSession.userId else {
             print("⏭️ getRouteRecommendAPI skipped: userId is nil")
             return
         }
