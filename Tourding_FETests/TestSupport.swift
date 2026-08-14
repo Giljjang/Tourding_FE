@@ -105,18 +105,39 @@ enum TestRoute {
         name: String,
         type: String,
         lat: String,
-        lon: String
+        lon: String,
+        typeCode: String = "A01",
+        contentId: String? = nil,
+        contentTypeId: String = "12"
     ) -> LocationNameModel {
         LocationNameModel(
             sequenceNum: sequenceNum,
             name: name,
             type: type,
-            typeCode: "A01",
-            contentId: "c\(sequenceNum)",
-            contentTypeId: "12",
+            typeCode: typeCode,
+            contentId: contentId ?? "c\(sequenceNum)",
+            contentTypeId: contentTypeId,
             lon: lon,
             lat: lat
         )
+    }
+
+    /// 추천 코스를 선택해 만들어진 경로의 실제 형태.
+    /// 서버가 경유지 메타데이터를 비워서 돌려주기 때문에 `contentTypeId`가 전부 같은 값(빈 문자열)이다.
+    /// 실제 로그: typeCode "경유지,경유지,경유지", contentTypeId ""
+    static var recommendedCourseWithThreeWaypoints: [LocationNameModel] {
+        [
+            location(sequenceNum: 0, name: "아라한강갑문", type: "Start", lat: "37.60000734237715", lon: "126.79970313779297",
+                     typeCode: "", contentId: "", contentTypeId: ""),
+            location(sequenceNum: 1, name: "경안천 습지생태공원", type: "WayPoint", lat: "37.4573533357", lon: "127.3032168104",
+                     typeCode: "경유지", contentId: "630741", contentTypeId: ""),
+            location(sequenceNum: 2, name: "양섬", type: "WayPoint", lat: "37.3054405896", lon: "127.6200230151",
+                     typeCode: "경유지", contentId: "2766859", contentTypeId: ""),
+            location(sequenceNum: 3, name: "수룡폭포", type: "WayPoint", lat: "37.0634495189", lon: "127.7958196484",
+                     typeCode: "경유지", contentId: "1687491", contentTypeId: ""),
+            location(sequenceNum: 4, name: "충주댐", type: "Goal", lat: "37.01274225635733", lon: "127.91673091230659",
+                     typeCode: "", contentId: "", contentTypeId: "")
+        ]
     }
 
     /// Start → Goal
