@@ -11,7 +11,7 @@ import NMapsMap
 extension RidingViewModel {
     //MARK: - 라이딩 시작하기 전 API 호출
     @MainActor
-    func getRoutesTotalAPI(isUsed: Bool = false) async {
+    func getRoutesTotalAPI(isUsed: Bool? = nil) async {
         guard let userId = userId else {
             print("❌ userId가 nil입니다")
             return
@@ -20,7 +20,8 @@ extension RidingViewModel {
         isLoading = true
         
         do {
-            let response = try await routeRepository.getRoutes(userId: userId, isUsed: isUsed)
+            let routeIsUsed = isUsed ?? self.isUsedRoute
+            let response = try await routeRepository.getRoutes(userId: userId, isUsed: routeIsUsed)
             routeTotal = response
             // #region agent log
             DebugSessionLogger.log(
@@ -28,7 +29,7 @@ extension RidingViewModel {
                 message: "riding total loaded",
                 hypothesisId: "H1",
                 data: [
-                    "isUsed": String(isUsed),
+                    "isUsed": String(routeIsUsed),
                     "distance": String(response.distance),
                     "duration": String(response.duration)
                 ]
@@ -58,8 +59,8 @@ extension RidingViewModel {
         
         while retryCount < maxRetries {
             do {
-                // isRecommend가 nil이 아닐 때는 !isRecommend, nil일 때는 self.flag 사용
-                let isUsed = isUsedOverride ?? (isRecommend != nil ? !isRecommend! : self.flag)
+                // 명시 인자 > 추천 코스 흐름(!isRecommend) > 현재 화면이 다루는 경로(isUsedRoute)
+                let isUsed = isUsedOverride ?? (isRecommend != nil ? !isRecommend! : self.isUsedRoute)
                 
                 let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: isUsed)
                 routeLocation = response
@@ -114,7 +115,7 @@ extension RidingViewModel {
         
         while retryCount < maxRetries {
             do {
-                let routeIsUsed = isUsed ?? self.flag
+                let routeIsUsed = isUsed ?? self.isUsedRoute
                 let response = try await routeRepository.getRoutesPath(userId: userId, isUsed: routeIsUsed)
                 routeMapPaths = response
                 // #region agent log

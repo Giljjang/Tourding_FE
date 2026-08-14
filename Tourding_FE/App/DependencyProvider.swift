@@ -97,7 +97,8 @@ struct DependencyProvider {
 
         return DetailSpotViewModel(
             tourRepository: tourRepository,
-            routeRepository: routeRepository)
+            routeRepository: routeRepository,
+            userSession: makeUserSession())
     }
 
     static func makeRecommendViewModel() -> RecommendRouteViewModel {

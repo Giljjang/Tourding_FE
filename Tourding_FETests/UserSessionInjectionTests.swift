@@ -42,6 +42,32 @@ struct UserSessionInjectionTests {
         #expect(repository.capturedPostRoutes.isEmpty)
     }
 
+    @Test func detailSpotViewModelSendsInjectedUserId() async {
+        let repository = FakeRouteRepository()
+        let viewModel = DetailSpotViewModel(
+            tourRepository: FakeTourRepository(),
+            routeRepository: repository,
+            userSession: FakeUserSession(userId: 777_003)
+        )
+
+        await viewModel.postRouteAPI(originalData: TestRoute.startGoal, updatedData: TestSpot.sample)
+
+        #expect(repository.capturedPostRoutes.last?.userId == 777_003)
+    }
+
+    @Test func detailSpotViewModelSkipsRequestWhenSessionHasNoUserId() async {
+        let repository = FakeRouteRepository()
+        let viewModel = DetailSpotViewModel(
+            tourRepository: FakeTourRepository(),
+            routeRepository: repository,
+            userSession: FakeUserSession(userId: nil)
+        )
+
+        await viewModel.postRouteAPI(originalData: TestRoute.startGoal, updatedData: TestSpot.sample)
+
+        #expect(repository.capturedPostRoutes.isEmpty)
+    }
+
     @Test func spotAddViewModelUsesInjectedUserId() {
         let viewModel = SpotAddViewModel(
             tourRepository: FakeTourRepository(),

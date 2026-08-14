@@ -17,6 +17,12 @@ final class RidingViewModel: ObservableObject {
     /// 이 화면이 다루는 경로의 출처. 편집 모드 API·재정렬 POST의 `isUsed` 판정 단일 소스.
     /// `handleInitialEntry`에서 1회 저장한다.
     @Published var routeSource: RidingRouteSource = .draft
+
+    /// 이 화면이 읽고 써야 할 경로가 서버의 "사용 완료" 경로인지.
+    /// `flag`(라이딩 중인가)만으로 판정하면 최근 경로를 편집할 때 draft를 읽는다.
+    var isUsedRoute: Bool {
+        flag || routeSource.isUsed
+    }
     
     //라이딩 시작 전
     @Published var routeLocation: [LocationNameModel] = []

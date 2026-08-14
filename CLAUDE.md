@@ -72,7 +72,8 @@ private static func makeRouteRepository() -> RouteRepositoryProtocol {
 | 프로퍼티 | 의미 |
 |----------|------|
 | `flag` | `false` 편집 / `true` 라이딩 중 |
-| `routeSource` | `.draft` / `.recentUsed` — `isUsed` 판정의 **단일 소스**. `handleInitialEntry`에서 1회 저장 |
+| `routeSource` | `.draft` / `.recentUsed` — 화면이 진입한 경로 출처. `handleInitialEntry`에서 1회 저장 |
+| `isUsedRoute` | **`flag \|\| routeSource.isUsed`** — 서버의 어느 경로를 읽고 쓸지 판정하는 단일 소스. 모든 `get*API` 기본값이 이 값을 쓴다. `flag`(라이딩 중인가)만으로 판정하면 최근 경로 편집 시 draft를 읽는다 |
 | `routeLocation`, `pathCoordinates`, `guideList` | 지도·가이드 데이터 |
 | `markerCoordinates`, `markerIcons` | `applyRouteLocationMarkers(from:)`로 갱신 |
 | `userSession` | `UserSessionProviding` — `userId` 공급자. ViewModel에서 `KeychainHelper` 직접 호출 금지 |
@@ -237,6 +238,14 @@ xcodebuild test -scheme Tourding_FE \
   - 디바운스 DnD Task self-cancel 해소
   - `routeSource` 상태 승격 — DnD·삭제·경로선 재조회·포그라운드
 
+- [x] **최근 경로에서 경유지 삭제가 반영되지 않던 문제 (TDD)** — 테스트 62개 통과
+  - 삭제 POST는 사용 완료 경로에, 직후 재조회는 draft를 읽어 목록이 원상복구되던 문제
+  - `isUsedRoute = flag || routeSource.isUsed`로 판정 통일, 모든 `get*API` 기본값에 적용
+  - 삭제+재조회를 `deleteWaypointAndRefresh`로 묶어 View에서 오케스트레이션 제거
+- [x] **경로 추가 요청 데이터 버그 3건 (TDD)** — 테스트 56개 통과
+  - `typeCode`만 `insert(at: count-1)`이라 새 스팟과 마지막 경유지의 카테고리가 뒤바뀌던 문제 (SpotAdd·Detail)
+  - Detail이 `contentTypeId` 자리에 `contentId`를 보내던 복붙 오류
+  - 좌표 규약(경도,위도)을 `RouteAddRequestTests`로 고정 + 모델 주석 정정
 - [x] **AI 선행 리팩토링 3건 (TDD)** — 테스트 45개 통과
   - `UserSessionProviding` 주입 (`RidingViewModel`, `SpotAddViewModel`)
   - 편의시설 마커 `Task` 프로퍼티 노출 + `apply*()` 분리 + 취소 배선
@@ -248,6 +257,9 @@ xcodebuild test -scheme Tourding_FE \
 - [ ] LocationManager 이중 인스턴스 정리 (`MapViewController.locationManager` vs `userLocationManager`)
 
 ### 기술 부채
+- **`POST /routes` 본문 조립이 `SpotAddViewModel`·`DetailSpotViewModel`에 복붙돼 있음**
+  — 두 화면이 같은 본문을 만드는지는 `RouteAddRequestTests.bothEntryPointsProduceIdenticalRequestBody`가 잠근다.
+  공용 빌더(`RouteRequestBuilder`) 추출은 미완
 - `POST /routes` 응답 타입 불일치 (`RoutesModel` vs `EmptyResponse`)
 - UserRepository → NetworkService 통합
 - ErrorType 이중화 해소

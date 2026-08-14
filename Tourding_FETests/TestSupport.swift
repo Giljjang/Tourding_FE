@@ -51,11 +51,19 @@ final class FakeRouteRepository: RouteRepositoryProtocol {
         return paths
     }
 
-    func getRoutesLocationName(userId: Int, isUsed: Bool) async throws -> [LocationNameModel] { locationNames }
+    /// 재조회가 어느 경로(draft / 사용 완료)를 읽었는지 검증용
+    private(set) var capturedLocationNameRequests: [(userId: Int, isUsed: Bool)] = []
+    private(set) var capturedRoutesRequests: [(userId: Int, isUsed: Bool)] = []
+
+    func getRoutesLocationName(userId: Int, isUsed: Bool) async throws -> [LocationNameModel] {
+        capturedLocationNameRequests.append((userId: userId, isUsed: isUsed))
+        return locationNames
+    }
 
     func getRoutesGuide(userId: Int, isUsed: Bool) async throws -> [GuideModel] { guides }
 
     func getRoutes(userId: Int, isUsed: Bool) async throws -> RoutesModel {
+        capturedRoutesRequests.append((userId: userId, isUsed: isUsed))
         guard let routes else { throw FakeError.notConfigured }
         return routes
     }
