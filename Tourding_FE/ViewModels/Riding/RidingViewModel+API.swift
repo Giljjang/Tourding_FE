@@ -125,6 +125,12 @@ extension RidingViewModel {
                 break
                 
             } catch {
+                // 500·4xx는 다시 걸어도 같은 답이 온다 (실측: /routes/path 500 3회 연속 동일)
+                guard (error as? ErrorType)?.isRetryable ?? true else {
+                    print("🚫 재시도하지 않는 에러 - 중단: \(error)")
+                    break
+                }
+
                 retryCount += 1
                 print("❌ 경로 위치 API 호출 실패 (시도 \(retryCount)/\(maxRetries)): \(error)")
                 
@@ -184,6 +190,12 @@ extension RidingViewModel {
                 break
                 
             } catch {
+                // 500·4xx는 다시 걸어도 같은 답이 온다 (실측: /routes/path 500 3회 연속 동일)
+                guard (error as? ErrorType)?.isRetryable ?? true else {
+                    print("🚫 재시도하지 않는 에러 - 중단: \(error)")
+                    break
+                }
+
                 retryCount += 1
                 print("❌ 경로 경로선 API 호출 실패 (시도 \(retryCount)/\(maxRetries)): \(error)")
                 
@@ -528,6 +540,12 @@ extension RidingViewModel {
                 break
                 
             } catch {
+                // 500·4xx는 다시 걸어도 같은 답이 온다 (실측: /routes/path 500 3회 연속 동일)
+                guard (error as? ErrorType)?.isRetryable ?? true else {
+                    print("🚫 재시도하지 않는 에러 - 중단: \(error)")
+                    break
+                }
+
                 retryCount += 1
                 print("❌ 가이드 API 호출 실패 (시도 \(retryCount)/\(maxRetries)): \(error)")
                 

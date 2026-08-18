@@ -46,8 +46,12 @@ final class FakeRouteRepository: RouteRepositoryProtocol {
     /// `getRoutesPath`가 받은 (userId, isUsed) — 경로선 재조회가 어떤 경로를 가리키는지 검증용
     private(set) var capturedPathRequests: [(userId: Int, isUsed: Bool)] = []
 
+    /// nil이 아니면 GET 계열이 이 에러를 던진다 (재시도 정책 검증용)
+    var getRoutesError: Error?
+
     func getRoutesPath(userId: Int, isUsed: Bool) async throws -> [RoutePathModel] {
         capturedPathRequests.append((userId: userId, isUsed: isUsed))
+        if let getRoutesError { throw getRoutesError }
         return paths
     }
 
@@ -57,6 +61,7 @@ final class FakeRouteRepository: RouteRepositoryProtocol {
 
     func getRoutesLocationName(userId: Int, isUsed: Bool) async throws -> [LocationNameModel] {
         capturedLocationNameRequests.append((userId: userId, isUsed: isUsed))
+        if let getRoutesError { throw getRoutesError }
         return locationNames
     }
 
@@ -75,6 +80,7 @@ final class FakeRouteRepository: RouteRepositoryProtocol {
 
     func getRoutesGuide(userId: Int, isUsed: Bool) async throws -> [GuideModel] {
         onGetRoutesGuide?()
+        if let getRoutesError { throw getRoutesError }
         return guides
     }
 

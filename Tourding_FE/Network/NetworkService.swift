@@ -9,6 +9,18 @@ import Foundation
 
 enum NetworkService {
 
+    /// 타임아웃을 건 전용 세션.
+    ///
+    /// URLSession.shared는 요청 60초·리소스 7일이 기본이다. 라이딩 시작 오버레이가
+    /// 터치를 흡수하는 동안 재시도까지 겹치면 화면이 수 분간 잠긴다.
+    /// 20초 근거: 가장 무거운 /routes(80KB대, ORS 전체 재계산)가 실측 1~3초에 끝난다.
+    static let session: URLSession = {
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 20
+        configuration.timeoutIntervalForResource = 60
+        return URLSession(configuration: configuration)
+    }()
+
     // #region agent log
     private static var searchLocationRequestSeq = 0
     private static let searchLocationSeqLock = NSLock()
@@ -189,7 +201,7 @@ enum NetworkService {
             let data: Data
             let response: URLResponse
             
-           (data, response) = try await URLSession.shared.data(for: request)
+           (data, response) = try await session.data(for: request)
            
            print("🔵 네트워크 응답 받음")
            if let httpResponse = response as? HTTPURLResponse {
@@ -211,13 +223,11 @@ enum NetworkService {
                 )
             }
             // #endregion
-//           print("🔵 Response Data: \(String(data: data, encoding: .utf8) ?? "디코딩 실패")")
-            
             if let httpResponse = response as? HTTPURLResponse,
-               let defindedErrorCode = NetworkErrorCode(rawValue: httpResponse.statusCode) {
+               let statusError = HTTPStatusValidator.error(for: httpResponse.statusCode) {
                 print("HTTP \(httpResponse.statusCode) body:",
                       String(data: data, encoding: .utf8) ?? "<no body>")
-                throw ErrorType.serverDefinedError(defindedErrorCode)
+                throw statusError
             }
             
             do {
@@ -230,6 +240,24 @@ enum NetworkService {
                 throw ErrorType.decodingFailure(underlying: error)
             }
         }
+}
+
+//MARK: - HTTP 상태 판정
+
+/// 상태코드 → 에러 판정. URLSession 없이 테스트할 수 있도록 순수 함수로 분리한다.
+enum HTTPStatusValidator {
+    static func error(for statusCode: Int) -> ErrorType? {
+        if (200..<300).contains(statusCode) { return nil }
+
+        // 사용자 문구가 정의된 코드는 그대로 보존한다
+        if let known = NetworkErrorCode(rawValue: statusCode) {
+            return .serverDefinedError(known)
+        }
+
+        // 목록에 없는 코드(429·504 등)를 통과시키면 본문 디코딩으로 흘러가
+        // decodingFailure로 둔갑한다. 코드를 그대로 실어 올린다.
+        return .invalidResponse(statusCode: statusCode)
+    }
 }
 
 //MARK: - Error 처리
@@ -269,6 +297,23 @@ enum NetworkErrorCode: Int {
 }
 
 enum ErrorType: Error {
+    /// 다시 걸면 될 수 있는 실패인가.
+    ///
+    /// 이 서버의 500은 결정적이다 — 실측상 /routes/path 500이 3회 연속 같은 답을 받았다.
+    /// 재시도는 낭비이고, 이미 무너진 서버를 더 밀어붙인다.
+    var isRetryable: Bool {
+        switch self {
+        case .networkFailure:
+            return true
+        case .serverDefinedError(let code):
+            return code == .serviceUnavailable          // 503만
+        case .invalidResponse(let statusCode):
+            return statusCode == 408 || statusCode == 429
+        case .invalidURL, .decodingFailure, .unknown:
+            return false
+        }
+    }
+
     case invalidURL
     case networkFailure(underlying: Error)
     case invalidResponse(statusCode: Int)
@@ -346,14 +391,14 @@ extension NetworkService {
         }
         
         // downloadTask 실행
-        let (tempURL, response) = try await URLSession.shared.download(for: request)
+        let (tempURL, response) = try await session.download(for: request)
         
         // HTTP 상태 코드 체크
         if let httpResponse = response as? HTTPURLResponse {
             print("🔹 HTTP Status Code: \(httpResponse.statusCode)")
             
-            if let definedError = NetworkErrorCode(rawValue: httpResponse.statusCode) {
-                throw ErrorType.serverDefinedError(definedError)
+            if let statusError = HTTPStatusValidator.error(for: httpResponse.statusCode) {
+                throw statusError
             }
         }
         
