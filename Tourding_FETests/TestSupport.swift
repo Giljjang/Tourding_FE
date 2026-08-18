@@ -94,8 +94,12 @@ final class FakeRouteRepository: RouteRepositoryProtocol {
 
     private(set) var capturedByNameRequests: [ReqRoutesByNameModel] = []
 
+    /// nil이 아니면 `postRoutesByName`이 이 에러를 던진다 (서버 500 재현용)
+    var byNameError: Error?
+
     func postRoutesByName(requestBody: ReqRoutesByNameModel) async throws -> RoutesModel {
         capturedByNameRequests.append(requestBody)
+        if let byNameError { throw byNameError }
         guard let routes else { throw FakeError.notConfigured }
         return routes
     }
