@@ -108,13 +108,7 @@ extension RidingViewModel {
         // #endregion
         do {
             try Task.checkCancellation()
-            await getRoutesTotalAPI(isUsed: routeSource.isUsed)
-
-            try Task.checkCancellation()
-            await getRouteLocationAPI(isUsedOverride: routeSource.isUsed)
-
-            try Task.checkCancellation()
-            await getRoutePathAPI(isUsed: routeSource.isUsed)
+            await loadRouteBundleAPI(isUsed: routeSource.isUsed)
 
             try Task.checkCancellation()
             await MainActor.run {
@@ -130,13 +124,7 @@ extension RidingViewModel {
     func refreshEditModeRouteData(routeSource: RidingRouteSource = .draft) async {
         do {
             try Task.checkCancellation()
-            await getRoutesTotalAPI(isUsed: routeSource.isUsed)
-
-            try Task.checkCancellation()
-            await getRouteLocationAPI(isUsedOverride: routeSource.isUsed)
-
-            try Task.checkCancellation()
-            await getRoutePathAPI(isUsed: routeSource.isUsed)
+            await loadRouteBundleAPI(isUsed: routeSource.isUsed)
 
             try Task.checkCancellation()
             await MainActor.run {
@@ -193,21 +181,23 @@ extension RidingViewModel {
 
     // MARK: - routeLocation change (edit mode)
 
+    /// 경유지를 드래그하는 동안 `routeLocation`은 매 프레임 재할당된다.
+    /// 그때마다 총계를 조회하면 요청이 폭주하므로 디바운스해 마지막 한 번만 나간다.
     @MainActor
     func handleRouteLocationChangedInEditMode() {
         guard !flag else { return }
 
-        print("🔄 routeLocation 변경 감지 - getRoutesTotalAPI 호출")
-        Task { [weak self] in
-            do {
-                try Task.checkCancellation()
-                await self?.getRoutesTotalAPI()
-                print("✅ getRoutesTotalAPI 호출 완료")
-            } catch is CancellationError {
-                print("🚫 getRoutesTotalAPI Task 취소됨")
-            } catch {
-                print("❌ getRoutesTotalAPI 에러: \(error)")
+        print("🔄 routeLocation 변경 감지 - 총계 갱신 예약")
+        routeTotalRefreshTask?.cancel()
+        routeTotalRefreshTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            guard !Task.isCancelled else {
+                print("🚫 총계 갱신 취소됨")
+                return
             }
+
+            await self?.getRoutesTotalAPI(showsLoading: false)
+            print("✅ getRoutesTotalAPI 호출 완료")
         }
     }
 
@@ -221,10 +211,18 @@ extension RidingViewModel {
         onMarkAbnormalExit()
         isStartingRiding = true
 
-        Task { @MainActor in
-            await startRidingAPIProcess(isNotNormal: isNotNormal, locationManager: locationManager)
-            print("✅ 라이딩 시작 프로세스 완료 - 로딩 종료")
-            isStartingRiding = false
+        // Task를 프로퍼티로 붙잡아야 endRiding에서 취소할 수 있다.
+        // 놓치면 라이딩을 끝낸 뒤 뒤늦게 끝난 가이드가 편집 모드 화면을 덮는다.
+        ridingStartTask?.cancel()
+        ridingStartTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer {
+                // 취소로 중간에 빠져나가도 오버레이는 반드시 내려야 한다 (화면 잠김 방지)
+                self.isStartingRiding = false
+                print("✅ 라이딩 시작 프로세스 종료 - 로딩 해제")
+            }
+
+            await self.startRidingAPIProcess(isNotNormal: isNotNormal, locationManager: locationManager)
         }
     }
 
@@ -237,16 +235,16 @@ extension RidingViewModel {
 
         startRidingNavigationMode(locationManager: locationManager, logPrefix: "startRidingProcess")
 
-        Task { [weak self] in
-            do {
-                try Task.checkCancellation()
-                await self?.getRouteGuideAPI(isNotNormal: isNotNormal)
-                print("✅ 라이딩 가이드 API 호출 완료")
-            } catch is CancellationError {
-                print("🚫 라이딩 가이드 API Task 취소됨")
-            } catch {
-                print("❌ 라이딩 가이드 API 에러: \(error)")
-            }
+        // 자식 Task로 띄우면 여기서 즉시 반환해 "시작 완료"로 표시된다.
+        // 가이드가 실제로 실릴 때까지 기다려야 로딩 표시와 화면이 맞는다.
+        do {
+            try Task.checkCancellation()
+            await getRouteGuideAPI(isNotNormal: isNotNormal)
+            print("✅ 라이딩 가이드 API 호출 완료")
+        } catch is CancellationError {
+            print("🚫 라이딩 가이드 API Task 취소됨")
+        } catch {
+            print("❌ 라이딩 가이드 API 에러: \(error)")
         }
     }
 
@@ -257,6 +255,14 @@ extension RidingViewModel {
         // 진행 중인 편의시설 요청을 먼저 끊는다.
         // 아래 API들을 await하는 동안 뒤늦게 끝나면 지운 마커가 되살아난다.
         cancelFacilityMarkerTasks()
+
+        // 같은 이유로 라이딩 시작(가이드 로드)도 끊는다.
+        //
+        // 주의: 이 취소가 시작 Task보다 먼저 도달한다고 가정하면 안 된다.
+        // 실측(flag 전이 [false, true, false])상 시작 Task가 먼저 실행돼 flag=true까지 찍은 뒤
+        // 가이드 요청에서 suspend하고, 그 사이 여기가 돈다. 뒤늦은 가이드를 막는 실제 방어선은
+        // getRouteGuideAPI가 응답 도착 후 확인하는 Task.isCancelled다.
+        ridingStartTask?.cancel()
 
         locationManager.stopLocationUpdates()
         locationManager.stopNavigationMode()

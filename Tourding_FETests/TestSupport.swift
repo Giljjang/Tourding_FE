@@ -46,8 +46,12 @@ final class FakeRouteRepository: RouteRepositoryProtocol {
     /// `getRoutesPath`가 받은 (userId, isUsed) — 경로선 재조회가 어떤 경로를 가리키는지 검증용
     private(set) var capturedPathRequests: [(userId: Int, isUsed: Bool)] = []
 
+    /// nil이 아니면 GET 계열이 이 에러를 던진다 (재시도 정책 검증용)
+    var getRoutesError: Error?
+
     func getRoutesPath(userId: Int, isUsed: Bool) async throws -> [RoutePathModel] {
         capturedPathRequests.append((userId: userId, isUsed: isUsed))
+        if let getRoutesError { throw getRoutesError }
         return paths
     }
 
@@ -57,10 +61,28 @@ final class FakeRouteRepository: RouteRepositoryProtocol {
 
     func getRoutesLocationName(userId: Int, isUsed: Bool) async throws -> [LocationNameModel] {
         capturedLocationNameRequests.append((userId: userId, isUsed: isUsed))
+        if let getRoutesError { throw getRoutesError }
         return locationNames
     }
 
-    func getRoutesGuide(userId: Int, isUsed: Bool) async throws -> [GuideModel] { guides }
+    var bundle: RouteGuideResponse?
+    private(set) var capturedBundleRequests: [(userId: Int, isUsed: Bool)] = []
+
+    func getRouteBundle(userId: Int, isUsed: Bool) async throws -> RouteGuideResponse {
+        capturedBundleRequests.append((userId: userId, isUsed: isUsed))
+        guard let bundle else { throw FakeError.notConfigured }
+        return bundle
+    }
+
+    /// `getRoutesGuide`가 실행되는 순간 호출된다.
+    /// 응답이 도착하는 타이밍에 취소를 끼워 넣어 "뒤늦게 끝난 가이드"를 결정적으로 재현하는 훅.
+    var onGetRoutesGuide: (() -> Void)?
+
+    func getRoutesGuide(userId: Int, isUsed: Bool) async throws -> [GuideModel] {
+        onGetRoutesGuide?()
+        if let getRoutesError { throw getRoutesError }
+        return guides
+    }
 
     func getRoutes(userId: Int, isUsed: Bool) async throws -> RoutesModel {
         capturedRoutesRequests.append((userId: userId, isUsed: isUsed))

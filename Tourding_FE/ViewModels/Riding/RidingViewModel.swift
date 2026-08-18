@@ -85,6 +85,12 @@ final class RidingViewModel: ObservableObject {
     /// 편의시설 마커 갱신 Task — 화면 이탈·라이딩 종료 시 취소해야 한다
     var toiletMarkerTask: Task<Void, Never>?
     var convenienceStoreMarkerTask: Task<Void, Never>?
+
+    /// 라이딩 시작(가이드 로드까지) Task — `endRiding`에서 취소한다
+    var ridingStartTask: Task<Void, Never>?
+
+    /// 편집 모드 총계 갱신 디바운스 Task
+    var routeTotalRefreshTask: Task<Void, Never>?
     
     let userSession: UserSessionProviding
 

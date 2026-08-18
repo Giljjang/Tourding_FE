@@ -129,7 +129,7 @@ final class HomeViewModel: ObservableObject {
         }
         
         isLoading = true
-        let requestBody = ReqRoutesByNameModel(userId: uid, start: start, goal: goal)
+        let requestBody = ReqRoutesByNameModel(userId: uid, start: start, goal: goal, isUsed: false)
         do {
             try await routeRepository.postRoutesByName(requestBody: requestBody)
         } catch {

@@ -15,6 +15,7 @@ final class DetailSpotViewModel: ObservableObject {
     @Published var currentPosition: DetailBottomSheetPosition = .standard
     
     @Published var routeLocation: [LocationNameModel] = []
+    @Published var errorMessage: String? = nil
     
     private let tourRepository: TourRepositoryProtocol
     private let routeRepository: RouteRepositoryProtocol
@@ -112,11 +113,9 @@ final class DetailSpotViewModel: ObservableObject {
             
             print("ReqDetailModel: \(requestBody)")
             let response = try await tourRepository.getTourAreaDetail(requestBody: requestBody)
-            
-//            print("Detail: \(response)")
-            
+
             detailData = response
-            
+
         } catch {
             print("GET ERROR: /tour/area-detail \(error)")
         }
@@ -145,6 +144,26 @@ final class DetailSpotViewModel: ObservableObject {
         }
     }
     
+    /// 스팟 추가 진입점.
+    ///
+    /// onAppear는 상세 정보를 먼저 받고 getRouteLocationAPI를 나중에 부른다.
+    /// 상세가 그려진 순간 추가 버튼을 누를 수 있으므로 그때 경로가 비어 있을 수 있다.
+    /// 그대로 postRouteAPI에 넘기면 guard에 걸려 POST가 나가지 않는데도 화면은 넘어간다.
+    @MainActor
+    func addSpotToRoute(_ spot: SpotData) async {
+        if routeLocation.isEmpty {
+            await getRouteLocationAPI()
+        }
+
+        guard !routeLocation.isEmpty else {
+            errorMessage = "경로 정보를 불러오지 못해 스팟을 추가하지 못했습니다."
+            print("❌ 스팟 추가 중단 - 경로 데이터 없음")
+            return
+        }
+
+        await postRouteAPI(originalData: routeLocation, updatedData: spot)
+    }
+
     @MainActor
     func postRouteAPI(originalData: [LocationNameModel], updatedData: SpotData) async {
 

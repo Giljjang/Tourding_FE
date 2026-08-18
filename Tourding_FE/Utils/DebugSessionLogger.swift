@@ -17,6 +17,10 @@ enum DebugSessionLogger {
     #if DEBUG
     private static let sessionId = "397c83"
     private static let ingestURL = URL(string: "http://127.0.0.1:7674/ingest/6e431614-3e1a-46d5-b5a7-96329d0dfb1e")!
+
+    /// 수집 서버가 떠 있을 때만 켠다.
+    /// 꺼져 있으면 요청마다 연결 거부 + nw_* 로그가 15줄씩 쏟아져 콘솔을 못 읽는다.
+    private static let isIngestEnabled = false
     #endif
 
     static func log(
@@ -40,7 +44,8 @@ enum DebugSessionLogger {
         // #region agent log
         print("[DEBUG-397c83][\(hypothesisId)] \(message) | \(data)")
 
-        guard JSONSerialization.isValidJSONObject(payload),
+        guard isIngestEnabled,
+              JSONSerialization.isValidJSONObject(payload),
               let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
             return
         }

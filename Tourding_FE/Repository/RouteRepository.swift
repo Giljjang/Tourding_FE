@@ -51,13 +51,15 @@ final class RouteRepository: RouteRepositoryProtocol {
     }
     
     func getRoutesGuide(userId: Int , isUsed: Bool) async throws  -> [GuideModel]{
-        let routeGuides: [GuideModel] = try await NetworkService.request(
+        // 서버는 배열이 아니라 RouteGuideRespDto 객체를 반환한다.
+        // 배열로 디코딩하면 typeMismatch로 실패해 가이드가 통째로 비어버린다.
+        let response: RouteGuideResponse = try await NetworkService.request(
             apiType: .main,
             endpoint: "/routes/guide",
             parameters: ["userId": String(userId), "isUsed": String(isUsed)]
         )
-        
-        return routeGuides
+
+        return response.guides
     }
     
     // 경로 총시간, 거리
@@ -69,6 +71,14 @@ final class RouteRepository: RouteRepositoryProtocol {
         )
             
         return routesTotal
+    }
+
+    func getRouteBundle(userId: Int, isUsed: Bool) async throws -> RouteGuideResponse {
+        try await NetworkService.request(
+            apiType: .main,
+            endpoint: "/routes",
+            parameters: ["userId": String(userId), "isUsed": String(isUsed)]
+        )
     }
     
     //추천코스

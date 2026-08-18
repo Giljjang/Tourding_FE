@@ -39,10 +39,14 @@ final class RecommendRouteViewModel: ObservableObject {
     private let tourRepository: TourRepositoryProtocol
     private let routeRepository: RouteRepositoryProtocol
     
+    private let userSession: UserSessionProviding
+
     init(tourRepository: TourRepositoryProtocol,
-         routeRepository: RouteRepositoryProtocol) {
+         routeRepository: RouteRepositoryProtocol,
+         userSession: UserSessionProviding) {
         self.tourRepository = tourRepository
         self.routeRepository = routeRepository
+        self.userSession = userSession
     }
     
     // MARK: - 메모리 정리
@@ -73,7 +77,7 @@ final class RecommendRouteViewModel: ObservableObject {
     //MARK: - API 호출
     @MainActor
     func getRoutesTotalAPI() async {
-        guard let userId = KeychainHelper.loadUid() else {
+        guard let userId = userSession.userId else {
             print("❌ userId가 nil입니다")
             return
         }
@@ -94,7 +98,7 @@ final class RecommendRouteViewModel: ObservableObject {
     
     @MainActor
     func getRouteLocationAPI() async {
-        guard let userId = KeychainHelper.loadUid() else {
+        guard let userId = userSession.userId else {
             print("❌ userId가 nil입니다")
             return
         }
@@ -135,6 +139,12 @@ final class RecommendRouteViewModel: ObservableObject {
                 break
                 
             } catch {
+                // 500·4xx는 다시 걸어도 같은 답이 온다 (실측: /routes/path 500 3회 연속 동일)
+                guard (error as? ErrorType)?.isRetryable ?? true else {
+                    print("🚫 재시도하지 않는 에러 - 중단: \(error)")
+                    break
+                }
+
                 retryCount += 1
                 print("❌ 경로 위치 API 호출 실패 (시도 \(retryCount)/\(maxRetries)): \(error)")
                 
@@ -153,7 +163,7 @@ final class RecommendRouteViewModel: ObservableObject {
     //초기 출발지, 도착지만 입력시 POST
     @MainActor
     func getRoutePathAPI() async {
-        guard let userId = KeychainHelper.loadUid() else {
+        guard let userId = userSession.userId else {
             print("❌ userId가 nil입니다")
             return
         }
@@ -182,6 +192,12 @@ final class RecommendRouteViewModel: ObservableObject {
                 break
                 
             } catch {
+                // 500·4xx는 다시 걸어도 같은 답이 온다 (실측: /routes/path 500 3회 연속 동일)
+                guard (error as? ErrorType)?.isRetryable ?? true else {
+                    print("🚫 재시도하지 않는 에러 - 중단: \(error)")
+                    break
+                }
+
                 retryCount += 1
                 print("❌ 경로 경로선 API 호출 실패 (시도 \(retryCount)/\(maxRetries)): \(error)")
                 

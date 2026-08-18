@@ -108,6 +108,7 @@ struct DependencyProvider {
 
         return RecommendRouteViewModel(
             tourRepository: tourRepository,
-            routeRepository: routeRepository)
+            routeRepository: routeRepository,
+            userSession: KeychainUserSession())
     }
 }

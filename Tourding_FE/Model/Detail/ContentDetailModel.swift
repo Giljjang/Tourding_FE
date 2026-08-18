@@ -8,9 +8,11 @@
 import Foundation
 
 struct ContentDetailModel: Codable {
-    let contentid: String
-    let typeCode: String
-    let contenttypeid: String
+    // 서버가 분류 필드를 생략하는 응답이 있다. non-optional로 두면 keyNotFound로
+    // 응답 전체가 버려져 title·overview가 다 있어도 상세 화면이 통째로 빈다.
+    let contentid: String?
+    let typeCode: String?
+    let contenttypeid: String?
     let homepage: String?
     let tel: String?
     let telname: String?
