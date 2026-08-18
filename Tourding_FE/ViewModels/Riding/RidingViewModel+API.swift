@@ -43,6 +43,48 @@ extension RidingViewModel {
         }
     }
     
+    /// /routes 한 번으로 요약·경유지·경로선을 모두 채운다.
+    ///
+    /// 이전에는 /routes, /routes/location-name, /routes/path 를 각각 불러 서버가 같은 경로를
+    /// 세 번 재계산했다. 응답 하나가 80KB대이고 편집 화면 진입·복귀마다 반복된다.
+    ///
+    /// 재시도를 두지 않는다. 세 엔드포인트가 연쇄 500을 내는 상황에서 재시도는 부하를 키운다.
+    @MainActor
+    func loadRouteBundleAPI(isUsed: Bool? = nil) async {
+        guard let userId = userId else {
+            print("❌ userId가 nil입니다")
+            return
+        }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let routeIsUsed = isUsed ?? self.isUsedRoute
+            let bundle = try await routeRepository.getRouteBundle(userId: userId, isUsed: routeIsUsed)
+
+            routeTotal = RoutesModel(
+                isUsed: bundle.isUsed,
+                duration: bundle.duration,
+                distance: bundle.distance,
+                routeSummaryId: bundle.routeSummaryId
+            )
+
+            routeLocation = bundle.locations
+            applyRouteLocationMarkers(from: bundle.locations)
+
+            routeMapPaths = bundle.paths
+            pathCoordinates = bundle.paths.compactMap { item in
+                guard let lat = Double(item.lat), let lon = Double(item.lon) else { return nil }
+                return NMGLatLng(lat: lat, lng: lon)
+            }
+
+            print("✅ 경로 번들 로드 완료 - 경유지 \(bundle.locations.count)개, 경로선 \(pathCoordinates.count)개")
+        } catch {
+            print("ERRO: GET /routes (bundle) - \(error)")
+        }
+    }
+
     @MainActor
     func getRouteLocationAPI(isRecommend: Bool? = nil, isUsedOverride: Bool? = nil) async {
         guard let userId = userId else {

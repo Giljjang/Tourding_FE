@@ -108,13 +108,7 @@ extension RidingViewModel {
         // #endregion
         do {
             try Task.checkCancellation()
-            await getRoutesTotalAPI(isUsed: routeSource.isUsed)
-
-            try Task.checkCancellation()
-            await getRouteLocationAPI(isUsedOverride: routeSource.isUsed)
-
-            try Task.checkCancellation()
-            await getRoutePathAPI(isUsed: routeSource.isUsed)
+            await loadRouteBundleAPI(isUsed: routeSource.isUsed)
 
             try Task.checkCancellation()
             await MainActor.run {
@@ -130,13 +124,7 @@ extension RidingViewModel {
     func refreshEditModeRouteData(routeSource: RidingRouteSource = .draft) async {
         do {
             try Task.checkCancellation()
-            await getRoutesTotalAPI(isUsed: routeSource.isUsed)
-
-            try Task.checkCancellation()
-            await getRouteLocationAPI(isUsedOverride: routeSource.isUsed)
-
-            try Task.checkCancellation()
-            await getRoutePathAPI(isUsed: routeSource.isUsed)
+            await loadRouteBundleAPI(isUsed: routeSource.isUsed)
 
             try Task.checkCancellation()
             await MainActor.run {

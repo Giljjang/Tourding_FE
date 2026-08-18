@@ -39,6 +39,11 @@ final class MockRouteRepository: RouteRepositoryProtocol {
         return try FixtureLoader.load(filename)
     }
 
+    func getRouteBundle(userId: Int, isUsed: Bool) async throws -> RouteGuideResponse {
+        try await simulateNetworkDelay()
+        return try FixtureLoader.load("routes_guide_response.json")
+    }
+
     func getRoutesGuide(userId: Int, isUsed: Bool) async throws -> [GuideModel] {
         try await simulateNetworkDelay()
         let filename = guideFixtureName()

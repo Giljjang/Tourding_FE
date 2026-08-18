@@ -60,6 +60,15 @@ final class FakeRouteRepository: RouteRepositoryProtocol {
         return locationNames
     }
 
+    var bundle: RouteGuideResponse?
+    private(set) var capturedBundleRequests: [(userId: Int, isUsed: Bool)] = []
+
+    func getRouteBundle(userId: Int, isUsed: Bool) async throws -> RouteGuideResponse {
+        capturedBundleRequests.append((userId: userId, isUsed: isUsed))
+        guard let bundle else { throw FakeError.notConfigured }
+        return bundle
+    }
+
     /// `getRoutesGuide`가 실행되는 순간 호출된다.
     /// 응답이 도착하는 타이밍에 취소를 끼워 넣어 "뒤늦게 끝난 가이드"를 결정적으로 재현하는 훅.
     var onGetRoutesGuide: (() -> Void)?

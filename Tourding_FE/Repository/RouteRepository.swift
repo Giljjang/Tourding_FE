@@ -72,6 +72,14 @@ final class RouteRepository: RouteRepositoryProtocol {
             
         return routesTotal
     }
+
+    func getRouteBundle(userId: Int, isUsed: Bool) async throws -> RouteGuideResponse {
+        try await NetworkService.request(
+            apiType: .main,
+            endpoint: "/routes",
+            parameters: ["userId": String(userId), "isUsed": String(isUsed)]
+        )
+    }
     
     //추천코스
     func getRoutesRidingRecommend(pageNum:Int) async throws -> [RouteRidingRecommendModel] {
