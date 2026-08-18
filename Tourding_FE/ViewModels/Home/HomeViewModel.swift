@@ -122,20 +122,30 @@ final class HomeViewModel: ObservableObject {
     }
     
     @MainActor
-    func postRouteByNameAPI(start: String, goal: String) async {
+    /// 추천 코스를 사용자의 draft 경로로 저장하고, **성공 여부**를 돌려준다.
+    ///
+    /// 추천 코스는 서버에 따로 저장되지 않는다. 이 요청이 draft 슬롯을 덮어쓰는데,
+    /// 그 자리는 사용자가 직접 만든 코스와 같다. 저장에 실패했는데 화면을 넘기면
+    /// 다음 화면이 draft를 읽어 **옛 코스를 추천 코스인 양 보여준다.**
+    /// 그래서 호출부는 이 값이 true일 때만 이동해야 한다.
+    @discardableResult
+    func postRouteByNameAPI(start: String, goal: String) async -> Bool {
         guard let uid = userSession.userId else {
-            print("⏭️ getRouteRecommendAPI skipped: userId is nil")
-            return
+            print("⏭️ postRouteByNameAPI skipped: userId is nil")
+            return false
         }
-        
+
         isLoading = true
+        defer { isLoading = false }
+
         let requestBody = ReqRoutesByNameModel(userId: uid, start: start, goal: goal, isUsed: false)
         do {
             try await routeRepository.postRoutesByName(requestBody: requestBody)
+            return true
         } catch {
             print("POST postRouteByNameAPI ERROR: ", error)
             print("requestBody: ", requestBody)
+            return false
         }
-        isLoading = false
     }
 }

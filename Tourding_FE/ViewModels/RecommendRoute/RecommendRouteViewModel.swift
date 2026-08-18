@@ -21,12 +21,20 @@ final class RecommendRouteViewModel: ObservableObject {
     @Published var description: String = ""
     
     // MARK: - 지도 관련 프로퍼티
-    var locationManager: LocationManager?
-    var userLocationManager: LocationManager?
-    var mapView: NMFMapView?
-    var markerManager: MarkerManager?
-    var pathManager: PathManager?
-    var mapViewController: RecommendMapViewController?
+    //
+    // 전부 weak이다. 소유자는 화면이다 — Coordinator가 RecommendMapViewController를
+    // 보유하고, updateUIView가 갱신마다 이 여섯 개를 다시 연결한다.
+    // strong으로 잡으면 VC와 양방향 순환이 생겨 화면을 pop해도 둘 다 해제되지 않고,
+    // VC가 소유한 LocationManager까지 살아남아 GPS가 계속 돈다.
+    // 화면에 들어갈 때마다 한 세트씩 쌓인다.
+    //
+    // 회귀 방지: RecommendMapBindingLifetimeTests
+    weak var locationManager: LocationManager?
+    weak var userLocationManager: LocationManager?
+    weak var mapView: NMFMapView?
+    weak var markerManager: MarkerManager?
+    weak var pathManager: PathManager?
+    weak var mapViewController: RecommendMapViewController?
     
     
     // MARK: - 지도 관련 프로퍼티

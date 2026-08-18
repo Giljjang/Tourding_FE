@@ -18,7 +18,8 @@ final class RecommendMapViewController: UIViewController {
     private var mapView: NMFNaverMapView?
     let locationManager = LocationManager()
     private let locationButton = UIButton(type: .custom)
-    var recommendRouteViewModel: RecommendRouteViewModel?
+    /// ViewModel을 소유하면 안 된다 — 순환이 생겨 화면을 떠나도 지도와 GPS가 살아남는다
+    weak var recommendRouteViewModel: RecommendRouteViewModel?
     var userLocationManager: LocationManager?
     
     // MARK: - Data Properties

@@ -223,6 +223,11 @@ enum NetworkService {
                 )
             }
             // #endregion
+            // 🔎 [Diag] 임시 진단 — 원인 확정 후 제거
+            if let requestURL = request.url {
+                print("🔎 [Diag/Net] \(requestURL.path) status=\((response as? HTTPURLResponse)?.statusCode ?? -1) body(\(data.count)B): \(String(data: data, encoding: .utf8)?.prefix(600) ?? "<binary>")")
+            }
+            
             if let httpResponse = response as? HTTPURLResponse,
                let statusError = HTTPStatusValidator.error(for: httpResponse.statusCode) {
                 print("HTTP \(httpResponse.statusCode) body:",
@@ -407,7 +412,8 @@ extension NetworkService {
         
         // 디버깅: 서버에서 내려온 원본 데이터 출력
         if let jsonString = String(data: data, encoding: .utf8) {
-//            print("🔹 Response Data:\n\(jsonString)")
+            // 🔎 [Diag] 임시 진단 — 원인 확정 후 제거
+            print("🔎 [Diag/Net] \(url.path) body(\(data.count)B): \(jsonString.prefix(600))")
         } else {
             print("🔹 Response Data: Cannot convert to string")
         }

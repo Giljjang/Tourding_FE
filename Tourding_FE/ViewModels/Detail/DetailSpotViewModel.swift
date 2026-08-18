@@ -111,13 +111,17 @@ final class DetailSpotViewModel: ObservableObject {
         isLoading = true
         do {
             
-            print("ReqDetailModel: \(requestBody)")
+            // 🔎 [Diag] 임시 진단 — 원인 확정 후 제거
+            print("🔎 [Diag/Detail] REQ contentid=\(requestBody.contentid) contenttypeid=\(requestBody.contenttypeid)")
+
             let response = try await tourRepository.getTourAreaDetail(requestBody: requestBody)
 
             detailData = response
 
+            print("🔎 [Diag/Detail] OK title=\(response.title ?? "nil") overview=\(response.overview == nil ? "nil" : "\(response.overview!.count)자") addr=\(response.address ?? "nil")")
+
         } catch {
-            print("GET ERROR: /tour/area-detail \(error)")
+            print("🔎 [Diag/Detail] FAIL contentid=\(requestBody.contentid) contenttypeid=\(requestBody.contenttypeid) error=\(error)")
         }
         isLoading = false
     }
