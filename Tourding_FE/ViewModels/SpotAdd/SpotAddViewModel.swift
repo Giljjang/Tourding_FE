@@ -293,6 +293,27 @@ final class SpotAddViewModel: ObservableObject {
         }
     }
     
+    /// 스팟 추가 진입점.
+    ///
+    /// 화면은 스팟 리스트를 먼저 띄우고 routeLocation을 나중에 받는다.
+    /// 리스트가 뜨는 순간 사용자는 탭할 수 있으므로, 추가 시점에 경로가 비어 있을 수 있다.
+    /// 그대로 postRouteAPI에 넘기면 guard에 걸려 POST가 나가지 않는데도 그냥 pop돼
+    /// "추가했는데 리스트에도 지도에도 없는" 상태가 된다.
+    @MainActor
+    func addSpotToRoute(_ spot: SpotData) async {
+        if routeLocation.isEmpty {
+            await getRouteLocationAPI(showsLoading: false)
+        }
+
+        guard !routeLocation.isEmpty else {
+            errorMessage = "경로 정보를 불러오지 못해 스팟을 추가하지 못했습니다."
+            print("❌ 스팟 추가 중단 - 경로 데이터 없음")
+            return
+        }
+
+        await postRouteAPI(originalData: routeLocation, updatedData: spot)
+    }
+
     @MainActor
     func postRouteAPI(originalData: [LocationNameModel], updatedData: SpotData) async {
         guard let userId = userId else {

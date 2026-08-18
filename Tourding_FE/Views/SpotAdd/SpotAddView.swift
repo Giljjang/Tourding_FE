@@ -291,7 +291,7 @@ struct SpotAddView: View {
                                     Task { [weak spotAddViewModel] in
                                         do {
                                             try Task.checkCancellation()
-                                            await spotAddViewModel?.postRouteAPI(originalData: spotAddViewModel?.routeLocation ?? [], updatedData: spot)
+                                            await spotAddViewModel?.addSpotToRoute(spot)
                                             
                                             try Task.checkCancellation()
                                             await spotAddViewModel?.getRouteLocationAPI()
@@ -324,7 +324,7 @@ struct SpotAddView: View {
                 .padding(.vertical, 12)
                 .onTapGesture {
                     let req = ReqDetailModel(contentid: spot.contentid, contenttypeid: spot.contenttypeid)
-                    
+
                     navigationManager.push(.DetailSpotView(isSpotAdd: true, detailId: req))
                 }
                 .onAppear {
