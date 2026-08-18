@@ -86,8 +86,7 @@ struct MarkerPassingTests {
 
     /// 한 번의 위치 갱신은 안내를 **한 칸만** 소비해야 한다.
     /// 두 칸 이상 사라지면 그 사이 안내는 화면에 한 번도 뜨지 않는다.
-    @Test(.disabled("재현 완료 — 통과 판정 방식(A/B/C) 결정 대기 중. 결정되면 활성화한다"))
-    func consumesAtMostOneGuidancePerLocationUpdate() async {
+    @Test func consumesAtMostOneGuidancePerLocationUpdate() async {
         // 마커0·마커1이 25m 간격 — 실제 fixture에도 20m대 구간이 있다
         let viewModel = makeRidingViewModel(markersAt: [0, 25, 300])
 
@@ -99,8 +98,7 @@ struct MarkerPassingTests {
     }
 
     /// GPS가 튀거나 끊겼다 이어져도 중간 경유지 안내가 소리 없이 사라지면 안 된다
-    @Test(.disabled("재현 완료 — 통과 판정 방식(A/B/C) 결정 대기 중. 결정되면 활성화한다"))
-    func doesNotSilentlyConsumeWaypointGuidanceOnGpsJump() async {
+    @Test func doesNotSilentlyConsumeWaypointGuidanceOnGpsJump() async {
         // 20m 간격으로 4개, 인덱스 1·2가 경유지(type 9)
         let viewModel = makeRidingViewModel(markersAt: [0, 20, 40, 60],
                                             types: [6, 9, 9, 10])

@@ -73,35 +73,36 @@ extension RidingViewModel {
         print("🎯 마커 개수: \(markerCoordinates.count)")
         print("🎯 임계값: \(markerPassThreshold)m")
         
-        // 가장 가까운 마커의 인덱스 찾기
-        var closestMarkerIndex: Int? = nil
-        var minDistance = Double.infinity
-        
+        // 임계값 안에 마커가 있는지만 본다.
+        //
+        // 이전에는 "가장 가까운" 마커를 찾아 0...그 인덱스를 한꺼번에 지웠다.
+        // 그래서 30m 안에 마커가 둘 이상 들어오거나 GPS가 튀면 그 사이 안내가
+        // 화면에 한 번도 뜨지 않고 사라졌다. 실제 fixture에 20.7m·21.2m 간격 구간이 있다.
+        //
+        // 한 번의 위치 갱신에 한 칸만 소비한다. 여러 칸 밀렸으면 다음 갱신들로 따라잡는다
+        // (위치 콜백이 3m 이동마다 오므로 두 칸이면 약 6m 주행).
+        var nearestDistance = Double.infinity
+        var hasMarkerWithinThreshold = false
+
         for (index, markerCoord) in markerCoordinates.enumerated() {
             let distance = calculateDistance(from: userLocation, to: markerCoord)
             print("🎯 마커[\(index)]: \(markerCoord.lat), \(markerCoord.lng) - 거리: \(String(format: "%.2f", distance))m")
-            
-            if distance <= markerPassThreshold && distance < minDistance {
-                minDistance = distance
-                closestMarkerIndex = index
-                print("🎯 새로운 가장 가까운 마커 발견! 인덱스: \(index), 거리: \(String(format: "%.2f", distance))m")
+
+            if distance <= markerPassThreshold {
+                hasMarkerWithinThreshold = true
+                nearestDistance = min(nearestDistance, distance)
             }
         }
-        
-        // 가장 가까운 마커를 지나갔다면, 그 마커 이전의 모든 마커들 제거
-        if let closestIndex = closestMarkerIndex {
-            let removedCount = closestIndex + 1
-            
-            print("✅ 🎯 가까운 마커 발견! 인덱스: \(closestIndex), 거리: \(String(format: "%.2f", minDistance))m")
-            print("✅ 제거할 마커 개수: \(removedCount)개")
-            print("✅ 제거할 마커 인덱스: 0~\(closestIndex)")
-            
+
+        if hasMarkerWithinThreshold {
+            print("✅ 🎯 임계값 안 마커 있음 (최근접 \(String(format: "%.2f", nearestDistance))m) - 맨 앞 한 칸만 소비")
+
             // guideList의 좌표를 지날 때 showToilet과 showConvenienceStore 상태에 따라 토글 함수 호출
             await checkAndToggleFacilities(userLocation: userLocation)
-            
+
             // @MainActor를 사용하여 동기적으로 처리
-            await removePassedMarkers(removedCount: removedCount, closestIndex: closestIndex)
-            
+            await removePassedMarkers(removedCount: 1, closestIndex: 0)
+
         } else {
             print("⏸️ 가까운 마커 없음 (임계값: \(markerPassThreshold)m)")
             print("⏸️ 모든 마커가 \(markerPassThreshold)m보다 멀리 있음")
