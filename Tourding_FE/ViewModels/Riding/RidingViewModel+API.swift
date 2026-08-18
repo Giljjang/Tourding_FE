@@ -11,14 +11,16 @@ import NMapsMap
 extension RidingViewModel {
     //MARK: - 라이딩 시작하기 전 API 호출
     @MainActor
-    func getRoutesTotalAPI(isUsed: Bool? = nil) async {
+    func getRoutesTotalAPI(isUsed: Bool? = nil, showsLoading: Bool = true) async {
         guard let userId = userId else {
             print("❌ userId가 nil입니다")
             return
         }
         
-        isLoading = true
-        
+        // 드래그 중 배경 갱신은 오버레이를 띄우지 않는다 — 뜨면 제스처가 끊긴다
+        if showsLoading { isLoading = true }
+        defer { if showsLoading { isLoading = false } }
+
         do {
             let routeIsUsed = isUsed ?? self.isUsedRoute
             let response = try await routeRepository.getRoutes(userId: userId, isUsed: routeIsUsed)
@@ -39,9 +41,6 @@ extension RidingViewModel {
         } catch {
             print("ERRO: GET - \(error)")
         }
-        
-        isLoading = false
-        
     }
     
     @MainActor
@@ -378,9 +377,11 @@ extension RidingViewModel {
         
         print("🔄 가이드 API 호출 시작 - isNotNormal: \(isNotNormal != nil)")
         
-        // 가이드 API 호출 시 로딩 상태 설정
+        // 가이드 API 호출 시 로딩 상태 설정.
+        // 취소로 중간에 빠져나가도 반드시 내려야 하므로 defer로 묶는다
         isStartingRiding = true
-        
+        defer { isStartingRiding = false }
+
         // 라이딩 시작 전 원본 데이터 백업 (정상/비정상 종료 모두)
         print("🔄 라이딩 시작 - 원본 데이터 백업")
         
@@ -430,8 +431,16 @@ extension RidingViewModel {
         while retryCount < maxRetries {
             do {
                 let response = try await routeRepository.getRoutesGuide(userId: userId, isUsed: true)
+
+                // 응답을 기다리는 사이 라이딩이 끝났으면 적용하지 않는다.
+                // 적용하면 편집 모드 화면이 가이드 마커로 덮인다.
+                if Task.isCancelled {
+                    print("🚫 가이드 응답 도착 후 취소 확인 - 적용하지 않음")
+                    return
+                }
+
                 guideList = response
-                
+
                 print("✅ 가이드 데이터 로드 완료: \(guideList.count)개")
                 
                 // 기존 마커들을 제거하고 가이드 마커들로 교체
@@ -495,8 +504,6 @@ extension RidingViewModel {
             }
         }
         
-        // 가이드 API 호출 완료 후 로딩 상태 해제
-        isStartingRiding = false
     }
     
     @MainActor

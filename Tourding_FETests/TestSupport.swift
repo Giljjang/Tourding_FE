@@ -60,7 +60,14 @@ final class FakeRouteRepository: RouteRepositoryProtocol {
         return locationNames
     }
 
-    func getRoutesGuide(userId: Int, isUsed: Bool) async throws -> [GuideModel] { guides }
+    /// `getRoutesGuide`가 실행되는 순간 호출된다.
+    /// 응답이 도착하는 타이밍에 취소를 끼워 넣어 "뒤늦게 끝난 가이드"를 결정적으로 재현하는 훅.
+    var onGetRoutesGuide: (() -> Void)?
+
+    func getRoutesGuide(userId: Int, isUsed: Bool) async throws -> [GuideModel] {
+        onGetRoutesGuide?()
+        return guides
+    }
 
     func getRoutes(userId: Int, isUsed: Bool) async throws -> RoutesModel {
         capturedRoutesRequests.append((userId: userId, isUsed: isUsed))
