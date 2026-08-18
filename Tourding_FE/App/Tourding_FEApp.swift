@@ -70,6 +70,10 @@ struct Tourding_FEApp: App {
                                     // case 추가해서 탭뷰 제외 뷰 넣으면 됨
                                 case .LoginView:
                                     LoginView()
+                                case .OnboardingSurveyView:
+                                    OnboardingSurveyView(onComplete: {
+                                        navigationManager.pop()
+                                    })
                                 case .ServiceView:
                                     ServiceView()
                                 case .RidingView(let isNotNormal, let isStart, let routeSource):
