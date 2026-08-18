@@ -119,6 +119,20 @@ struct KeychainHelper {
         print("🗑 애플 유저 정보 삭제 완료")
     }
 
+    // MARK: - 온보딩 설문 완료 여부 저장용
+
+    static func saveOnboardingCompleted() {
+        save(key: "hasCompletedOnboarding", value: "true")
+    }
+
+    static func hasCompletedOnboarding() -> Bool {
+        load(key: "hasCompletedOnboarding") == "true"
+    }
+
+    static func deleteOnboardingCompleted() {
+        delete(key: "hasCompletedOnboarding")
+    }
+
 }
 
 func saveKakaoToken(token: OAuthToken) {

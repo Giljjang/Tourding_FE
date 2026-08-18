@@ -17,6 +17,7 @@ class LoginViewModel: NSObject, ObservableObject {
     @Published var userEmail: String = "Tourding@example.com"
     @Published var currentUser: CreateUserResponse? = nil   // ✅ 전역에서 쓰기 위한 모델
     @Published var loginProvider: String = ""  // "kakao" 또는 "apple"
+    @Published var hasCompletedOnboarding: Bool = KeychainHelper.hasCompletedOnboarding()
     
     private let userRepository: UserRepositoryProtocol
     
@@ -181,6 +182,12 @@ class LoginViewModel: NSObject, ObservableObject {
         }
     }
     
+    /// 온보딩 설문 완료 처리 (다시는 온보딩이 뜨지 않도록 기기에 저장)
+    func completeOnboarding() {
+        KeychainHelper.saveOnboardingCompleted()
+        hasCompletedOnboarding = true
+    }
+
     func fetchUserInfo() {
         UserApi.shared.me { user, error in
             if let error = error {
@@ -404,15 +411,17 @@ class LoginViewModel: NSObject, ObservableObject {
                 // 3. 로컬 데이터 정리
                 clearKakaoTokens()
                 KeychainHelper.deleteUid()
-                
+                KeychainHelper.deleteOnboardingCompleted()
+
                 await MainActor.run {
                     isLoggedIn = false
                     userNickname = "홍길동"
                     userEmail = "Tourding@example.com"
                     loginProvider = ""
                     currentUser = nil
+                    hasCompletedOnboarding = false
                 }
-                
+
                 print("✅ 카카오 회원탈퇴 완료")
                 
             } catch {
@@ -442,15 +451,17 @@ class LoginViewModel: NSObject, ObservableObject {
                 KeychainHelper.deleteUid()
                 // loginProvider도 삭제하여 로그인 상태 해제
                 KeychainHelper.delete(key: "loginProvider")
-                
+                KeychainHelper.deleteOnboardingCompleted()
+
                 await MainActor.run {
                     isLoggedIn = false
                     userNickname = "홍길동"
                     userEmail = "Tourding@example.com"
                     loginProvider = ""
                     currentUser = nil
+                    hasCompletedOnboarding = false
                 }
-                
+
                 print("✅ 애플 회원탈퇴 완료")
                 
             } catch {
