@@ -37,8 +37,6 @@ final class LocationManager: NSObject, ObservableObject {
     @Published var cameraPivotY: CGFloat = 0.3
     
     // MARK: - Auto Tracking Properties
-    private var touchTimer: Timer?
-    private let autoTrackingDelay: TimeInterval = 20.0 // 20초 후 자동 위치추적
     
     // MARK: - Initialization
     override init() {
@@ -334,7 +332,6 @@ final class LocationManager: NSObject, ObservableObject {
     func stopNavigationMode() {
         isNavigationMode = false
         isLocationTrackingEnabled = false
-        cancelAutoTrackingTimer() // 타이머 정리
         // print("🧭 네비게이션 모드 종료")
     }
     
@@ -389,31 +386,8 @@ final class LocationManager: NSObject, ObservableObject {
         isLocationTrackingEnabled = false
         print("📍 위치추적 상태 변경: \(isLocationTrackingEnabled)")
         stopNavigationMode()
-        
-        // 20초 후 자동 위치추적 on 타이머 시작
-//        startAutoTrackingTimer()
     }
     
-    // 20초 후 자동 위치추적 on 타이머 시작
-    private func startAutoTrackingTimer() {
-        // 기존 타이머 취소
-        touchTimer?.invalidate()
-        
-        touchTimer = Timer.scheduledTimer(withTimeInterval: autoTrackingDelay, repeats: false) { [weak self] _ in
-            Task { @MainActor in
-                guard let self = self else { return }
-                
-                print("⏰ 20초 경과 - 자동 위치추적 on")
-                self.toggleLocationTracking()
-            }
-        }
-    }
-    
-    // 타이머 취소
-    func cancelAutoTrackingTimer() {
-        touchTimer?.invalidate()
-        touchTimer = nil
-    }
     
     // 현재 맵뷰 가져오기 (헬퍼 메서드)
     private func getCurrentMapView() -> NMFMapView? {

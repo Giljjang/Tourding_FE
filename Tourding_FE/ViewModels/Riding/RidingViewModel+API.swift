@@ -141,55 +141,32 @@ extension RidingViewModel {
         
         isLoading = true
         
-        // 재시도 메커니즘 (최대 3회)
-        var retryCount = 0
-        let maxRetries = 3
-        
-        while retryCount < maxRetries {
-            do {
-                // 명시 인자 > 추천 코스 흐름(!isRecommend) > 현재 화면이 다루는 경로(isUsedRoute)
-                let isUsed = isUsedOverride ?? (isRecommend != nil ? !isRecommend! : self.isUsedRoute)
-                
-                let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: isUsed)
-                routeLocation = response
-                applyRouteLocationMarkers(from: response)
-                // #region agent log
-                DebugSessionLogger.log(
-                    location: "RidingViewModel+API.swift:getRouteLocationAPI",
-                    message: "riding route locations loaded",
-                    hypothesisId: "H1_H4",
-                    data: [
-                        "isUsed": String(isUsed),
-                        "flag": String(flag),
-                        "first": response.first?.name ?? "nil",
-                        "last": response.last?.name ?? "nil",
-                        "count": String(response.count)
-                    ]
-                )
-                // #endregion
-                
-                // 성공하면 루프 종료
-                break
-                
-            } catch {
-                // 500·4xx는 다시 걸어도 같은 답이 온다 (실측: /routes/path 500 3회 연속 동일)
-                guard (error as? ErrorType)?.isRetryable ?? true else {
-                    print("🚫 재시도하지 않는 에러 - 중단: \(error)")
-                    break
-                }
+        // 명시 인자 > 추천 코스 흐름(!isRecommend) > 현재 화면이 다루는 경로(isUsedRoute)
+        let isUsed = isUsedOverride ?? (isRecommend != nil ? !isRecommend! : self.isUsedRoute)
 
-                retryCount += 1
-                print("❌ 경로 위치 API 호출 실패 (시도 \(retryCount)/\(maxRetries)): \(error)")
-                
-                if retryCount < maxRetries {
-                    // 재시도 전 잠시 대기
-                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1초 대기
-                } else {
-                    print("❌ 경로 위치 API 호출 최종 실패")
-                }
-            }
+        let response = await RetryPolicy.run(label: "경로 위치 API") {
+            try await self.routeRepository.getRoutesLocationName(userId: userId, isUsed: isUsed)
         }
-        
+
+        if let response {
+            routeLocation = response
+            applyRouteLocationMarkers(from: response)
+            // #region agent log
+            DebugSessionLogger.log(
+                location: "RidingViewModel+API.swift:getRouteLocationAPI",
+                message: "riding route locations loaded",
+                hypothesisId: "H1_H4",
+                data: [
+                    "isUsed": String(isUsed),
+                    "flag": String(flag),
+                    "first": response.first?.name ?? "nil",
+                    "last": response.last?.name ?? "nil",
+                    "count": String(response.count)
+                ]
+            )
+            // #endregion
+        }
+
         isLoading = false
     }
     
@@ -203,58 +180,36 @@ extension RidingViewModel {
         
         isLoading = true
         
-        // 재시도 메커니즘 (최대 3회)
-        var retryCount = 0
-        let maxRetries = 3
-        
-        while retryCount < maxRetries {
-            do {
-                let routeIsUsed = isUsed ?? self.isUsedRoute
-                let response = try await routeRepository.getRoutesPath(userId: userId, isUsed: routeIsUsed)
-                routeMapPaths = response
-                // #region agent log
-                DebugSessionLogger.log(
-                    location: "RidingViewModel+API.swift:getRoutePathAPI",
-                    message: "riding path loaded",
-                    hypothesisId: "H1",
-                    data: [
-                        "isUsed": String(routeIsUsed),
-                        "pathCount": String(response.count)
-                    ]
-                )
-                // #endregion
-                
-                pathCoordinates = routeMapPaths.compactMap { item in
-                    if let lat = Double(item.lat),
-                       let lon = Double(item.lon) {
-                        return NMGLatLng(lat: lat, lng: lon)
-                    } else {
-                        return nil // 변환 실패 시 무시
-                    }
-                }
-                
-                // 성공하면 루프 종료
-                break
-                
-            } catch {
-                // 500·4xx는 다시 걸어도 같은 답이 온다 (실측: /routes/path 500 3회 연속 동일)
-                guard (error as? ErrorType)?.isRetryable ?? true else {
-                    print("🚫 재시도하지 않는 에러 - 중단: \(error)")
-                    break
-                }
+        let routeIsUsed = isUsed ?? self.isUsedRoute
 
-                retryCount += 1
-                print("❌ 경로 경로선 API 호출 실패 (시도 \(retryCount)/\(maxRetries)): \(error)")
-                
-                if retryCount < maxRetries {
-                    // 재시도 전 잠시 대기
-                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1초 대기
+        let response = await RetryPolicy.run(label: "경로 경로선 API") {
+            try await self.routeRepository.getRoutesPath(userId: userId, isUsed: routeIsUsed)
+        }
+
+        if let response {
+            routeMapPaths = response
+            // #region agent log
+            DebugSessionLogger.log(
+                location: "RidingViewModel+API.swift:getRoutePathAPI",
+                message: "riding path loaded",
+                hypothesisId: "H1",
+                data: [
+                    "isUsed": String(routeIsUsed),
+                    "pathCount": String(response.count)
+                ]
+            )
+            // #endregion
+
+            pathCoordinates = routeMapPaths.compactMap { item in
+                if let lat = Double(item.lat),
+                   let lon = Double(item.lon) {
+                    return NMGLatLng(lat: lat, lng: lon)
                 } else {
-                    print("❌ 경로 경로선 API 호출 최종 실패")
+                    return nil // 변환 실패 시 무시
                 }
             }
         }
-        
+
         isLoading = false
     }
     

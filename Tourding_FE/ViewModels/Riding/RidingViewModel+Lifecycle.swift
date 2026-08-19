@@ -269,7 +269,6 @@ extension RidingViewModel {
 
         locationManager.stopLocationUpdates()
         locationManager.stopNavigationMode()
-        locationManager.cancelAutoTrackingTimer()
 
         if let firstLocation = routeLocation.first,
            let lat = Double(firstLocation.lat),

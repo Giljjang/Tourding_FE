@@ -121,58 +121,35 @@ final class RecommendRouteViewModel: ObservableObject {
         
         isLoading = true
         
-        // 재시도 메커니즘 (최대 3회)
-        var retryCount = 0
-        let maxRetries = 3
-        
-        while retryCount < maxRetries {
-            do {
-                let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: false)
-                routeLocation = response
-                
-                markerCoordinates = routeLocation.compactMap { item in
-                    if let lat = Double(item.lat), let lon = Double(item.lon) {
-                        return NMGLatLng(lat: lat, lng: lon)
-                    } else {
-                        return nil
-                    }
-                }
-                
-                markerIcons = routeLocation.enumerated().map { (index, item) in
-                    switch item.type {
-                    case "Start":
-                        return MarkerIcons.startMarker
-                    case "Goal":
-                        return MarkerIcons.goalMarker
-                    case "WayPoint":
-                        return MarkerIcons.numberMarker(index) // index 사용
-                    default:
-                        return MarkerIcons.numberMarker(0)
-                    }
-                }
-                
-                // 성공하면 루프 종료
-                break
-                
-            } catch {
-                // 500·4xx는 다시 걸어도 같은 답이 온다 (실측: /routes/path 500 3회 연속 동일)
-                guard (error as? ErrorType)?.isRetryable ?? true else {
-                    print("🚫 재시도하지 않는 에러 - 중단: \(error)")
-                    break
-                }
+        let response = await RetryPolicy.run(label: "경로 위치 API") {
+            try await self.routeRepository.getRoutesLocationName(userId: userId, isUsed: false)
+        }
 
-                retryCount += 1
-                print("❌ 경로 위치 API 호출 실패 (시도 \(retryCount)/\(maxRetries)): \(error)")
-                
-                if retryCount < maxRetries {
-                    // 재시도 전 잠시 대기
-                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1초 대기
+        if let response {
+            routeLocation = response
+
+            markerCoordinates = routeLocation.compactMap { item in
+                if let lat = Double(item.lat), let lon = Double(item.lon) {
+                    return NMGLatLng(lat: lat, lng: lon)
                 } else {
-                    print("❌ 경로 위치 API 호출 최종 실패")
+                    return nil
+                }
+            }
+
+            markerIcons = routeLocation.enumerated().map { (index, item) in
+                switch item.type {
+                case "Start":
+                    return MarkerIcons.startMarker
+                case "Goal":
+                    return MarkerIcons.goalMarker
+                case "WayPoint":
+                    return MarkerIcons.numberMarker(index) // index 사용
+                default:
+                    return MarkerIcons.numberMarker(0)
                 }
             }
         }
-        
+
         isLoading = false
     }
     
@@ -186,46 +163,23 @@ final class RecommendRouteViewModel: ObservableObject {
         
         isLoading = true
         
-        // 재시도 메커니즘 (최대 3회)
-        var retryCount = 0
-        let maxRetries = 3
-        
-        while retryCount < maxRetries {
-            do {
-                let response = try await routeRepository.getRoutesPath(userId: userId, isUsed: false)
-                routeMapPaths = response
-                
-                pathCoordinates = routeMapPaths.compactMap { item in
-                    if let lat = Double(item.lat),
-                       let lon = Double(item.lon) {
-                        return NMGLatLng(lat: lat, lng: lon)
-                    } else {
-                        return nil // 변환 실패 시 무시
-                    }
-                }
-                
-                // 성공하면 루프 종료
-                break
-                
-            } catch {
-                // 500·4xx는 다시 걸어도 같은 답이 온다 (실측: /routes/path 500 3회 연속 동일)
-                guard (error as? ErrorType)?.isRetryable ?? true else {
-                    print("🚫 재시도하지 않는 에러 - 중단: \(error)")
-                    break
-                }
+        let response = await RetryPolicy.run(label: "경로 경로선 API") {
+            try await self.routeRepository.getRoutesPath(userId: userId, isUsed: false)
+        }
 
-                retryCount += 1
-                print("❌ 경로 경로선 API 호출 실패 (시도 \(retryCount)/\(maxRetries)): \(error)")
-                
-                if retryCount < maxRetries {
-                    // 재시도 전 잠시 대기
-                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1초 대기
+        if let response {
+            routeMapPaths = response
+
+            pathCoordinates = routeMapPaths.compactMap { item in
+                if let lat = Double(item.lat),
+                   let lon = Double(item.lon) {
+                    return NMGLatLng(lat: lat, lng: lon)
                 } else {
-                    print("❌ 경로 경로선 API 호출 최종 실패")
+                    return nil // 변환 실패 시 무시
                 }
             }
         }
-        
+
         isLoading = false
     }
 }

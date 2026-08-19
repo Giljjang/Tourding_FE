@@ -28,7 +28,6 @@ final class RecommendMapViewController: UIViewController {
     
     // MARK: - Callbacks
     var onLocationUpdate: ((CLLocation) -> Void)?
-    var onMapTap: ((NMGLatLng) -> Void)?
     
     // MARK: - Managers
     var markerManager: MarkerManager?
@@ -51,7 +50,6 @@ final class RecommendMapViewController: UIViewController {
         
         // 콜백 해제
         onLocationUpdate = nil
-        onMapTap = nil
         
         // 마커 매니저 정리
         markerManager?.clearAllMarkers()
