@@ -54,7 +54,7 @@ final class PathManager {
         
         // 메인 경로선 설정
         innerPathOverlay.width = 8 // 경로선 너비를 늘려서 마커와 겹치도록
-        innerPathOverlay.color = UIColor(hex: "#00E1FF")
+        innerPathOverlay.color = UIColor(hex: "#2C333A")
         innerPathOverlay.outlineWidth = 0
         
         // 패턴 이미지 설정
@@ -234,7 +234,7 @@ final class PathManager {
         
         // 메인 경로선 스타일 재설정
         innerPathOverlay.width = 8 // 경로선 너비를 늘려서 마커와 겹치도록
-        innerPathOverlay.color = UIColor(hex: "#00E1FF")
+        innerPathOverlay.color = UIColor(hex: "#2C333A")
         innerPathOverlay.outlineWidth = 0
         
         // 패턴 이미지 재설정
