@@ -24,6 +24,11 @@ enum BikeType: String, CaseIterable, Identifiable {
         case .mountain: return "cycling-mountain"
         }
     }
+
+    init?(apiValue: String) {
+        guard let match = Self.allCases.first(where: { $0.apiValue == apiValue }) else { return nil }
+        self = match
+    }
 }
 
 enum RidingSkillLevel: String, CaseIterable, Identifiable {
@@ -43,6 +48,16 @@ enum RidingSkillLevel: String, CaseIterable, Identifiable {
         }
     }
 
+    /// 라이딩 스타일 설정 화면의 짧은 pill 라벨 (온보딩 카드 문구와 별개)
+    var shortLabel: String {
+        switch self {
+        case .beginner: return "입문자"
+        case .novice: return "초급자"
+        case .skilled: return "숙련자"
+        case .expert: return "전문가"
+        }
+    }
+
     /// PUT /user/{id}/riding-profile 의 routeOption.skillLevel 값
     var apiValue: String {
         switch self {
@@ -51,5 +66,10 @@ enum RidingSkillLevel: String, CaseIterable, Identifiable {
         case .skilled: return "ADVANCED"
         case .expert: return "PRO"
         }
+    }
+
+    init?(apiValue: String) {
+        guard let match = Self.allCases.first(where: { $0.apiValue == apiValue }) else { return nil }
+        self = match
     }
 }

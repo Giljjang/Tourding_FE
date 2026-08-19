@@ -13,4 +13,5 @@ protocol UserRepositoryProtocol {
     func deleteUser(id: Int) async throws
     func revokeUser(userId: Int, authorizationCode: String) async throws
     func updateRidingProfile(userId: Int, request: UpdateRidingProfileRequest) async throws -> UserRidingProfileResponse
+    func getRidingProfile(userId: Int) async throws -> UserRidingProfileResponse
 }
