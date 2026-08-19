@@ -265,6 +265,29 @@ final class LocationManager: NSObject, ObservableObject {
         }
     }
     
+    // MARK: - Camera Pivot
+
+    /// 바텀시트 위치별 카메라 피봇 Y. `nil`이면 카메라를 건드리지 않는다.
+    ///
+    /// 피봇은 `(0,0)`이 좌상단이라 값이 클수록 사용자가 화면 **아래쪽**에 놓인다.
+    /// 시트가 작을수록 지도가 넓게 보이므로 시점을 더 위로(값을 크게) 둔다.
+    static func cameraPivot(for position: BottomSheetPosition) -> CGFloat? {
+        switch position {
+        case .small:  return 0.6
+        case .medium: return 0.4
+        case .large:  return nil   // 지도가 거의 가려지므로 카메라를 건드리지 않는다
+        }
+    }
+
+    /// 시트 위치를 피봇에 반영한다.
+    ///
+    /// 편집 모드에서도 반드시 불러야 한다 — 안 부르면 "내 위치로 이동" 버튼이
+    /// 기본값 0.3을 쓰고, 라이딩을 했다 돌아온 경우엔 직전 라이딩의 값이 남는다.
+    func syncCameraPivot(for position: BottomSheetPosition) {
+        guard let pivot = Self.cameraPivot(for: position) else { return }
+        cameraPivotY = pivot
+    }
+
     // MARK: - Camera Follow
 
     /// 카메라가 사용자를 따라가야 하는가.

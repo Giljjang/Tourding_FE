@@ -243,17 +243,16 @@ struct RidingView: View {
                 return
             }
             
-            // 바텀시트 위치에 따른 카메라 피봇 조정
-            let yPivot: CGFloat
-            switch newValue {
-            case .small:
-                yPivot = 0.6  // 바텀시트가 작을 때 카메라 시점을 더 위로
-            case .medium:
-                yPivot = 0.4  // 중간 크기일 때 적당한 위치
-            case .large:
+            // 바텀시트 위치에 따른 카메라 피봇. 매핑은 LocationManager가 갖는다.
+            guard let yPivot = LocationManager.cameraPivot(for: newValue) else {
                 return  // large일 때는 아무것도 하지 않음
             }
-            
+
+            // 편집·라이딩 **양쪽 모두** 피봇을 저장한다.
+            // 편집에서 저장하지 않으면 "내 위치로 이동" 버튼이 시트 높이를 반영하지 못하고,
+            // 라이딩을 했다 돌아온 경우엔 직전 라이딩의 값이 그대로 남는다.
+            ridingViewModel.userLocationManager?.syncCameraPivot(for: newValue)
+
             // 편집 모드는 pivot만 조정 (보고 있는 화면 위치 유지).
             // 라이딩 중에는 **추적 중일 때만** 사용자 위치로 따라간다 — 판정은 LocationManager에 있다.
             if !ridingViewModel.flag {
@@ -268,10 +267,6 @@ struct RidingView: View {
                 }
             } else {
                 guard let userLocationManager = ridingViewModel.userLocationManager else { return }
-                
-                // pivot 상태 저장 (userLocationManager에 저장)
-                userLocationManager.cameraPivotY = yPivot
-                print("📷 바텀시트 높이 변경: 피봇을 \(yPivot)으로 설정")
                 
                 // 애니메이션 충돌 방지를 위해 약간의 지연 후 실행
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
