@@ -282,26 +282,19 @@ final class MapViewController: UIViewController {
     
     // 나침반 방향 업데이트 메서드 추가
     private func updateUserLocationBearing(_ heading: CLHeading) {
-        // 나침반 데이터가 부정확한 경우 무시
-        if heading.headingAccuracy < 0 {
+        // 판정은 HeadingResolver 한 곳에 있다.
+        // 예전에는 여기(진북 우선)와 LocationManager(자북)가 같은 오버레이에
+        // 서로 다른 기준의 값을 써서, 어느 쪽이 마지막에 이겼는지에 따라 마커가 달라졌다.
+        guard let adjustedHeading = HeadingResolver.markerHeading(from: heading) else {
             return
         }
-        
+
         guard let mapView = mapView else {
             print("❌ mapView가 nil입니다")
             return
         }
-        
-        let locationOverlay = mapView.mapView.locationOverlay
-        
-        // 이미지가 오른쪽 하단을 가리키므로 -45도 오프셋 적용
-        // magneticHeading: 자북 기준 (0-359도)
-        // trueHeading: 진북 기준 (더 정확하지만 GPS가 필요)
-        let bearing = heading.trueHeading >= 0 ? heading.trueHeading : heading.magneticHeading
-        let adjustedHeading = bearing - 45.0
-        
-        // NMFLocationOverlay의 heading 속성 사용
-        locationOverlay.heading = CGFloat(adjustedHeading)
+
+        mapView.mapView.locationOverlay.heading = CGFloat(adjustedHeading)
     }
 }
 

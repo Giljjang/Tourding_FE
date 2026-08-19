@@ -228,8 +228,11 @@ final class LocationManager: NSObject, ObservableObject {
     func updateLocationOverlayHeading(on mapView: NMFMapView) {
         let locationOverlay = mapView.locationOverlay
         
-        // 이미지가 오른쪽 하단을 가리키므로 -45도 오프셋 적용
-        let adjustedHeading = currentHeading - 45.0
+        // currentHeading은 이미 HeadingResolver가 고른 진북 기준 값이다.
+        // 여기서는 아이콘 보정만 더한다 — 오프셋 상수를 복제하지 말 것.
+        let adjustedHeading = HeadingResolver.normalized(
+            currentHeading + HeadingResolver.markerIconOffset
+        )
         locationOverlay.heading = CGFloat(adjustedHeading)
     }
     
@@ -508,15 +511,15 @@ extension LocationManager: CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
         // print("🧭 didUpdateHeading 호출됨 - 정확도: \(newHeading.headingAccuracy)")
         
-        // 나침반 데이터가 부정확한 경우 무시
-        if newHeading.headingAccuracy < 0 {
+        // 방위 판정은 HeadingResolver 한 곳에 있다 — 여기서 원본을 직접 고르지 말 것.
+        // 자북을 그대로 쓰면 진북 기준인 지도가 편각만큼(서울 약 9도) 틀어져 회전한다.
+        guard let resolved = HeadingResolver.mapHeading(from: newHeading) else {
             // print("❌ 나침반 데이터가 부정확함 - 무시")
             return
         }
-        
-        // 자북(magnetic north) 기준 방향 사용
+
         let oldHeading = currentHeading
-        currentHeading = newHeading.magneticHeading
+        currentHeading = resolved
         
         // print("🧭 헤딩 변경: \(oldHeading)도 → \(currentHeading)도")
         
