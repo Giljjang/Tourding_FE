@@ -176,11 +176,17 @@ enum NetworkService {
             }
             
             // 네트워크 요청 실행
+            //
+            // URL·본문은 릴리즈에서 찍지 않는다. URL 쿼리에 authorizationCode가 실리는
+            // 엔드포인트가 있고(`revokeUser`), 본문에는 userId·좌표가 그대로 들어간다.
+            // 릴리즈 콘솔은 sysdiagnose로 빠져나간다.
+            #if DEBUG
             print("🔵 네트워크 요청 시작: \(request.url?.absoluteString ?? "URL 없음")")
             print("🔵 HTTP Method: \(request.httpMethod ?? "GET")")
             if let body = request.httpBody {
                 print("🔵 Request Body: \(String(data: body, encoding: .utf8) ?? "디코딩 실패")")
             }
+            #endif
 
             // #region agent log
             let debugSeq = request.url?.absoluteString.contains("search-location") == true
@@ -225,8 +231,13 @@ enum NetworkService {
             // #endregion
             if let httpResponse = response as? HTTPURLResponse,
                let statusError = HTTPStatusValidator.error(for: httpResponse.statusCode, body: data) {
+                // 본문에 서버가 실어 보낸 사용자 데이터가 들어올 수 있다.
+                // 상태 코드만 릴리즈에 남기고 본문은 DEBUG에서만 본다.
+                print("HTTP \(httpResponse.statusCode) 실패")
+                #if DEBUG
                 print("HTTP \(httpResponse.statusCode) body:",
                       String(data: data, encoding: .utf8) ?? "<no body>")
+                #endif
                 throw statusError
             }
             
@@ -236,7 +247,9 @@ enum NetworkService {
                 return decodedResponse
             } catch {
                 print("Decoding error: \(error)")
+                #if DEBUG
                 print("Response data: \(String(data: data, encoding: .utf8) ?? "Unable to convert to string")")
+                #endif
                 throw ErrorType.decodingFailure(underlying: error)
             }
         }
