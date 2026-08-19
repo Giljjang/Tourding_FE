@@ -145,7 +145,22 @@ NMapView → MapViewRepresentable → MapViewController
 strong으로 잡으면 화면을 떠난 뒤에도 `MapViewController`와 그 `CLLocationManager`가 살아 GPS가 계속 돈다.
 `MapViewController.ridingViewModel`도 같은 이유로 `weak`.
 
-**새 지도 참조를 추가할 때도 `weak`을 유지할 것.** 회귀 방지 테스트: `MapBindingLifetimeTests`
+`RecommendRouteViewModel` ↔ `RecommendMapViewController`도 같다.
+이쪽은 ViewModel이 **화면 수명**(`@StateObject`)이라 순환이 나면 화면에 들어갈 때마다
+한 세트씩 쌓인다 — 앱 수명인 라이딩 쪽(1세트 잔존)보다 나쁘다.
+
+**새 지도 참조를 추가할 때도 `weak`을 유지할 것.**
+회귀 방지 테스트: `MapBindingLifetimeTests`, `RecommendMapBindingLifetimeTests`
+
+### 마커 통과 판정 (A)
+
+임계값(30m) 안에 마커가 있으면 **맨 앞 한 칸만** 소비한다.
+이전에는 "가장 가까운" 마커를 찾아 `0...그 인덱스`를 한꺼번에 지워서,
+30m 안에 마커가 둘 이상이거나 GPS가 튀면 중간 안내가 화면에 한 번도 뜨지 않고 사라졌다
+(실제 fixture에 20.7m·21.2m 간격 구간이 있다).
+
+여러 칸 밀리면 다음 위치 갱신들로 따라잡는다 — 콜백이 3m 이동마다 오므로 두 칸이면 약 6m 주행이다.
+회귀 방지 테스트: `MarkerPassingTests`
 
 ### 미해결 이슈
 
@@ -155,11 +170,43 @@ strong으로 잡으면 화면을 떠난 뒤에도 `MapViewController`와 그 `CL
 
 ---
 
+## 네트워크 계약
+
+**경로 조회는 `getRouteBundle` (`GET /routes`) 하나로 받는다.**
+서버가 요약·`guides`·`paths`·`locations`를 한 응답에 담아준다(`RouteGuideRespDto`).
+개별 엔드포인트를 각각 부르면 서버가 같은 경로를 여러 번 재계산한다 —
+응답 하나가 80KB대이고, 실측상 짧은 세션에 `/routes` 200 응답만 12회 나간 뒤
+`/routes`·`/routes/path`·`/routes/guide`가 연쇄 500을 반환했다.
+
+**응답 모델의 새 필드는 옵셔널로 둔다.** 필드 하나 때문에 응답 전체가 폐기되는 실패를
+두 번 겪었다(`/routes/guide` 형태 변경, 상세의 분류 필드 누락).
+
+**재시도는 될 만한 것에만.** `ErrorType.isRetryable` —
+408·429·503·네트워크 단절만 재시도하고 **500·502·504·4xx는 즉시 중단**한다.
+이 서버의 500은 결정적이다(실측: `/routes/path` 500이 3회 연속 동일).
+재시도 루프를 새로 만들면 이 가드를 반드시 넣을 것.
+
+**상태 판정은 `HTTPStatusValidator.error(for:)`.** `(200..<300)` 범위로 본다.
+"아는 에러 코드 목록" 조회 방식은 429·504를 통과시켜 `decodingFailure`로 둔갑시켰다.
+
+**타임아웃**: `NetworkService.session` (요청 20초 / 리소스 60초). `URLSession.shared`를 쓰지 말 것.
+
+**실패를 삼키지 마라.** `catch { print }` 후 화면을 그대로 진행시키면 사용자는 성공한 줄 안다.
+오늘 이 형태로 4건이 나왔다 — 삭제 안 됨, 스팟 추가 안 됨, 상세 빈 화면,
+그리고 **추천 코스 자리에 사용자의 옛 코스가 표시**됐다.
+호출부가 분기해야 하면 성공 여부를 반환할 것.
+
+---
+
 ## API 요약
 
 **Request**: `RequestRouteModel` — 좌표는 `경도,위도` 순 (`wayPoints`: `lon,lat|lon,lat`)
 
-**Response**: `RoutePathModel`, `LocationNameModel`(Start/WayPoint/Goal), `GuideModel`, `RoutesModel`, `FacilityInfoModel`
+**Response**: `RouteGuideResponse`(통합 — 요약·guides·paths·locations), `RoutePathModel`,
+`LocationNameModel`(Start/WayPoint/Goal), `GuideModel`, `RoutesModel`(+ `routeSummaryId`·`ascent`·
+`uphillLevel`·`appliedOption` 등 옵셔널), `RouteOptionModel`, `FacilityInfoModel`
+
+`routeSummaryId`는 AI 경로 재설정(`/ai/routes/adjustments/*`)의 필수 입력이라 `routeTotal`에 보관한다.
 
 **Fixtures** (`Resources/Fixtures/`):
 
@@ -170,6 +217,8 @@ strong으로 잡으면 화면을 떠난 뒤에도 `MapViewController`와 그 `CL
 | `routes_guide_simple.json` / `_with_waypoints.json` | 가이드 (type 9 = 경유지) |
 | `routes_path_unused.json` | 258좌표 (PathManager 벤치마크) |
 | `routes_toilet.json`, `routes_convenience_store.json` | 편의시설 |
+| `routes_guide_response.json` | 변경된 서버 형태 (`RouteGuideRespDto` 객체) |
+| `tour_area_detail_partial.json` | 분류 필드가 빠진 상세 응답 (부분 누락 내구성) |
 
 ---
 
@@ -256,18 +305,47 @@ xcodebuild test -scheme Tourding_FE \
   - 편의시설 마커 `Task` 프로퍼티 노출 + `apply*()` 분리 + 취소 배선
   - `markerKinds(for:) -> [RouteMarkerKind]` 순수 함수 분리
 
+- [x] **서버 API 변경 대응 + 라이딩 결함 (TDD)** — 테스트 130개, 스킵 0
+  - **가이드 미표시** — `GET /routes/guide`가 배열 → `RouteGuideRespDto` 객체로 바뀌어
+    `typeMismatch`로 실패. 재시도 3회가 전부 같은 이유로 실패해 `guideList`가 빈 채로 남았다
+  - **라이딩 시작 Task 추적 불가** — 자식 Task라 취소할 수 없어, 종료 후 뒤늦게 끝난 가이드가
+    편집 화면을 덮었다. `ridingStartTask`로 소유하고 `endRiding`에서 취소
+  - **안내 건너뜀** — 30m 안에 마커가 둘 이상이면 중간 안내가 화면에 한 번도 안 뜨고 사라졌다.
+    통과 판정 A(맨 앞 한 칸만 소비)로 변경
+  - **스팟 추가 유실** — 경로 로드 전에 추가하면 guard에 걸려 POST가 안 나가고 화면만 넘어갔다
+    (SpotAdd·Detail 두 진입점)
+  - **추천 코스에 사용자 옛 코스 표시** — `/routes/by-name` 실패를 삼키고 화면을 넘겨,
+    draft에 남아 있던 옛 코스를 추천 코스인 양 보여줬다
+  - **추천 코스 화면 지도 순환 참조** — ViewModel ↔ MapViewController 양방향 strong.
+    화면에 들어갈 때마다 GPS가 한 세트씩 쌓였다
+  - **HTTP 2xx 판정·타임아웃·재시도 정책** — 429·504가 `decodingFailure`로 둔갑하던 문제,
+    타임아웃 미설정(60초), 500에 3회 재시도하던 문제
+  - **`/routes` 호출 통합** — 편집 진입·복귀가 3회 → 1회
+  - 상세 응답 분류 필드 누락 내구성, 명세 정합(`isUsed` 전송·요약 필드), `UserRepository` 에러 계약 통일
+
 ### 다음
+- [ ] **AI 기능 착수** — 서버 준비 완료(`/ai/routes/adjustments/text`·`/voice`,
+      `/routes/recommendations`, `/user/{id}/riding-profile`), `routeSummaryId` 보관 완료
 - [ ] `PathSimplifier` + `PathSimplificationMetrics` + perf A/B 로깅
 - [ ] RidingViewModel Mock 시나리오 테스트 확대
 - [ ] LocationManager 이중 인스턴스 정리 (`MapViewController.locationManager` vs `userLocationManager`)
+
+### 보류 (판단이 끝났고 지금은 안 함)
+- **라이딩 시작의 `/routes/guide` 통합** — `/routes/guide`와 `/routes`는 같은
+  `RouteGuideRespDto`를 반환한다(실측 응답이 86110B로 바이트 동일). 라이딩 시작 한 번에
+  같은 재계산이 두 번 간다. 다만 `getRouteGuideAPI`는 단순 조회가 아니라
+  `postRidingStartAPI`로 경로를 "사용 중"으로 바꾼 **직후에** 읽는 오케스트레이션이고,
+  비정상 종료 복구 분기(`isNotNormal`)까지 얽혀 있어 순서 의존 검증이 선행돼야 한다
+- **에러를 사용자에게 노출** — 실패가 전부 `print`로만 남는다. 서버 500이 정리된 뒤
+  남는 실패(네트워크 끊김 등)를 보고 표시 방식을 정하기로 했다
 
 ### 기술 부채
 - **`POST /routes` 본문 조립이 `SpotAddViewModel`·`DetailSpotViewModel`에 복붙돼 있음**
   — 두 화면이 같은 본문을 만드는지는 `RouteAddRequestTests.bothEntryPointsProduceIdenticalRequestBody`가 잠근다.
   공용 빌더(`RouteRequestBuilder`) 추출은 미완
 - `POST /routes` 응답 타입 불일치 (`RoutesModel` vs `EmptyResponse`)
-- UserRepository → NetworkService 통합
-- ErrorType 이중화 해소
+- `UserRepository`의 요청 조립만 `NetworkService` 밖에 남음
+  (세션·상태 판정·에러 타입은 통일 완료)
 - `print` → OSLog
 
 ---
