@@ -224,7 +224,7 @@ enum NetworkService {
             }
             // #endregion
             if let httpResponse = response as? HTTPURLResponse,
-               let statusError = HTTPStatusValidator.error(for: httpResponse.statusCode) {
+               let statusError = HTTPStatusValidator.error(for: httpResponse.statusCode, body: data) {
                 print("HTTP \(httpResponse.statusCode) body:",
                       String(data: data, encoding: .utf8) ?? "<no body>")
                 throw statusError
@@ -244,10 +244,26 @@ enum NetworkService {
 
 //MARK: - HTTP 상태 판정
 
+/// 서버가 4xx 본문에 실어 보내는 에러. AI 엔드포인트가 이 형태를 쓴다.
+/// 예: {"code":"AI_STT_FAILED","message":"음성을 인식하지 못했습니다."}
+struct ServerErrorBody: Decodable {
+    let code: String
+    let message: String
+}
+
 /// 상태코드 → 에러 판정. URLSession 없이 테스트할 수 있도록 순수 함수로 분리한다.
 enum HTTPStatusValidator {
-    static func error(for statusCode: Int) -> ErrorType? {
+    static func error(for statusCode: Int, body: Data? = nil) -> ErrorType? {
         if (200..<300).contains(statusCode) { return nil }
+
+        // 서버가 본문에 code/message를 실어 보냈으면 그걸 쓴다.
+        // AI 엔드포인트는 이 형태로 실패 사유를 구분해준다
+        // (AI_STT_FAILED / AI_UNSUPPORTED_REQUEST / ROUTE_SUMMARY_NOT_FOUND …).
+        // 형태가 다르면(스프링 기본 에러 본문 등) 아래 기존 판정으로 떨어진다.
+        if let body,
+           let parsed = try? JSONDecoder().decode(ServerErrorBody.self, from: body) {
+            return .serverError(code: parsed.code, message: parsed.message, statusCode: statusCode)
+        }
 
         // 사용자 문구가 정의된 코드는 그대로 보존한다
         if let known = NetworkErrorCode(rawValue: statusCode) {
@@ -309,6 +325,9 @@ enum ErrorType: Error {
             return code == .serviceUnavailable          // 503만
         case .invalidResponse(let statusCode):
             return statusCode == 408 || statusCode == 429
+        case .serverError(_, _, let statusCode):
+            // 본문이 있어도 재시도 여부는 상태코드가 정한다
+            return statusCode == 408 || statusCode == 429 || statusCode == 503
         case .invalidURL, .decodingFailure, .unknown:
             return false
         }
@@ -320,7 +339,9 @@ enum ErrorType: Error {
     case decodingFailure(underlying: Error)
     case unknown(underlying: Error)
     case serverDefinedError(NetworkErrorCode)
-    
+    /// 서버가 본문에 code/message를 실어 보낸 에러 (AI 엔드포인트 등)
+    case serverError(code: String, message: String, statusCode: Int)
+
     var localizedDescription: String {
         switch self {
         case .invalidURL:
@@ -335,6 +356,8 @@ enum ErrorType: Error {
             return "An unknown error occurred: \(err.localizedDescription)"
         case .serverDefinedError(let code):
             return code.showErrorDescription
+        case .serverError(_, let message, _):
+            return message
         }
     }
 }
