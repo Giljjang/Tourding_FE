@@ -89,11 +89,13 @@ struct RidingView: View {
                 
                 backButton
                 
-                if ridingViewModel.flag {
+                if ridingViewModel.flag { // 라이딩 중일 때
                     
                     toiletButton
                     
                     csButton
+                    
+                    AICourseEditButton
                     
                 } // : if
                 
@@ -363,6 +365,7 @@ struct RidingView: View {
             } // : HStack
             .background(ridingViewModel.showToilet ? Color.gray5 : Color.white)
             .cornerRadius(12)
+            .shadow(color: .black.opacity(0.02), radius: 10, x: 0, y: 6)
         }
         .position(x: 110, y:SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : toiletButton
@@ -386,9 +389,49 @@ struct RidingView: View {
             } // : HStack
             .background(ridingViewModel.showConvenienceStore ? Color.gray5 : Color.white)
             .cornerRadius(12)
+            .shadow(color: .black.opacity(0.02), radius: 10, x: 0, y: 6)
         }
         .position(x: 208, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : csButton
+    
+    private var AICourseEditButton: some View {
+        Button(action:{
+            // AI 코스수정 기능 추가 예정
+        }){
+            HStack(spacing: 2){
+                Image("ai_course_btn")
+                    .padding(.vertical, 9)
+                    .padding(.leading, 12)
+                
+                Text("AI 코스수정")
+                    .foregroundColor(.gray5)
+                    .font(.pretendardMedium(size: 14))
+                    .padding(.trailing, 14)
+            } // : HStack
+            .background(Color.white)
+            .cornerRadius(12)
+            .shadow(color: .black.opacity(0.02), radius: 10, x: 0, y: 6)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(Self.aiBorderGradient, lineWidth: 1)
+            )
+        }
+        .position(x: 316, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
+    } // : AICourseEditButton
+
+    /// AI 코스수정 버튼 테두리 — Figma GRADIENT_LINEAR (2774:17889)
+    ///
+    /// startPoint·endPoint가 0...1을 벗어나는 건 의도된 값이다.
+    /// Figma의 gradientTransform을 역변환한 결과이고, 그래서 버튼에 실제로 보이는 건
+    /// 그라데이션의 가운데 구간(약 t=0.2~0.9)이다. 0,0 → 1,1로 바꾸면 색이 달라진다.
+    private static let aiBorderGradient = LinearGradient(
+        stops: [
+            .init(color: Color(hex: "#00E1FF"), location: 0),
+            .init(color: Color(hex: "#CEB4FF"), location: 1)
+        ],
+        startPoint: UnitPoint(x: 0.074, y: -0.925),
+        endPoint:   UnitPoint(x: 0.829, y: 1.625)
+    )
     
     //MARK: - Lifecycle helpers
 
