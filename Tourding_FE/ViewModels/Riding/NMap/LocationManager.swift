@@ -280,7 +280,11 @@ final class LocationManager: NSObject, ObservableObject {
     /// 호출부마다 줌을 넘기면 주행 중 화면에 다시 들어왔을 때도 줌이 걸려
     /// 사용자가 맞춰 둔 배율이 날아간다. 게이트를 여기 한 곳에 둔다.
     func consumeRidingStartZoom() -> Double? {
+        // 위치가 없으면 startNavigationMode가 카메라를 옮기지 않는다.
+        // 그때 소비하면 줌이 적용되지 않은 채 게이트만 닫혀 영영 걸리지 않는다.
+        guard currentLocation != nil else { return nil }
         guard !didApplyRidingStartZoom else { return nil }
+
         didApplyRidingStartZoom = true
         return Self.zoomLevel(for: .ridingStart)
     }
@@ -330,7 +334,11 @@ final class LocationManager: NSObject, ObservableObject {
 
             let cameraUpdate = NMFCameraUpdate(position: position)
             cameraUpdate.pivot = CGPoint(x: 0.5, y: cameraPivotY)
-            cameraUpdate.animation = .easeIn
+            // 줌을 바꿀 때는 애니메이션 없이 즉시 맞춘다.
+            // 애니메이션 중에 헤딩 갱신(headingFilter 1도, 0.5초 스로틀)이 끼어들면
+            // updateCameraWithHeading이 `mapView.cameraPosition.zoom`으로 **중간 줌**을 읽어
+            // 그 값으로 카메라를 다시 세팅한다 — 줌이 목표에 닿기 전에 멈춘다.
+            cameraUpdate.animation = zoom == nil ? .easeIn : .none
             mapView.moveCamera(cameraUpdate)
         }
     }
