@@ -75,22 +75,21 @@ struct HeadingResolverTests {
     /// 렌더된 아이콘의 실제 방향이 SVG 좌표 계산과 다르며, 어디서 어긋나는지는 미규명이다.
     /// 값은 관측을 따른다 — 바꿀 일이 생기면 계산이 아니라 실기기에서 확인할 것.
     @Test func markerIconOffsetMatchesDeviceObservation() {
-        #expect(HeadingResolver.markerIconOffset == 6.5)
+        #expect(HeadingResolver.markerIconOffset == -8.5)
     }
 
     /// 마커는 아이콘 오프셋을 뺀 값을 쓴다
     @Test func markerHeadingAppliesIconOffset() {
         let resolved = HeadingResolver.markerHeading(trueHeading: 90, magneticHeading: 99, accuracy: 5)
 
-        #expect(resolved == 96.5, "진북 90에 아이콘 보정 6.5를 더한 값")
+        #expect(resolved == 81.5, "진북 90에 아이콘 보정 -8.5를 더한 값")
     }
 
     /// 오프셋을 빼서 음수가 되면 정규화한다 — 예전에는 -35 같은 값이 그대로 들어갔다
     @Test func markerHeadingNormalizesNegativeResult() {
-        // 오프셋이 양수라 360을 넘는 쪽으로 정규화를 검증한다
-        let resolved = HeadingResolver.markerHeading(trueHeading: 355, magneticHeading: 355, accuracy: 5)
+        let resolved = HeadingResolver.markerHeading(trueHeading: 5, magneticHeading: 5, accuracy: 5)
 
-        #expect(resolved == 1.5, "355 + 6.5 = 361.5 → 1.5로 정규화되어야 한다")
+        #expect(resolved == 356.5, "5 - 8.5 = -3.5 → 356.5로 정규화되어야 한다")
     }
 
     /// 마커와 카메라는 **같은 원본**에서 나와야 한다.
@@ -109,24 +108,27 @@ struct HeadingResolverTests {
 
     // MARK: - 카메라 방위 보정
 
-    /// 카메라 보정은 마커 보정과 **별개 손잡이**다.
+    /// **마커가 제대로 맞으면 카메라 보정은 0이어야 한다.**
     ///
-    /// 마커 보정(`markerIconOffset`)은 아이콘 그림이 정북을 안 가리켜서 되돌리는 값이고,
-    /// 카메라 보정은 지도 자체를 돌린다. 둘은 원인이 다르므로 한 값으로 묶으면 안 된다.
+    /// 헤딩-업에서 마커 화살표는 화면 위를 향해야 한다. 그러려면
+    /// 카메라 방위 = 마커가 가리키는 실제 방위여야 하고,
+    /// 마커가 실제 방위를 맞게 가리키고 있다면 카메라는 원본 방위를 그대로 쓰면 된다.
     ///
-    /// 값의 근거는 실기기 관측이다 — 마커를 맞춘 뒤에도 지도 회전이 나침반과 약 20도 어긋났다.
-    @Test func cameraOffsetIsSeparateFromMarkerOffset() {
-        #expect(HeadingResolver.cameraHeadingOffset == -20)
-        #expect(HeadingResolver.cameraHeadingOffset != HeadingResolver.markerIconOffset)
+    /// 한때 -20을 넣었지만 그건 **마커가 아직 틀렸을 때** 눈으로 맞춘 값이었다.
+    /// 마커를 바로잡은 뒤에는 카메라 보정이 불필요해진다.
+    /// 손잡이는 남겨두되, 0이 아닌 값이 필요하다면 마커부터 의심할 것.
+    @Test func cameraNeedsNoOffsetWhenMarkerIsCalibrated() {
+        #expect(HeadingResolver.cameraHeadingOffset == 0)
     }
 
-    @Test func cameraHeadingAppliesOffset() {
-        #expect(HeadingResolver.cameraHeading(from: 90) == 70)
+    @Test func cameraHeadingUsesResolvedHeadingAsIs() {
+        #expect(HeadingResolver.cameraHeading(from: 90) == 90)
     }
 
-    /// 보정으로 음수가 되면 정규화한다
-    @Test func cameraHeadingNormalizesNegativeResult() {
-        #expect(HeadingResolver.cameraHeading(from: 5) == 345)
+    /// 입력이 범위를 벗어나도 정규화한다
+    @Test func cameraHeadingNormalizesOutOfRangeInput() {
+        #expect(HeadingResolver.cameraHeading(from: 370) == 10)
+        #expect(HeadingResolver.cameraHeading(from: -5) == 355)
     }
 
     /// 카메라와 마커는 같은 원본에서 나오되 보정만 다르다
