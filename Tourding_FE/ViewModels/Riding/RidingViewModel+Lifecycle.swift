@@ -320,7 +320,10 @@ extension RidingViewModel {
         print("🌍 onChange - 위치 업데이트 재시작")
 
         if let mapView {
-            locationManager.startNavigationMode(on: mapView)
+            locationManager.startNavigationMode(
+                on: mapView,
+                zoomTo: LocationManager.zoomLevel(for: .ridingStart)
+            )
             print("🧭 onChange - 네비게이션 모드 재시작")
         } else {
             print("❌ onChange - mapView가 nil이어서 네비게이션 모드 재시작 실패")
@@ -353,13 +356,19 @@ extension RidingViewModel {
             self.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
             print("🎯 \(logPrefix) - 카메라를 사용자 위치로 이동: \(coordinate.lat), \(coordinate.lng)")
             print("🧭 \(logPrefix) - 나침반 사용 가능 여부: \(CLLocationManager.headingAvailable())")
-            locationManager.startNavigationMode(on: mapView)
+            locationManager.startNavigationMode(
+                on: mapView,
+                zoomTo: LocationManager.zoomLevel(for: .ridingStart)
+            )
         } else {
             print("❌ \(logPrefix) - 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
 
             if let mapView {
                 print("🧭 \(logPrefix) - 위치 없이 네비게이션 모드 시작 (위치 업데이트 대기)")
-                locationManager.startNavigationMode(on: mapView)
+                locationManager.startNavigationMode(
+                on: mapView,
+                zoomTo: LocationManager.zoomLevel(for: .ridingStart)
+            )
             }
         }
     }

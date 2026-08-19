@@ -241,10 +241,38 @@ final class LocationManager: NSObject, ObservableObject {
         locationOverlay.heading = CGFloat(adjustedHeading)
     }
     
+    // MARK: - Camera Zoom
+
+    /// 네비게이션 모드에 들어가는 경로.
+    enum NavigationStart {
+        /// 라이딩 시작 — 줌을 주행에 맞게 맞춘다
+        case ridingStart
+        /// 추적 재개 ("경로 안내 재개" 버튼 / 3m 자동 재개) — 줌을 건드리지 않는다
+        case resumeTracking
+    }
+
+    /// 라이딩 시작 시 맞추는 줌 레벨.
+    ///
+    /// 편집 모드는 경로 전체를 보느라 멀리 있는데, 라이딩 중에는 앞의 길이 보여야 한다.
+    /// NMap 줌은 0(세계)~21(건물) 범위이고 이 값은 거리 수준이다.
+    /// 더 당기거나 물리려면 이 값만 바꾸면 된다.
+    static let ridingStartZoom: Double = 16.5
+
+    /// 이 진입에서 줌을 맞출 것인가. `nil`이면 현재 줌을 유지한다.
+    ///
+    /// **추적 재개에는 맞추지 않는다.** 주행 중에 일어나는 일이라
+    /// 사용자가 조정해 둔 배율을 덮으면 안 된다.
+    static func zoomLevel(for start: NavigationStart) -> Double? {
+        switch start {
+        case .ridingStart:    return ridingStartZoom
+        case .resumeTracking: return nil
+        }
+    }
+
     // MARK: - Navigation Methods
     
     // 네비게이션 모드 시작
-    func startNavigationMode(on mapView: NMFMapView) {
+    func startNavigationMode(on mapView: NMFMapView, zoomTo zoom: Double? = nil) {
         isNavigationMode = true
         isLocationTrackingEnabled = true
         // print("🧭 네비게이션 모드 시작 - 위치추적 on")
@@ -265,13 +293,21 @@ final class LocationManager: NSObject, ObservableObject {
             // 3m를 움직이기 전까지 마커가 보이지 않는다.
             showUserLocationOverlay(on: mapView, at: coordinate)
 
-            let cameraUpdate = NMFCameraUpdate(scrollTo: coordinate)
+            // 좌표·줌·헤딩을 **한 번에** 맞춘다.
+            // 따로 옮기면 뒤이은 헤딩 갱신이 애니메이션 중인 카메라를 읽어
+            // 방금 지정한 줌을 이전 값으로 되돌린다.
+            let current = mapView.cameraPosition
+            let position = NMFCameraPosition(
+                coordinate,
+                zoom: zoom ?? current.zoom,
+                tilt: current.tilt,
+                heading: HeadingResolver.cameraHeading(from: currentHeading)
+            )
+
+            let cameraUpdate = NMFCameraUpdate(position: position)
             cameraUpdate.pivot = CGPoint(x: 0.5, y: cameraPivotY)
             cameraUpdate.animation = .easeIn
             mapView.moveCamera(cameraUpdate)
-            
-            // 헤딩 적용
-            updateCameraWithHeading(on: mapView, location: location)
         }
     }
     
