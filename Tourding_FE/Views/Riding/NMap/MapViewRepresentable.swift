@@ -97,7 +97,6 @@ struct MapViewRepresentable: UIViewRepresentable {
         
         // RidingViewModel에 LocationManager, NMFMapView, MarkerManager, PathManager 설정 (viewDidLoad 완료 후)
         if let ridingViewModel = ridingViewModel {
-            ridingViewModel.locationManager = mapViewController.locationManager
             if let nmfMapView = mapViewController.nmfMapView {
                 ridingViewModel.mapView = nmfMapView
             }

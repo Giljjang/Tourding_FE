@@ -15,7 +15,10 @@ extension RidingViewModel {
 
     @MainActor
     func configureLocationManager(_ locationManager: LocationManager) {
+        // 지도용·위치용 참조가 같은 인스턴스를 가리켜야 한다.
+        // 갈라지면 LocationManager가 두 벌 살아 GPS·나침반 스트림이 두 개 돈다.
         userLocationManager = locationManager
+        self.locationManager = locationManager
         if let mapView {
             locationManager.setMapView(mapView)
         }

@@ -16,7 +16,6 @@ final class MapViewController: UIViewController {
     
     // MARK: - Properties
     private var mapView: NMFNaverMapView?
-    let locationManager = LocationManager()
     private let locationButton = UIButton(type: .custom)
     // ViewModel은 앱 수명, 이 컨트롤러는 화면 수명이다. strong으로 잡으면 순환이 생겨
     // deinit이 실행되지 않고 CLLocationManager가 화면을 떠난 뒤에도 계속 돈다.
@@ -46,7 +45,6 @@ final class MapViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupMap()
-        setupLocationManager()
     }
     
     deinit {
@@ -56,9 +54,6 @@ final class MapViewController: UIViewController {
     
     // MARK: - Cleanup
     private func cleanupResources() {
-        // 위치 업데이트 중지
-        locationManager.stopLocationUpdates()
-        
         // 콜백 해제
         onLocationUpdate = nil
         onMapTap = nil
@@ -106,20 +101,6 @@ final class MapViewController: UIViewController {
         pathManager = PathManager(mapView: mapView.mapView)
     }
     
-    private func setupLocationManager() {
-        var isFirstLocationUpdate = true
-        
-        // 위치 업데이트 콜백은 RidingView에서 설정하므로 여기서는 설정하지 않음
-        // 대신 onLocationUpdate 콜백이 호출될 때 MapViewController의 기능도 실행하도록 수정
-        
-        // 나침반 방향 업데이트 콜백 추가
-        locationManager.onHeadingUpdate = { [weak self] heading in
-            self?.updateUserLocationBearing(heading)
-        }
-        
-        locationManager.startLocationUpdates()
-    }
-    
     // LocationManager 설정 메서드 추가
     func setupUserLocationManager(_ userLocationManager: LocationManager) {
         self.userLocationManager = userLocationManager
@@ -129,21 +110,18 @@ final class MapViewController: UIViewController {
         userLocationManager.onHeadingUpdate = { [weak self, weak userLocationManager] heading in
             guard let self = self,
                   let userLocationManager,
-                  let mapView = self.mapView?.mapView,
-                  userLocationManager.isNavigationMode else {
-//                print("❌ MapViewController: 헤딩 콜백 조건 불만족")
-                return
-            }
-            
-//            print("🗺️ MapViewController: 헤딩 콜백 호출됨 - \(heading.magneticHeading)도")
-            
-            // 사용자 마커 방향 업데이트
-            userLocationManager.updateLocationOverlayHeading(on: mapView)
-            
-            // 네비게이션 모드에서 헤딩 업데이트 시 카메라 회전
-            if let location = userLocationManager.currentLocation {
-                userLocationManager.updateNavigationCamera(on: mapView, location: location)
-            }
+                  let mapView = self.mapView?.mapView else { return }
+
+            // 마커 방향은 추적 여부와 무관하게 갱신한다.
+            // 예전에는 MapViewController의 자체 LocationManager가 이 일을 했고 그쪽에는
+            // 추적 가드가 없었다 — 인스턴스를 없애면서 그 동작을 여기로 옮긴다.
+            self.updateUserLocationBearing(heading)
+
+            // 카메라 회전만 추적 판정을 따른다
+            guard userLocationManager.shouldFollowUser,
+                  let location = userLocationManager.currentLocation else { return }
+
+            userLocationManager.updateNavigationCamera(on: mapView, location: location)
         }
         
         // 위치 업데이트 콜백 설정 (네비게이션 모드용)
