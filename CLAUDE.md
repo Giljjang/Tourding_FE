@@ -135,6 +135,7 @@ SheetContentView.onDrag/onDrop
 NMapView → MapViewRepresentable → MapViewController
   → PathManager (Douglas-Peucker), MarkerManager
 LocationManager → HeadingResolver (방위 판정)
+PathManager    → PathSimplifier (Douglas-Peucker, 순수 함수)
 ```
 
 `MapViewRepresentable.updateUIView`에서 ViewModel에 `pathManager` 포함 전체 매니저 연결.
@@ -175,7 +176,21 @@ strong으로 잡으면 화면을 떠난 뒤에도 `MapViewController`와 그 `CL
 추적이 꺼져도 사용자가 `userMovementThreshold`(3m) 이상 움직이면
 `resumeTrackingIfStopped()`가 자동으로 되켠다. 상태 전이는 `beginTracking()` 한 곳에 있다.
 
-회귀 방지 테스트: `CameraFollowTests`
+**줌은 라이딩 시작에만 맞춘다** — `zoomLevel(for:)`가 `.ridingStart`에는 `ridingStartZoom`(16.5),
+`.resumeTracking`에는 `nil`을 준다. 추적 재개는 주행 중에 일어나므로 그때 줌을 덮으면
+사용자가 맞춰 둔 배율이 날아간다.
+시작 시 좌표·줌·헤딩은 **한 번의 카메라 이동**으로 맞춘다 — 따로 옮기면 뒤이은 헤딩 갱신이
+애니메이션 중인 카메라를 읽어 방금 지정한 줌을 되돌린다.
+
+**사용자 위치 마커를 켜는 것도 잊지 말 것.** `NMFLocationOverlay`는 기본이 숨김이라
+`showUserLocationOverlay(on:at:)`를 부르기 전에는 그려지지 않는다.
+예전에는 "내 위치로 이동" 버튼과 라이딩 중 위치 콜백만 이걸 했고, `distanceFilter`가 3m라
+정지 상태에서 라이딩을 시작하면 마커가 안 보였다.
+
+**바텀시트 높이는 편집·라이딩 양쪽에서 피봇에 반영한다** — `syncCameraPivot(for:)`.
+편집에서 빠뜨리면 "내 위치로 이동" 버튼이 시트 높이를 무시한다.
+
+회귀 방지 테스트: `CameraFollowTests`, `CameraPivotTests`, `RidingStartZoomTests`
 
 ### 방위(heading) 판정 (중요)
 
@@ -185,8 +200,21 @@ NMap의 heading은 **진북 기준**이라 `magneticHeading`을 그대로 넣으
 편각만큼(서울 약 9도) 지도가 틀어져 회전한다. `trueHeading`은 Core Location이 편각을
 이미 반영해 주므로 편각 상수를 들고 있을 필요가 없다 — 음수(구하지 못함)일 때만 자북으로 폴백한다.
 
-`markerIconOffset`(-45)은 **편각 보정이 아니라 아이콘 에셋 보정**이다.
-에셋을 교체하면 같이 바뀌어야 한다. 이 값을 호출부에 복제하지 말 것.
+카메라 방위도 이 타입을 거친다 — `cameraHeading(from:)`.
+지도 회전 = 마커 방위 = `mapHeading`, 세 값이 모두 같다.
+
+**보정 상수 `markerIconOffset`·`cameraHeadingOffset`은 현재 둘 다 `0`이다.**
+편각 보정이 아니라 각각 아이콘 에셋·지도 회전을 보정하는 **별개 손잡이**이므로
+한 값으로 묶지 말 것. 값은 호출부에 복제하지 말 것.
+
+마커 보정은 **에셋 자체를 고쳐 없앴다** — `userMarker.imageset/Group 35465.svg`의
+화살표 path에 `transform="rotate(-38.5 …)"`를 넣어 정북으로 맞추고 필터 영역을 넓혔다
+(회전하면 화살표가 기존 필터 영역 위로 나가 잘린다).
+
+**이 값을 SVG 좌표로 계산해서 넣지 마라.** 계산으로 유도하다 두 번 빗나갔고,
+결국 실기기에서 눈으로 맞추는 데 일곱 번 걸렸다
+(`-45 → -23.5 → -3.5 → +16.5 → +6.5 → -8.5 → -38.5 → 0`).
+바꿀 일이 생기면 실기기에서 확인할 것.
 
 이전에는 `LocationManager`가 자북에서, `MapViewController`가 진북 우선에서 각각 -45를 빼
 같은 `locationOverlay.heading`에 서로 다른 기준의 값을 썼다.
@@ -205,9 +233,14 @@ NMap의 heading은 **진북 기준**이라 `magneticHeading`을 그대로 넣으
 
 ### 미해결 이슈
 
-1. **바텀시트 카메라 피봇** — `RidingView.onChange(currentPosition)` 로직 ViewModel 이전 검토
+1. **바텀시트 카메라 피봇** — 값 매핑은 `LocationManager.cameraPivot(for:)`로 옮겼으나,
+   `RidingView.onChange(currentPosition)`의 카메라 이동 오케스트레이션은 아직 View에 있다
 2. **지도 터치 감지 레이어** — 추적 중에만 존재하고 지도 위에 얹혀 있어, 첫 드래그가
    추적만 끄고 지도는 밀리지 않는다 (`RidingView`의 투명 제스처 레이어)
+4. **마커 재그리기** — 경로선은 `PathManager.isSameSequence`로 가드했지만
+   `MarkerManager.addMarkers`는 여전히 `clearMarkers()`로 시작해 매번 전량 재생성한다.
+   가드를 걸려면 아이콘 동일성 판정이 먼저다 — `MarkerIcons.numberMarker(_:)`가
+   호출마다 `UIView`를 렌더링해 새 `NMFOverlayImage`를 만든다
 3. **`POST /routes` 응답을 버리는 호출부** — 호출 6곳 중 응답을 쓰는 곳은 라이딩 시작 하나뿐.
    특히 경유지 DnD는 응답을 버리고 `GET /routes/path`를 다시 부른다
    (단 `applyRouteBundle`을 그대로 쓰면 `locations`까지 반영돼 드래그 순서가 덮인다 — path만 골라야 한다)
@@ -242,7 +275,9 @@ NMap의 heading은 **진북 기준**이라 `magneticHeading`을 그대로 넣으
 **재시도는 될 만한 것에만.** `ErrorType.isRetryable` —
 408·429·503·네트워크 단절만 재시도하고 **500·502·504·4xx는 즉시 중단**한다.
 이 서버의 500은 결정적이다(실측: `/routes/path` 500이 3회 연속 동일).
-재시도 루프를 새로 만들면 이 가드를 반드시 넣을 것.
+**재시도 루프를 직접 만들지 마라 — `RetryPolicy.run`을 쓸 것.**
+정책이 흩어져 있으면 다섯 번째 루프에서 가드를 빠뜨린다.
+ViewModel 4곳에 복붙돼 있던 것을 이 한 곳으로 모았다.
 
 **상태 판정은 `HTTPStatusValidator.error(for:)`.** `(200..<300)` 범위로 본다.
 "아는 에러 코드 목록" 조회 방식은 429·504를 통과시켜 `decodingFailure`로 둔갑시켰다.
@@ -402,12 +437,27 @@ xcodebuild test -scheme Tourding_FE \
     VC의 저장 프로퍼티를 없애고 주입만 받게 했다
   - **스팟 추가 POST 실패 시 로딩 미해제** — `isLoading` 해제가 `do` 블록 안에만 있었다
 
+- [x] **지도 성능·정리 (TDD)** — 테스트 206개, 스킵 0
+  - **경로선을 SwiftUI 갱신마다 재생성** — `updateUIView`가 `updateMap()`을 무조건 부르고
+    `setCoordinates`가 좌표 비교 없이 매번 단순화 + 오버레이 전체 재부착을 했다.
+    `PathManager.isSameSequence`로 가드. 개수만 비교하면 DnD 재정렬이 반영되지 않고,
+    `NMGLatLng`은 클래스라 참조 비교면 가드가 아예 안 먹는다
+  - **`PathSimplifier` / `PathSimplificationMetrics` 분리** — 특성화 테스트로 현재 동작을
+    먼저 잠근 뒤 옮겼다 (258좌표 → 239개, `count <= 3`은 줄이지 않음 — 교과서와 다르지만 보존)
+  - **`RetryPolicy` 단일화** — ViewModel 4곳의 복붙 루프 제거
+  - **릴리즈 로그 유출** — `NetworkService`의 요청 URL·본문·에러 응답 전문에 `#if DEBUG` 가드.
+    URL 쿼리에 `authorizationCode`가 실리는 엔드포인트가 있다
+  - **마커·카메라 방위 정합** — 보정 상수 둘 다 0으로, 에셋을 정북으로 교정
+  - **라이딩 시작 시 마커 미표시 / 줌 / 편집 모드 피봇 동기화**
+  - 빈 catch 2건, 죽은 코드 5건(+`onMapTap` 배선 전부) 정리
+
 ### 다음
 - [ ] **AI 기능 착수** — 서버 준비 완료(`/ai/routes/adjustments/text`·`/voice`,
       `/routes/recommendations`, `/user/{id}/riding-profile`), `routeSummaryId` 보관 완료
 - [ ] **내비게이션 카메라** — 자동차 내비처럼 "경로가 화면에서 위로" (피봇 → course → 틸트 순)
-      - **피봇** `cameraPivotY` 0.3 → 0.75. NMap 피봇은 `(0,0)`이 좌상단이라 지금은 사용자가
-        화면 위쪽 30%에 놓인다 — 헤딩-업 회전을 걸어도 앞이 30%만 보인다. 한 줄, 체감 가장 큼
+      - **피봇 값** 기본 0.3 → 0.75 검토. NMap 피봇은 `(0,0)`이 좌상단이라 지금은 사용자가
+        화면 위쪽 30%에 놓인다 — 헤딩-업 회전을 걸어도 앞이 30%만 보인다.
+        매핑은 `LocationManager.cameraPivot(for:)`에 모여 있으니 값만 바꾸면 된다
       - **틸트** 현재 0 (아무도 설정 안 함). `NMFMapView.maxTilt` 기본값 60, 내비 느낌은 45~55
       - **course** 우선순위 낮음 — **핸들바 거치를 전제**하기로 했다(2026-08-19 결정).
         거치 시 나침반 ≈ 진행 방향이라 이득이 작다.
@@ -418,14 +468,12 @@ xcodebuild test -scheme Tourding_FE \
         이음새는 이미 있다(`HeadingResolver`가 원시값 순수 함수, 테스트 8건)
       - 셋 다 **눈으로 보고 조정하는 값**이라 따로 하면 실기기 주행 테스트를 세 번 한다. 묶을 것
 
-- [ ] **경로선 재그리기 가드** — `MapViewRepresentable.updateUIView`가 `updateMap()`을 무조건 부르고
-      `PathManager.setCoordinates`가 좌표 비교 없이 매번 단순화 + 오버레이 전체 재부착을 한다.
-      마커도 매번 전량 재생성(`MarkerManager.addMarkers`가 `clearMarkers`로 시작).
-      **주의**: 좌표 *개수*로만 가드하면 DnD 재정렬이 반영되지 않는다
-- [ ] `PathSimplifier` + `PathSimplificationMetrics` + perf A/B 로깅
-      — Douglas-Peucker 실측: 258좌표 fixture에서 239개(7.4% 감소), 최대 이탈 0.87m.
-      실효가 거의 없다. tolerance를 키우면 이탈이 10m대라 자전거 경로엔 못 쓴다.
-      순수 타입 추출과 테스트가 먼저다 (현재 `PathManager` 테스트 0건)
+- [ ] **마커 재그리기 가드** — 경로선은 끝났지만 `MarkerManager.addMarkers`가 여전히
+      `clearMarkers()`로 시작해 매번 전량 재생성한다. 선행: 아이콘 동일성 판정
+      (`MarkerIcons.numberMarker(_:)`가 호출마다 `UIView`를 렌더링해 새 이미지를 만든다)
+- [ ] perf A/B 로깅 — `PathSimplificationMetrics`는 있으나 소요 시간·A/B 스위치는 없다.
+      Douglas-Peucker 실측: 258좌표에서 239개(7.4% 감소), 최대 이탈 0.87m.
+      실효가 거의 없어 제거도 선택지다
 - [ ] RidingViewModel Mock 시나리오 테스트 확대
       — `RidingViewModel`을 만드는 14개 파일이 전부 `FakeRouteRepository`를 쓴다.
       `MockRouteRepository` 시나리오(`.withWaypoints`/`.simple`) 기반 테스트는 0건.

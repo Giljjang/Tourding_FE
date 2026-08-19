@@ -24,9 +24,12 @@ API/Mock → RidingViewModel+API → @Published pathCoordinates
 
 ## PathManager
 
-- Douglas-Peucker (`tolerance: 0.00001`), 이중 NMFPath
+- 이중 NMFPath. 단순화는 `PathSimplifier`에 위임한다 (Douglas-Peucker, `tolerance: 0.00001`)
 - 실측: 258좌표 fixture에서 239개(7.4% 감소), 최대 이탈 0.87m — 실효가 거의 없다
-- **예정**: `PathSimplifier` 분리 + `PathSimplificationMetrics` (pure Swift, 테스트 가능)
+- `count <= 3`은 직선이어도 줄이지 않는다. 교과서와 다르지만 이식 시 보존했다 —
+  바꾸려면 `PathSimplifierTests`의 특성화 테스트부터 갱신할 것
+- `setCoordinates`는 `isSameSequence`로 재그리기를 가드한다.
+  **개수만 비교하면 DnD 재정렬이 반영되지 않는다.** `NMGLatLng`은 클래스라 참조 비교도 안 된다
 
 ## HeadingResolver
 
@@ -34,8 +37,12 @@ API/Mock → RidingViewModel+API → @Published pathCoordinates
 
 - `mapHeading` — **진북 기준**. `trueHeading` 우선, 음수면 `magneticHeading` 폴백.
   NMap의 heading이 진북 기준이라 자북을 그대로 넣으면 한국에서 약 9도 틀어진다
-- `markerHeading` — 같은 원본에 `markerIconOffset`(-45)만 더한다
-- `markerIconOffset`은 **편각 보정이 아니라 아이콘 에셋 보정**이다. 호출부에 복제 금지
+- `markerHeading` — 같은 원본에 `markerIconOffset`만 더한다
+- `cameraHeading` — 같은 원본에 `cameraHeadingOffset`만 더한다
+- `markerIconOffset`·`cameraHeadingOffset`은 **현재 둘 다 0**이다.
+  편각 보정이 아니라 각각 아이콘 에셋·지도 회전을 보정하는 **별개 손잡이**다. 한 값으로 묶지 말 것
+- 마커 보정은 에셋을 정북으로 고쳐 없앴다 (`Group 35465.svg`의 `rotate(-38.5 …)`, 필터 영역 확장)
+- **값을 SVG 좌표로 계산해서 넣지 마라.** 계산으로 두 번 빗나갔고 실기기에서 일곱 번 만에 맞췄다
 - `normalized` — `0..<360`
 
 `CLHeading`은 공개 이니셜라이저가 없어 테스트에서 만들 수 없다. 판정은 원시값 순수 함수가 갖고
@@ -116,10 +123,12 @@ VC에 저장 프로퍼티를 되살리면 스트림이 두 벌 돈다.
 
 ## 미해결 이슈
 
-- `RidingView.onChange(currentPosition)` 바텀시트 카메라 피봇 — ViewModel 이전 검토
+- `RidingView.onChange(currentPosition)` 카메라 이동 오케스트레이션 — ViewModel 이전 검토
+  (값 매핑은 `LocationManager.cameraPivot(for:)`로 이미 옮겼다)
 - 지도 터치 감지 레이어 — 추적 중에만 존재하고 지도 위에 얹혀 있어, 첫 드래그가
   추적만 끄고 지도는 밀리지 않는다
-- 경로선·마커 재그리기 — `updateUIView`마다 좌표 비교 없이 전량 재생성
+- 마커 재그리기 — `MarkerManager.addMarkers`가 `clearMarkers()`로 시작해 매번 전량 재생성.
+  선행: 아이콘 동일성 판정 (`numberMarker(_:)`가 호출마다 새 이미지를 만든다)
 
 ## View / DnD / Lifecycle 수정 시
 

@@ -43,4 +43,5 @@ alwaysApply: false
 ## 기술 부채
 
 - `UserRepository`만 NetworkService 미사용
-- `ErrorType` 이중화 (`NetworkService` vs `UserRepository`)
+- `UserRepository`만 `URLRequest`를 직접 조립한다 (서버 에러 본문 유실).
+  옮기려면 본문 없는 2xx용 Void 오버로드가 선행돼야 한다 — 지금 옮기면 삭제 성공이 실패로 뒤집힌다

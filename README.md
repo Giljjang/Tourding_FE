@@ -49,7 +49,7 @@
 - **Dependency Injection** - 의존성 주입을 통한 테스트 가능한 구조
 
 ### Map & Navigation
-- **네이버 지도 SDK (NMFMapView)** - 고성능 지도 표시 및 내비게이션
+- **네이버 지도 SDK (NMFMapView)** - 고성능 지도 표시 및 내비게이션 (헤딩-업 회전, 라이딩 시작 시 줌 정렬)
 - **NMap** - 실시간 위치 추적 및 나침반 기능 (방위 판정은 `HeadingResolver` 한 곳, 진북 기준)
 - **Core Location** - 정확한 GPS 위치 서비스
 - **Custom Location Manager** - 효율적인 위치 추적 관리
@@ -284,7 +284,7 @@ xcodebuild test -scheme Tourding_FE \
   -derivedDataPath /tmp/TourdingDD
 ```
 
-현재 **168개 통과 / 스킵 0**. 기능 추가·버그 수정·리팩토링 모두 실패하는 테스트를 먼저
+현재 **206개 통과 / 스킵 0**. 기능 추가·버그 수정·리팩토링 모두 실패하는 테스트를 먼저
 작성하는 TDD로 진행합니다.
 
 자세한 개발 가이드는 [`CLAUDE.md`](CLAUDE.md)를 참고하세요.
