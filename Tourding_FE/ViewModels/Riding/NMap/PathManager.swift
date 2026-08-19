@@ -14,6 +14,10 @@ final class PathManager {
     private let pathOverlay = NMFPath()
     private let innerPathOverlay = NMFPath() // 안쪽 테두리용
     private var pathCoordinates: [NMGLatLng] = []
+
+    /// 마지막으로 `setCoordinates`에 들어온 **원본** 좌표.
+    /// `pathCoordinates`는 단순화된 결과라 입력과 직접 비교할 수 없다.
+    private var lastRequestedCoordinates: [NMGLatLng] = []
     private weak var mapView: NMFMapView?
     
     // MARK: - Initialization
@@ -34,6 +38,7 @@ final class PathManager {
         innerPathOverlay.mapView = nil
         
         // 좌표 배열 정리
+        lastRequestedCoordinates.removeAll()
         pathCoordinates.removeAll()
         
         // 지도 뷰 참조 해제 (weak 참조이므로 nil 할당 가능)
@@ -71,6 +76,16 @@ final class PathManager {
 //        print("✅ 경로선 지도에 추가 완료")
     }
     
+    /// 이미 요청된 좌표열과 같은지. **순서까지** 본다.
+    ///
+    /// 개수만 비교하면 경유지 DnD 재정렬(개수 동일, 순서 변경)이 화면에 반영되지 않는다.
+    /// `NMGLatLng`은 클래스라 참조 비교로는 매번 새 인스턴스가 와서 가드가 발동하지 않는다 —
+    /// 반드시 값으로 비교한다. (`PathManagerTests`가 둘 다 잠근다)
+    static func isSameSequence(_ lhs: [NMGLatLng], _ rhs: [NMGLatLng]) -> Bool {
+        guard lhs.count == rhs.count else { return false }
+        return zip(lhs, rhs).allSatisfy { $0.lat == $1.lat && $0.lng == $1.lng }
+    }
+
     // MARK: - Public Methods
     func addCoordinate(_ coordinate: NMGLatLng) {
         pathCoordinates.append(coordinate)
@@ -78,6 +93,11 @@ final class PathManager {
     }
     
     func setCoordinates(_ coordinates: [NMGLatLng]) {
+        // updateUIView가 SwiftUI 갱신마다 updateMap()을 부른다.
+        // 좌표가 그대로면 단순화도 오버레이 재부착도 할 필요가 없다.
+        guard !Self.isSameSequence(coordinates, lastRequestedCoordinates) else { return }
+        lastRequestedCoordinates = coordinates
+
         pathCoordinates = PathSimplifier.simplify(coordinates)
 
         let metrics = PathSimplificationMetrics(
@@ -92,6 +112,9 @@ final class PathManager {
     
     
     func clearPath() {
+        // 오버레이를 떼면 가드도 풀어야 한다.
+        // 안 그러면 같은 좌표로 복원할 때(restoreOriginalData·refreshMapDisplay) 다시 안 그려진다.
+        lastRequestedCoordinates.removeAll()
         pathCoordinates.removeAll()
         pathOverlay.mapView = nil
         innerPathOverlay.mapView = nil
