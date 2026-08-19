@@ -47,14 +47,23 @@ extension RidingViewModel {
     ///
     /// `POST /routes`·`GET /routes`·AI 경로 재설정이 모두 같은 `RouteGuideResponse`를
     /// 돌려주므로 반영 경로를 하나로 둔다.
+    /// 요약만 반영한다.
+    ///
+    /// `routeSummaryId`는 AI 경로 재설정(`/ai/routes/adjustments/*`)의 필수 입력이다.
+    /// 라이딩 중에는 draft가 아니라 **사용 중** 경로의 id를 들고 있어야 한다.
     @MainActor
-    func applyRouteBundle(_ bundle: RouteGuideResponse) {
+    func applyRouteSummary(_ bundle: RouteGuideResponse) {
         routeTotal = RoutesModel(
             isUsed: bundle.isUsed,
             duration: bundle.duration,
             distance: bundle.distance,
             routeSummaryId: bundle.routeSummaryId
         )
+    }
+
+    @MainActor
+    func applyRouteBundle(_ bundle: RouteGuideResponse) {
+        applyRouteSummary(bundle)
 
         routeLocation = bundle.locations
         applyRouteLocationMarkers(from: bundle.locations)
@@ -502,7 +511,12 @@ extension RidingViewModel {
             // 비정상 복구는 서버가 방금 만든 경로로 화면을 새로 채운다.
             // 정상 시작은 편집 모드에서 이미 그린 것을 그대로 백업한다.
             if isNotNormal == true {
+                // 비정상 복구는 서버가 방금 만든 경로로 화면을 새로 채운다
                 applyRouteBundle(bundle)
+            } else {
+                // 정상 시작은 요약만 갱신한다.
+                // 전체를 반영하면 편집 모드에서 사용자가 그린 경유지가 서버 응답으로 덮인다.
+                applyRouteSummary(bundle)
             }
 
             // 순서가 중요하다 — 장소 기준 마커를 백업한 뒤 안내 기준으로 교체한다.
