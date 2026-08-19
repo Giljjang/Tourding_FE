@@ -68,28 +68,26 @@ struct HeadingResolverTests {
 
     // MARK: - 마커 아이콘 오프셋
 
-    /// 오프셋 값은 **실기기 관측으로 맞춘 값**이다. 아이콘을 교체하면 이 테스트가 먼저 깨져야 한다.
+    /// 에셋 화살표가 정북을 가리키므로 보정이 필요 없다.
     ///
-    /// 조정 이력: -45(근거 없음) → -23.5(SVG 계산) → -3.5 → +16.5 → **+6.5**(확정).
-    /// SVG 기하로는 화살표가 우상단 23.5~29.3도를 가리키는 것으로 계산됐지만 실기기와 맞지 않았다.
-    /// 렌더된 아이콘의 실제 방향이 SVG 좌표 계산과 다르며, 어디서 어긋나는지는 미규명이다.
-    /// 값은 관측을 따른다 — 바꿀 일이 생기면 계산이 아니라 실기기에서 확인할 것.
-    @Test func markerIconOffsetMatchesDeviceObservation() {
-        #expect(HeadingResolver.markerIconOffset == -38.5)
+    /// 예전에는 화살표가 비스듬히 그려져 있어 보정값을 눈으로 맞췄고, 일곱 번 걸렸다.
+    /// 마지막에 에셋 자체를 38.5도 회전시켜 보정을 없앴다.
+    /// 아이콘을 교체해 다시 보정이 필요해지면 이 테스트가 먼저 깨진다.
+    @Test func markerNeedsNoOffsetWhenAssetPointsNorth() {
+        #expect(HeadingResolver.markerIconOffset == 0)
     }
 
     /// 마커는 아이콘 오프셋을 뺀 값을 쓴다
     @Test func markerHeadingAppliesIconOffset() {
         let resolved = HeadingResolver.markerHeading(trueHeading: 90, magneticHeading: 99, accuracy: 5)
 
-        #expect(resolved == 51.5, "진북 90에 아이콘 보정 -38.5를 더한 값")
+        #expect(resolved == 90, "보정이 0이므로 진북 방위를 그대로 쓴다")
     }
 
-    /// 오프셋을 빼서 음수가 되면 정규화한다 — 예전에는 -35 같은 값이 그대로 들어갔다
-    @Test func markerHeadingNormalizesNegativeResult() {
-        let resolved = HeadingResolver.markerHeading(trueHeading: 5, magneticHeading: 5, accuracy: 5)
-
-        #expect(resolved == 326.5, "5 - 38.5 = -33.5 → 326.5로 정규화되어야 한다")
+    /// 범위를 벗어난 입력은 정규화한다 (보정이 0이 아니게 되면 음수도 나올 수 있다)
+    @Test func markerHeadingNormalizesOutOfRangeInput() {
+        #expect(HeadingResolver.markerHeading(trueHeading: 370, magneticHeading: 370, accuracy: 5) == 10)
+        #expect(HeadingResolver.markerHeading(trueHeading: -1, magneticHeading: 365, accuracy: 5) == 5)
     }
 
     /// 마커와 카메라는 **같은 원본**에서 나와야 한다.
