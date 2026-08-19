@@ -247,20 +247,16 @@ final class MapViewController: UIViewController {
         
         print("📍 MapViewController: 사용자 위치 마커 업데이트 완료 - \(lat), \(lng)")
         
-        // ridingViewModel.flag가 true일 때만 카메라 이동
-        guard let ridingViewModel = ridingViewModel, ridingViewModel.flag else {
-            return
+        // 추적 중일 때만 카메라가 따라간다.
+        // 판정은 LocationManager.shouldFollowUser 한 곳에 있다 — 여기서 복제하지 말 것.
+        let didFollow = userLocationManager?.followUser(
+            on: mapView.mapView,
+            to: NMGLatLng(lat: lat, lng: lng)
+        ) ?? false
+
+        if didFollow {
+            print("📷 MapViewController: 카메라 업데이트 완료")
         }
-        
-        // 바텀시트 높이에 따른 동적 피봇 조정
-        let cameraUpdate = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng))
-        let pivotY = userLocationManager?.cameraPivotY ?? 0.5
-        cameraUpdate.pivot = CGPoint(x: 0.5, y: pivotY)
-        cameraUpdate.animation = .easeIn
-        
-        mapView.mapView.moveCamera(cameraUpdate)
-        
-        print("📷 MapViewController: 카메라 업데이트 완료 (피봇: \(pivotY))")
     }
     
     // 라이딩 중 LocationManager에서 호출되는 메서드

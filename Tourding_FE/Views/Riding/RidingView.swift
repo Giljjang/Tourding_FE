@@ -254,8 +254,8 @@ struct RidingView: View {
                 return  // large일 때는 아무것도 하지 않음
             }
             
-            // flag가 false일 때는 pivot만 조정 (현재 보고 있는 화면 위치 유지)
-            // flag가 true일 때는 사용자 위치로 카메라 이동
+            // 편집 모드는 pivot만 조정 (보고 있는 화면 위치 유지).
+            // 라이딩 중에는 **추적 중일 때만** 사용자 위치로 따라간다 — 판정은 LocationManager에 있다.
             if !ridingViewModel.flag {
                 // 현재 카메라가 보고 있는 중심 좌표를 기준으로 pivot만 조정
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -267,7 +267,6 @@ struct RidingView: View {
                     mapView.moveCamera(cameraUpdate)
                 }
             } else {
-                // 라이딩 중일 때는 사용자 위치로 카메라 이동
                 guard let userLocationManager = ridingViewModel.userLocationManager else { return }
                 
                 // pivot 상태 저장 (userLocationManager에 저장)
@@ -276,8 +275,8 @@ struct RidingView: View {
                 
                 // 애니메이션 충돌 방지를 위해 약간의 지연 후 실행
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    // moveToCurrentLocation 호출하여 현재 위치로 카메라 이동
-                    userLocationManager.moveToCurrentLocation(on: mapView)
+                    // 추적 중이면 사용자 위치로, 아니면 보던 위치를 유지한 채 피봇만 조정
+                    userLocationManager.updateCameraPivot(on: mapView, yPivot: yPivot)
                 }
             }
         }

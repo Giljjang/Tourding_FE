@@ -262,6 +262,36 @@ final class LocationManager: NSObject, ObservableObject {
         }
     }
     
+    // MARK: - Camera Follow
+
+    /// 카메라가 사용자를 따라가야 하는가.
+    ///
+    /// 기준은 "라이딩 중인가"(`RidingViewModel.flag`)가 아니라 **"추적 중인가"**다.
+    /// 사용자가 지도를 밀면 `handleScreenTouch`가 추적을 끄는데, `flag`로 판정하면
+    /// 다음 GPS 갱신(`distanceFilter` 3m)에 카메라가 도로 사용자 위치로 스냅된다.
+    ///
+    /// `isLocationTrackingEnabled`가 아니라 `isNavigationMode`를 쓴다 —
+    /// 전자는 초기값이 `true`라 추적을 시작하기도 전에 따라가게 된다.
+    var shouldFollowUser: Bool { isNavigationMode }
+
+    /// 추적 중일 때만 카메라를 사용자 위치로 옮긴다.
+    ///
+    /// **카메라를 사용자에게 따라붙게 하는 코드는 전부 이 함수를 거칠 것.**
+    /// 호출부에서 `moveCamera`를 직접 부르면 판정이 복제되고, 그 복제본이 이 버그였다
+    /// (세 곳이 각자 판정하다 세 곳 모두 `flag`로 잘못 판정했다).
+    ///
+    /// - Returns: 실제로 카메라를 옮겼는지 여부
+    @discardableResult
+    func followUser(on mapView: NMFMapView, to coordinate: NMGLatLng) -> Bool {
+        guard shouldFollowUser else { return false }
+
+        let cameraUpdate = NMFCameraUpdate(scrollTo: coordinate)
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: cameraPivotY)
+        cameraUpdate.animation = .easeIn
+        mapView.moveCamera(cameraUpdate)
+        return true
+    }
+
     // 네비게이션 모드 종료
     func stopNavigationMode() {
         isNavigationMode = false
@@ -270,20 +300,26 @@ final class LocationManager: NSObject, ObservableObject {
         // print("🧭 네비게이션 모드 종료")
     }
     
-    // 위치추적 토글 (라이딩 중)
+    /// 위치추적 토글 (라이딩 중 "경로 안내 재개" 버튼)
+    ///
+    /// 상태 전이를 `mapView` 유무와 분리한다.
+    /// `currentMapView`는 `configureLocationManager`가 `onAppear`에서 **1회만**, 그것도
+    /// `if let mapView` 가드 뒤에서 설정하므로 nil로 남을 수 있다. 여기서 그 참조에 의존하면
+    /// 재개 버튼을 눌러도 추적이 켜지지 않는다. 카메라는 다음 위치 콜백이 `followUser`로 처리한다.
     @MainActor
     func toggleLocationTracking() {
-        isLocationTrackingEnabled.toggle()
-        print("📍 위치추적 상태 변경: \(isLocationTrackingEnabled)")
-        
-        if isLocationTrackingEnabled {
-            // 위치추적 on - 네비게이션 모드 시작
-            if let mapView = getCurrentMapView() {
-                startNavigationMode(on: mapView)
-            }
-        } else {
-            // 위치추적 off - 네비게이션 모드 종료
+        if shouldFollowUser {
             stopNavigationMode()
+            print("📍 위치추적 상태 변경: \(isLocationTrackingEnabled)")
+            return
+        }
+
+        isNavigationMode = true
+        isLocationTrackingEnabled = true
+        print("📍 위치추적 상태 변경: \(isLocationTrackingEnabled)")
+
+        if let mapView = getCurrentMapView() {
+            startNavigationMode(on: mapView)
         }
     }
     
@@ -390,7 +426,7 @@ extension LocationManager {
         mapView.cancelTransitions()
         
         // 네비게이션 모드에서는 현재 위치 기반으로 카메라 업데이트
-        if isNavigationMode, let location = currentLocation {
+        if shouldFollowUser, let location = currentLocation {
             let coordinate = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
             let cameraUpdate = NMFCameraUpdate(scrollTo: coordinate)
             cameraUpdate.pivot = CGPoint(x: 0.5, y: yPivot)

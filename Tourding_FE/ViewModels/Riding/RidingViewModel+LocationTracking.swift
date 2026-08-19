@@ -233,14 +233,13 @@ extension RidingViewModel {
             return 
         }
         
-        let cameraUpdate = NMFCameraUpdate(scrollTo: userLocation)
-        // 바텀시트 높이에 따른 동적 피봇 조정 (하드코딩 제거)
-        cameraUpdate.pivot = CGPoint(x: 0.5, y: userLocationManager.cameraPivotY)
-        cameraUpdate.animation = .easeIn
-        mapView.moveCamera(cameraUpdate)
-        
+        // 추적 중일 때만 따라간다 — 판정은 LocationManager 한 곳에 있다
+        guard userLocationManager.followUser(on: mapView, to: userLocation) else {
+            print("📷 추적이 꺼져 있어 카메라를 옮기지 않음")
+            return
+        }
+
         print("📷 카메라가 사용자 위치로 업데이트됨: \(userLocation.lat), \(userLocation.lng)")
-        print("📷 사용자가 움직였으므로 카메라가 따라감 (피봇: \(userLocationManager.cameraPivotY))")
     }
     
     // 지도에서 마커 업데이트 (@MainActor로 동기 처리)
