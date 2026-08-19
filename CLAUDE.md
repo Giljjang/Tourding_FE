@@ -178,6 +178,20 @@ strong으로 잡으면 화면을 떠난 뒤에도 `MapViewController`와 그 `CL
 응답 하나가 80KB대이고, 실측상 짧은 세션에 `/routes` 200 응답만 12회 나간 뒤
 `/routes`·`/routes/path`·`/routes/guide`가 연쇄 500을 반환했다.
 
+**`POST /routes` 응답을 버리지 마라.** 서버가 요약·`guides`·`paths`·`locations`를
+전부 돌려준다. 라이딩 시작은 이 응답을 재사용하고 `GET /routes/guide`를 부르지 않는다.
+
+**번들 반영은 `applyRouteBundle` / `applyGuideMarkers` 두 함수로만 한다.**
+`POST /routes`·`GET /routes`·AI 경로 재설정이 모두 같은 `RouteGuideResponse`를 돌려주므로
+반영 경로를 하나로 유지한다. 새로 만들지 말 것.
+
+**"백업 후 교체" 순서를 지켜라.**
+```
+장소(locations) 기준 마커 → backupOriginalData() → 안내(guides) 기준으로 교체
+```
+라이딩 종료 시 `restoreOriginalData`가 백업본으로 되돌린다. 순서가 뒤집히면
+종료 후 안내 마커가 남는다. 회귀 방지 테스트: `RidingStartRecoveryTests`
+
 **응답 모델의 새 필드는 옵셔널로 둔다.** 필드 하나 때문에 응답 전체가 폐기되는 실패를
 두 번 겪었다(`/routes/guide` 형태 변경, 상세의 분류 필드 누락).
 
@@ -323,6 +337,13 @@ xcodebuild test -scheme Tourding_FE \
   - **`/routes` 호출 통합** — 편집 진입·복귀가 3회 → 1회
   - 상세 응답 분류 필드 누락 내구성, 명세 정합(`isUsed` 전송·요약 필드), `UserRepository` 에러 계약 통일
 
+- [x] **라이딩 시작을 POST /routes 응답 재사용으로 통합 (TDD)** — 테스트 135개
+  - 서버가 POST 응답으로 경로 전체를 돌려주는데 앱이 버리고 GET으로 다시 받았다
+    (실측: POST 응답과 GET /routes/guide 응답이 86110B로 바이트 동일)
+  - 정상 시작 2회 → 1회, 비정상 복구 5회 → 2회
+  - 반영 로직을 `applyRouteBundle` / `applyGuideMarkers`로 추출 — 편집 모드도 같은 함수를 쓴다
+  - 손대기 전에 특성화 테스트(`RidingStartRecoveryTests`)로 현재 동작을 먼저 잠갔다
+
 ### 다음
 - [ ] **AI 기능 착수** — 서버 준비 완료(`/ai/routes/adjustments/text`·`/voice`,
       `/routes/recommendations`, `/user/{id}/riding-profile`), `routeSummaryId` 보관 완료
@@ -331,11 +352,6 @@ xcodebuild test -scheme Tourding_FE \
 - [ ] LocationManager 이중 인스턴스 정리 (`MapViewController.locationManager` vs `userLocationManager`)
 
 ### 보류 (판단이 끝났고 지금은 안 함)
-- **라이딩 시작의 `/routes/guide` 통합** — `/routes/guide`와 `/routes`는 같은
-  `RouteGuideRespDto`를 반환한다(실측 응답이 86110B로 바이트 동일). 라이딩 시작 한 번에
-  같은 재계산이 두 번 간다. 다만 `getRouteGuideAPI`는 단순 조회가 아니라
-  `postRidingStartAPI`로 경로를 "사용 중"으로 바꾼 **직후에** 읽는 오케스트레이션이고,
-  비정상 종료 복구 분기(`isNotNormal`)까지 얽혀 있어 순서 의존 검증이 선행돼야 한다
 - **에러를 사용자에게 노출** — 실패가 전부 `print`로만 남는다. 서버 500이 정리된 뒤
   남는 실패(네트워크 끊김 등)를 보고 표시 방식을 정하기로 했다
 

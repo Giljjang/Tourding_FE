@@ -60,10 +60,12 @@
 - **App Storage** - 사용자 설정 및 상태 관리
 
 ### Network & API
-- **URLSession** - 비동기 REST API 통신
+- **URLSession** - 비동기 REST API 통신 (요청 20초 / 리소스 60초 타임아웃)
 - **JSON Codable** - 타입 안전한 데이터 직렬화/역직렬화
 - **카카오 로컬 API** - 정확한 장소 검색 및 정보 제공
-- **Retry Mechanism** - 네트워크 오류 시 자동 재시도
+- **선별적 재시도** - 408·429·503·네트워크 단절만 재시도. 서버 오류(500·502·504)와
+  클라이언트 오류는 다시 걸어도 같은 답이라 즉시 중단
+- **통합 경로 조회** - `GET /routes` 한 번으로 요약·안내·경로선·장소를 모두 받는다
 
 ### Advanced Features
 - **Background Task Management** - 백그라운드에서의 위치 추적
@@ -257,6 +259,31 @@ View → ViewModel → Repository(protocol)
 | `+Lifecycle` | appear, 라이딩 시작/종료, 포그라운드, 위치 콜백 |
 | `+LocationTracking` | 3m 이동 감지, 30m 마커 통과 |
 | `+Utils` | 좌표 파싱, 포맷 |
+
+### 경로 데이터 흐름
+
+서버는 `POST /routes`·`GET /routes`·AI 경로 재설정 모두 같은 형태(`RouteGuideResponse`)로
+요약·안내·경로선·장소를 한 번에 돌려줍니다. 앱은 이를 **하나의 반영 경로**로 처리합니다.
+
+```
+RouteGuideResponse
+  ├─ applyRouteBundle()    요약 · 경유지 · 장소 기준 마커 · 경로선
+  └─ applyGuideMarkers()   라이딩 중 안내 기준 마커 (백업 후 교체)
+```
+
+라이딩 시작은 `POST /routes` 응답을 그대로 재사용하므로 별도 조회를 하지 않습니다.
+
+### 테스트
+
+```bash
+xcodebuild test -scheme Tourding_FE \
+  -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.5' \
+  -only-testing:Tourding_FETests \
+  -derivedDataPath /tmp/TourdingDD
+```
+
+현재 **135개 통과 / 스킵 0**. 기능 추가·버그 수정·리팩토링 모두 실패하는 테스트를 먼저
+작성하는 TDD로 진행합니다.
 
 자세한 개발 가이드는 [`CLAUDE.md`](CLAUDE.md)를 참고하세요.
 
