@@ -85,6 +85,17 @@ API/Mock → RidingViewModel+API → @Published pathCoordinates
 추적이 꺼져도 `userMovementThreshold`(3m) 이상 움직이면 `resumeTrackingIfStopped()`가 되켠다.
 상태 전이는 `beginTracking()` 한 곳. (테스트: `CameraFollowTests`)
 
+## 라이딩 시작 줌
+
+- **절대 줌 금지.** 현재 줌 기준 상대값 `ridingStartZoomDelta`를 쓴다.
+  절대값은 편집 화면 줌이 그보다 크면 축소가 된다 (실측 기준 줌 14.0, `maxZoomLevel` 22)
+- 게이트(`consumeRidingStartZoom`)는 **`startNavigationMode` 안에서** 연다.
+  호출부에서 열면 측위 전일 때 소진돼 영영 안 걸린다 — 시작 경로가 셋이다
+- 줌을 바꿀 때는 **애니메이션 없이**. 애니메이션 중 헤딩 갱신이 중간 줌을 붙잡아 굳힌다
+- 종료 시 `restoreZoomBeforeRiding(on:)`으로 되돌린다.
+  **`resetRidingStartZoom`보다 먼저** 부를 것 — 리셋이 기억을 비운다
+- (테스트: `RidingStartZoomTests`)
+
 ## 경유지 드래그앤드롭
 
 **파일**: `RouteLocationDropDelegate.swift` + `SheetContentView` (경유지 `onDrag`/`onDrop`)

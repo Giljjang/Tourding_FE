@@ -176,11 +176,26 @@ strong으로 잡으면 화면을 떠난 뒤에도 `MapViewController`와 그 `CL
 추적이 꺼져도 사용자가 `userMovementThreshold`(3m) 이상 움직이면
 `resumeTrackingIfStopped()`가 자동으로 되켠다. 상태 전이는 `beginTracking()` 한 곳에 있다.
 
-**줌은 라이딩 시작에만 맞춘다** — `zoomLevel(for:)`가 `.ridingStart`에는 `ridingStartZoom`(16.5),
-`.resumeTracking`에는 `nil`을 준다. 추적 재개는 주행 중에 일어나므로 그때 줌을 덮으면
-사용자가 맞춰 둔 배율이 날아간다.
-시작 시 좌표·줌·헤딩은 **한 번의 카메라 이동**으로 맞춘다 — 따로 옮기면 뒤이은 헤딩 갱신이
-애니메이션 중인 카메라를 읽어 방금 지정한 줌을 되돌린다.
+**줌은 라이딩 시작에만, 라이딩당 한 번만 맞춘다.**
+
+**절대 줌을 쓰지 마라 — 현재 줌 기준 상대값(`ridingStartZoomDelta`)이다.**
+처음에 절대값 16.5를 넣었다가 화면이 그대로였다. 실측 기준 줌이 **14.0**이라
+16.5는 확대였지만 폭이 작았고, 무엇보다 기준을 모르는 채로 절대값을 정하면
+편집 화면 줌이 그보다 크면 오히려 축소된다. 상대값이면 기준이 뭐든 확대된다.
+(실측 로그: `14.0 → 17.0`, 지도 `maxZoomLevel`은 22)
+
+**게이트는 `startNavigationMode` 안에서 연다** (`consumeRidingStartZoom`).
+호출부에서 열면 위치가 없어 카메라를 못 옮기는 경우에도 소진돼 영영 걸리지 않는다.
+시작 경로가 셋(`flag` 전이 · 시작 API · 비정상 복구)이라 그중 하나만 측위 전에 돌아도 잃는다.
+
+추적 재개(`beginTracking`)에는 걸지 않는다 — 주행 중에 일어나므로 배율이 날아간다.
+
+**줌을 바꿀 때는 애니메이션 없이** 맞춘다. 애니메이션 중에 헤딩 갱신이 끼어들면
+`updateCameraWithHeading`이 `cameraPosition.zoom`으로 **중간 줌**을 읽어 그대로 굳힌다.
+
+라이딩이 끝나면 시작 전 줌으로 되돌린다 — `restoreZoomBeforeRiding(on:)`.
+뒤로가기(라이딩 중)와 종료 버튼이 둘 다 `endRiding`을 거치므로 한 곳이면 된다.
+**복원이 `resetRidingStartZoom`보다 먼저**여야 한다 — 리셋이 기억해 둔 값을 비운다.
 
 **사용자 위치 마커를 켜는 것도 잊지 말 것.** `NMFLocationOverlay`는 기본이 숨김이라
 `showUserLocationOverlay(on:at:)`를 부르기 전에는 그려지지 않는다.
@@ -437,7 +452,7 @@ xcodebuild test -scheme Tourding_FE \
     VC의 저장 프로퍼티를 없애고 주입만 받게 했다
   - **스팟 추가 POST 실패 시 로딩 미해제** — `isLoading` 해제가 `do` 블록 안에만 있었다
 
-- [x] **지도 성능·정리 (TDD)** — 테스트 206개, 스킵 0
+- [x] **지도 성능·정리 (TDD)** — 테스트 215개, 스킵 0
   - **경로선을 SwiftUI 갱신마다 재생성** — `updateUIView`가 `updateMap()`을 무조건 부르고
     `setCoordinates`가 좌표 비교 없이 매번 단순화 + 오버레이 전체 재부착을 했다.
     `PathManager.isSameSequence`로 가드. 개수만 비교하면 DnD 재정렬이 반영되지 않고,
@@ -448,7 +463,10 @@ xcodebuild test -scheme Tourding_FE \
   - **릴리즈 로그 유출** — `NetworkService`의 요청 URL·본문·에러 응답 전문에 `#if DEBUG` 가드.
     URL 쿼리에 `authorizationCode`가 실리는 엔드포인트가 있다
   - **마커·카메라 방위 정합** — 보정 상수 둘 다 0으로, 에셋을 정북으로 교정
-  - **라이딩 시작 시 마커 미표시 / 줌 / 편집 모드 피봇 동기화**
+  - **라이딩 시작 시 마커 미표시 / 편집 모드 피봇 동기화**
+  - **라이딩 시작 줌** — 시작에만 1회 적용하고 종료 시 복원.
+    절대값으로 두었다가 안 걸려 6커밋을 썼다. 기준 줌을 모르는 채 값을 짐작한 것이 원인이다.
+    진단 로그를 먼저 넣었으면 한 번에 끝났을 일이다
   - 빈 catch 2건, 죽은 코드 5건(+`onMapTap` 배선 전부) 정리
 
 ### 다음
