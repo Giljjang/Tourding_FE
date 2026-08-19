@@ -405,6 +405,19 @@ xcodebuild test -scheme Tourding_FE \
 ### 다음
 - [ ] **AI 기능 착수** — 서버 준비 완료(`/ai/routes/adjustments/text`·`/voice`,
       `/routes/recommendations`, `/user/{id}/riding-profile`), `routeSummaryId` 보관 완료
+- [ ] **내비게이션 카메라** — 자동차 내비처럼 "경로가 화면에서 위로" (피봇 → course → 틸트 순)
+      - **피봇** `cameraPivotY` 0.3 → 0.75. NMap 피봇은 `(0,0)`이 좌상단이라 지금은 사용자가
+        화면 위쪽 30%에 놓인다 — 헤딩-업 회전을 걸어도 앞이 30%만 보인다. 한 줄, 체감 가장 큼
+      - **틸트** 현재 0 (아무도 설정 안 함). `NMFMapView.maxTilt` 기본값 60, 내비 느낌은 45~55
+      - **course** 우선순위 낮음 — **핸들바 거치를 전제**하기로 했다(2026-08-19 결정).
+        거치 시 나침반 ≈ 진행 방향이라 이득이 작다.
+        다만 완전히 무의미하지는 않다: 조향하면 폰도 같이 돌아 저속 코너에서 나침반이 튀고,
+        **자석 거치대**는 자력계 바로 옆에 자석이 붙어 정확도가 무너진다.
+        착수 시 한 줄 교체가 아니다 — `course`는 정지 중 무효(음수)라
+        속도 임계값 + 히스테리시스 + 나침반 폴백이 필요하다.
+        이음새는 이미 있다(`HeadingResolver`가 원시값 순수 함수, 테스트 8건)
+      - 셋 다 **눈으로 보고 조정하는 값**이라 따로 하면 실기기 주행 테스트를 세 번 한다. 묶을 것
+
 - [ ] **경로선 재그리기 가드** — `MapViewRepresentable.updateUIView`가 `updateMap()`을 무조건 부르고
       `PathManager.setCoordinates`가 좌표 비교 없이 매번 단순화 + 오버레이 전체 재부착을 한다.
       마커도 매번 전량 재생성(`MarkerManager.addMarkers`가 `clearMarkers`로 시작).
