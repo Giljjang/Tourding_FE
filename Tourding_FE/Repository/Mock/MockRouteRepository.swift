@@ -21,10 +21,10 @@ final class MockRouteRepository: RouteRepositoryProtocol {
         self.scenario = scenario
     }
 
-    func postRoutes(requestBody: RequestRouteModel) async throws {
+    @discardableResult
+    func postRoutes(requestBody: RequestRouteModel) async throws -> RouteGuideResponse {
         try await simulateNetworkDelay()
-        scenario = requestBody.wayPoints.isEmpty ? .simple : .withWaypoints
-        print("🧪 MockRouteRepository.postRoutes scenario=\(scenario)")
+        return try FixtureLoader.load("routes_guide_response.json")
     }
 
     func getRoutesPath(userId: Int, isUsed: Bool) async throws -> [RoutePathModel] {

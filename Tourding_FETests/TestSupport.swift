@@ -19,6 +19,9 @@ final class FakeRouteRepository: RouteRepositoryProtocol {
         case notConfigured
     }
 
+    /// 메서드 호출 순서를 그대로 기록한다. 여러 API에 걸친 순서 계약 검증용.
+    private(set) var callLog: [String] = []
+
     /// nil이 아니면 `postRoutes`가 이 에러를 던진다.
     var postRoutesError: Error?
 
@@ -35,12 +38,26 @@ final class FakeRouteRepository: RouteRepositoryProtocol {
     var guides: [GuideModel] = []
     var routes: RoutesModel?
 
-    func postRoutes(requestBody: RequestRouteModel) async throws {
+    /// `postRoutes`가 돌려줄 응답. 기본은 빈 번들이라 관심 없는 테스트는 설정하지 않아도 된다.
+    var postRoutesResponse = RouteGuideResponse(
+        routeSummaryId: 0, isUsed: false, duration: 0, distance: 0,
+        guides: [], paths: [], locations: []
+    )
+
+    /// `postRoutes`가 실행되는 순간 호출된다.
+    /// 응답이 도착하는 타이밍에 취소를 끼워 넣어 "뒤늦게 끝난 시작"을 결정적으로 재현하는 훅.
+    var onPostRoutes: (() -> Void)?
+
+    @discardableResult
+    func postRoutes(requestBody: RequestRouteModel) async throws -> RouteGuideResponse {
+        callLog.append("postRoutes")
+        onPostRoutes?()
         postRoutesCancellationStates.append(Task.isCancelled)
         capturedPostRoutes.append(requestBody)
         if let postRoutesError {
             throw postRoutesError
         }
+        return postRoutesResponse
     }
 
     /// `getRoutesPath`가 받은 (userId, isUsed) — 경로선 재조회가 어떤 경로를 가리키는지 검증용
@@ -50,6 +67,7 @@ final class FakeRouteRepository: RouteRepositoryProtocol {
     var getRoutesError: Error?
 
     func getRoutesPath(userId: Int, isUsed: Bool) async throws -> [RoutePathModel] {
+        callLog.append("getRoutesPath(isUsed: \(isUsed))")
         capturedPathRequests.append((userId: userId, isUsed: isUsed))
         if let getRoutesError { throw getRoutesError }
         return paths
@@ -60,6 +78,7 @@ final class FakeRouteRepository: RouteRepositoryProtocol {
     private(set) var capturedRoutesRequests: [(userId: Int, isUsed: Bool)] = []
 
     func getRoutesLocationName(userId: Int, isUsed: Bool) async throws -> [LocationNameModel] {
+        callLog.append("getRoutesLocationName(isUsed: \(isUsed))")
         capturedLocationNameRequests.append((userId: userId, isUsed: isUsed))
         if let getRoutesError { throw getRoutesError }
         return locationNames
@@ -79,6 +98,7 @@ final class FakeRouteRepository: RouteRepositoryProtocol {
     var onGetRoutesGuide: (() -> Void)?
 
     func getRoutesGuide(userId: Int, isUsed: Bool) async throws -> [GuideModel] {
+        callLog.append("getRoutesGuide(isUsed: \(isUsed))")
         onGetRoutesGuide?()
         if let getRoutesError { throw getRoutesError }
         return guides

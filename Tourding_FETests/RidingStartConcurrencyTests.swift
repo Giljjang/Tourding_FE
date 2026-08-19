@@ -37,6 +37,14 @@ struct RidingStartConcurrencyTests {
         )
     }
 
+    /// 가이드는 이제 POST /routes 응답에서 온다 (별도 GET /routes/guide 없음)
+    private func bundle(_ guides: [GuideModel]) -> RouteGuideResponse {
+        RouteGuideResponse(
+            routeSummaryId: 60, isUsed: true, duration: 100, distance: 200,
+            guides: guides, paths: [], locations: []
+        )
+    }
+
     private func makeViewModel(_ repository: FakeRouteRepository) -> RidingViewModel {
         let viewModel = makeTestRidingViewModel(repository: repository)
         viewModel.routeLocation = TestRoute.startTwoWaypointsGoal
@@ -49,7 +57,7 @@ struct RidingStartConcurrencyTests {
     /// 이전에는 자식 Task를 띄우고 바로 "완료"로 처리했다.
     @Test func startRidingCompletesOnlyAfterGuidesAreLoaded() async throws {
         let repository = FakeRouteRepository()
-        repository.guides = [guide(0), guide(1)]
+        repository.postRoutesResponse = bundle([guide(0), guide(1)])
         let viewModel = makeViewModel(repository)
 
         viewModel.startRidingWithLoading(
@@ -67,7 +75,7 @@ struct RidingStartConcurrencyTests {
     /// 라이딩을 끝냈으면 뒤늦게 끝난 가이드가 편집 모드 화면을 덮으면 안 된다
     @Test func endRidingCancelsRidingStartBeforeGuidesApply() async throws {
         let repository = FakeRouteRepository()
-        repository.guides = [guide(0), guide(1)]
+        repository.postRoutesResponse = bundle([guide(0), guide(1)])
         let viewModel = makeViewModel(repository)
 
         viewModel.startRidingWithLoading(
@@ -88,12 +96,12 @@ struct RidingStartConcurrencyTests {
     /// 편집 화면이 가이드 마커로 덮인다")은 이쪽이다. 시작 전 취소만 막아서는 재발한다.
     @Test func guidesArrivingAfterCancellationDoNotOverwriteEditMode() async throws {
         let repository = FakeRouteRepository()
-        repository.guides = [guide(0), guide(1)]
+        repository.postRoutesResponse = bundle([guide(0), guide(1)])
         let viewModel = makeViewModel(repository)
 
-        // 가이드 응답이 도착하는 순간 라이딩 시작 Task를 취소한다
+        // 시작 응답이 도착하는 순간 라이딩 시작 Task를 취소한다
         let box = TaskBox()
-        repository.onGetRoutesGuide = { box.task?.cancel() }
+        repository.onPostRoutes = { box.task?.cancel() }
 
         viewModel.startRidingWithLoading(
             isNotNormal: nil,
@@ -111,7 +119,7 @@ struct RidingStartConcurrencyTests {
     /// 취소되더라도 로딩 오버레이는 반드시 내려가야 한다 (화면 잠김 방지)
     @Test func cancelledRidingStartStillClearsLoadingOverlay() async throws {
         let repository = FakeRouteRepository()
-        repository.guides = [guide(0)]
+        repository.postRoutesResponse = bundle([guide(0)])
         let viewModel = makeViewModel(repository)
 
         viewModel.startRidingWithLoading(

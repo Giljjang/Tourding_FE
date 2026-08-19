@@ -43,6 +43,60 @@ extension RidingViewModel {
         }
     }
     
+    /// 번들 응답을 편집 모드 상태로 반영한다 — 요약·경유지·장소 기준 마커·경로선.
+    ///
+    /// `POST /routes`·`GET /routes`·AI 경로 재설정이 모두 같은 `RouteGuideResponse`를
+    /// 돌려주므로 반영 경로를 하나로 둔다.
+    @MainActor
+    func applyRouteBundle(_ bundle: RouteGuideResponse) {
+        routeTotal = RoutesModel(
+            isUsed: bundle.isUsed,
+            duration: bundle.duration,
+            distance: bundle.distance,
+            routeSummaryId: bundle.routeSummaryId
+        )
+
+        routeLocation = bundle.locations
+        applyRouteLocationMarkers(from: bundle.locations)
+
+        routeMapPaths = bundle.paths
+        pathCoordinates = bundle.paths.compactMap { item in
+            guard let lat = Double(item.lat), let lon = Double(item.lon) else { return nil }
+            return NMGLatLng(lat: lat, lng: lon)
+        }
+
+        print("✅ 경로 번들 반영 - 경유지 \(bundle.locations.count)개, 경로선 \(pathCoordinates.count)개")
+    }
+
+    /// 라이딩 중 표시용 — 안내(guides) 기준 마커로 교체한다.
+    /// **반드시 `backupOriginalData()` 뒤에 부를 것.** 백업에는 장소 기준 마커가 남아야
+    /// 라이딩 종료 시 원래대로 복원된다.
+    @MainActor
+    func applyGuideMarkers(_ guides: [GuideModel]) {
+        guideList = guides
+
+        markerCoordinates = guides.compactMap { item in
+            guard let lat = Double(item.lat), let lon = Double(item.lon) else { return nil }
+            return NMGLatLng(lat: lat, lng: lon)
+        }
+
+        markerIcons = guides.enumerated().map { (index, item) in
+            switch item.guideType {
+            case .start:      return MarkerIcons.startMarker
+            case .end:        return index == guides.count - 1 ? MarkerIcons.goalMarker : MarkerIcons.stopoverMarker
+            case .leftTurn:   return MarkerIcons.leftMarker
+            case .rightTurn:  return MarkerIcons.rightMarker
+            case .straight:   return MarkerIcons.straightMarker
+            case .stopOver:   return MarkerIcons.stopoverMarker
+            case .none:       return MarkerIcons.straightMarker
+            case .roundabout: return MarkerIcons.crossingMarker
+            }
+        }
+
+        print("✅ 가이드 마커 설정 완료: \(markerCoordinates.count)개")
+        restorePathWithGuides()
+    }
+
     /// /routes 한 번으로 요약·경유지·경로선을 모두 채운다.
     ///
     /// 이전에는 /routes, /routes/location-name, /routes/path 를 각각 불러 서버가 같은 경로를
@@ -63,23 +117,7 @@ extension RidingViewModel {
             let routeIsUsed = isUsed ?? self.isUsedRoute
             let bundle = try await routeRepository.getRouteBundle(userId: userId, isUsed: routeIsUsed)
 
-            routeTotal = RoutesModel(
-                isUsed: bundle.isUsed,
-                duration: bundle.duration,
-                distance: bundle.distance,
-                routeSummaryId: bundle.routeSummaryId
-            )
-
-            routeLocation = bundle.locations
-            applyRouteLocationMarkers(from: bundle.locations)
-
-            routeMapPaths = bundle.paths
-            pathCoordinates = bundle.paths.compactMap { item in
-                guard let lat = Double(item.lat), let lon = Double(item.lon) else { return nil }
-                return NMGLatLng(lat: lat, lng: lon)
-            }
-
-            print("✅ 경로 번들 로드 완료 - 경유지 \(bundle.locations.count)개, 경로선 \(pathCoordinates.count)개")
+            applyRouteBundle(bundle)
         } catch {
             print("ERRO: GET /routes (bundle) - \(error)")
         }
@@ -360,17 +398,19 @@ extension RidingViewModel {
     //MARK: - 라이딩 중 API 호출
     
     // 라이딩이 시작했으니 실제로 길찾기에 사용된 코스를 저장하기 위해 post
+    /// 라이딩 시작 POST. 서버가 돌려주는 경로 전체를 반환한다 — 실패 시 nil.
     @MainActor
-    func postRidingStartAPI(locationData: [LocationNameModel]) async {
+    @discardableResult
+    func postRidingStartAPI(locationData: [LocationNameModel]) async -> RouteGuideResponse? {
         guard let userId = userId else {
             print("❌ userId가 nil입니다")
-            return
+            return nil
         }
 
         guard let start = locationData.first,
               let end = locationData.last else {
             print("❌ 경로 데이터가 부족합니다")
-            return
+            return nil
         }
 
         isLoading = true
@@ -414,158 +454,70 @@ extension RidingViewModel {
         print("requestBody.contentId: \(requestBody.contentId)")
         
         do {
-            try await routeRepository.postRoutes(requestBody: requestBody)
+            let response = try await routeRepository.postRoutes(requestBody: requestBody)
+            print("✅ 라이딩 시작 POST 완료 - routeSummaryId \(response.routeSummaryId)")
+            return response
         } catch {
             print("로그 확인: \(requestBody)")
             print("POST ERROR: /routes \(error)")
+            return nil
         }
     }
     
     // routes/guide & routes/path
     @MainActor
     func getRouteGuideAPI(isNotNormal: Bool?) async {
-        guard let userId = userId else {
-            print("❌ userId가 nil입니다")
-            return
-        }
-        
-        print("🔄 가이드 API 호출 시작 - isNotNormal: \(isNotNormal != nil)")
-        
-        // 가이드 API 호출 시 로딩 상태 설정.
+        print("🔄 라이딩 시작 - isNotNormal: \(isNotNormal != nil)")
+
         // 취소로 중간에 빠져나가도 반드시 내려야 하므로 defer로 묶는다
         isStartingRiding = true
         defer { isStartingRiding = false }
 
-        // 라이딩 시작 전 원본 데이터 백업 (정상/비정상 종료 모두)
-        print("🔄 라이딩 시작 - 원본 데이터 백업")
-        
-        // 비정상 종료 시에는 기존 데이터가 비어있을 수 있으므로 API 호출 후 백업
-        if let isNotNormal = isNotNormal, isNotNormal {
-            print("🔄 비정상 종료 감지 - 경로 데이터 재로드 후 백업")
-            
-            // 경로 데이터 재로드
-            do {
+        do {
+            // 비정상 종료 후에는 화면 데이터가 비어 있을 수 있어, 무엇을 POST할지 draft에서 먼저 읽는다
+            if isNotNormal == true {
+                print("🔄 비정상 종료 감지 - draft 재로드")
                 try Task.checkCancellation()
-                await getRouteLocationAPI(isRecommend: true) // 이거 추천코스에서 받은 데이터 false일 때 isUsed flase로 설정해서 데이터 받아오고 그걸 post해서 라이딩 시작하기 바로 가능하도록 구현...
-                
-                try Task.checkCancellation()
-                await postRidingStartAPI(locationData: routeLocation) // true로 바꿈
-                
-                try Task.checkCancellation()
-                await getRoutePathAPI()
-                
-                try Task.checkCancellation()
-                await getRouteLocationAPI()
-                
-                // 데이터 로드 완료 후 백업
-                backupOriginalData()
-                print("✅ 비정상 종료 복구 - 경로 데이터 재로드 및 백업 완료")
-            } catch {
-                print("❌ 비정상 종료 복구 실패: \(error)")
-                // 실패해도 기존 데이터로 백업 시도
-                backupOriginalData()
+                await getRouteLocationAPI(isRecommend: true)
             }
-        } else {
-            
-            do {
-                try Task.checkCancellation()
-                await postRidingStartAPI(locationData: routeLocation)
-                
-                // 정상 시작 시에는 기존 데이터로 바로 백업
+
+            try Task.checkCancellation()
+
+            // 서버는 이 POST 응답으로 경로 전체(요약·guides·paths·locations)를 돌려준다.
+            // 예전에는 이걸 버리고 /routes/path·/routes/location-name·/routes/guide 를
+            // 다시 불러 같은 재계산을 반복했다.
+            guard let bundle = await postRidingStartAPI(locationData: routeLocation) else {
+                print("❌ 라이딩 시작 POST 실패 - 기존 데이터로 백업")
                 backupOriginalData()
-            } catch {
-                print("❌ 정상 라이딩 시작시 post 에러: \(error)")
+                return
             }
+
+            // 응답이 도착하는 사이 라이딩이 끝났으면 적용하지 않는다.
+            // 적용하면 편집 모드 화면이 가이드 마커로 덮인다.
+            if Task.isCancelled {
+                print("🚫 라이딩 시작 응답 도착 후 취소 확인 - 적용하지 않음")
+                return
+            }
+
+            // 비정상 복구는 서버가 방금 만든 경로로 화면을 새로 채운다.
+            // 정상 시작은 편집 모드에서 이미 그린 것을 그대로 백업한다.
+            if isNotNormal == true {
+                applyRouteBundle(bundle)
+            }
+
+            // 순서가 중요하다 — 장소 기준 마커를 백업한 뒤 안내 기준으로 교체한다.
+            // 라이딩을 끝내면 restoreOriginalData가 백업본으로 되돌린다.
+            backupOriginalData()
+            applyGuideMarkers(bundle.guides)
+
+        } catch is CancellationError {
+            print("🚫 라이딩 시작 Task 취소됨")
+        } catch {
+            print("❌ 라이딩 시작 실패: \(error)")
+            backupOriginalData()
         }
-        
-        // 재시도 메커니즘 (비정상 종료 시 안정성 강화)
-        var retryCount = 0
-        let maxRetries = 3
-        
-        while retryCount < maxRetries {
-            do {
-                let response = try await routeRepository.getRoutesGuide(userId: userId, isUsed: true)
-
-                // 응답을 기다리는 사이 라이딩이 끝났으면 적용하지 않는다.
-                // 적용하면 편집 모드 화면이 가이드 마커로 덮인다.
-                if Task.isCancelled {
-                    print("🚫 가이드 응답 도착 후 취소 확인 - 적용하지 않음")
-                    return
-                }
-
-                guideList = response
-
-                print("✅ 가이드 데이터 로드 완료: \(guideList.count)개")
-                
-                // 기존 마커들을 제거하고 가이드 마커들로 교체
-                markerCoordinates = guideList.compactMap { item in
-                    if let lat = Double(item.lat), let lon = Double(item.lon) {
-                        return NMGLatLng(lat: lat, lng: lon)
-                    } else {
-                        return nil
-                    }
-                }
-                
-                markerIcons = guideList.enumerated().map { (index, item) in
-                    switch item.guideType {
-                    case .start:
-                        return MarkerIcons.startMarker
-                    case .end:
-                        if index == guideList.count - 1 {
-                            return MarkerIcons.goalMarker
-                        } else {
-                            return MarkerIcons.stopoverMarker
-                        }
-                    case .leftTurn:
-                        return MarkerIcons.leftMarker
-                    case .rightTurn:
-                        return MarkerIcons.rightMarker
-                    case .straight:
-                        return MarkerIcons.straightMarker
-                    case .stopOver:
-                        return MarkerIcons.stopoverMarker
-                    case .none:
-                        return MarkerIcons.straightMarker
-                    case .roundabout:
-                        return MarkerIcons.crossingMarker
-                    }
-                }
-                
-                print("✅ 가이드 마커 설정 완료: \(markerCoordinates.count)개")
-                
-                // 가이드 마커 설정 후 경로선 복원 (경로선이 사라지지 않도록)
-                restorePathWithGuides()
-                
-                // 성공하면 루프 종료
-                break
-                
-            } catch {
-                // 500·4xx는 다시 걸어도 같은 답이 온다 (실측: /routes/path 500 3회 연속 동일)
-                guard (error as? ErrorType)?.isRetryable ?? true else {
-                    print("🚫 재시도하지 않는 에러 - 중단: \(error)")
-                    break
-                }
-
-                retryCount += 1
-                print("❌ 가이드 API 호출 실패 (시도 \(retryCount)/\(maxRetries)): \(error)")
-                
-                if retryCount < maxRetries {
-                    // 재시도 전 잠시 대기
-                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1초 대기
-                } else {
-                    print("❌ 가이드 API 호출 최종 실패")
-                    
-                    // 비정상 종료 시 가이드 데이터가 없어도 기본 마커 유지
-                    if isNotNormal != nil {
-                        print("⚠️ 비정상 종료 시 가이드 데이터 없음 - 기본 마커 유지")
-                        // 기존 마커 데이터 유지
-                    }
-                }
-            }
-        }
-        
     }
-    
+
     @MainActor
     func postRoutesToiletAPI(lon: String, lat: String) async {
         isLoading = true

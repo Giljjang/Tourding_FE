@@ -386,7 +386,7 @@ final class SpotAddViewModel: ObservableObject {
         print("requestBody.contentId: \(requestBody.contentId)")
         
         do {
-            let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
+            _ = try await routeRepository.postRoutes(requestBody: requestBody)
 
             isLoading = false
         } catch {
