@@ -269,6 +269,30 @@ final class LocationManager: NSObject, ObservableObject {
         }
     }
 
+    /// 이번 라이딩에서 시작 줌을 이미 적용했는가.
+    private var didApplyRidingStartZoom = false
+
+    /// 라이딩 시작 줌을 **한 번만** 내준다. 두 번째부터는 `nil`(현재 줌 유지).
+    ///
+    /// 시작 경로가 여러 갈래이고 서로 연달아 돈다 —
+    /// `flag` 전이(`activateRidingLocationTracking`), 라이딩 시작 API(`startRidingAPIProcess`),
+    /// 비정상 종료 복구(`onAppear` → `setupRidingNavigationOnAppear`).
+    /// 호출부마다 줌을 넘기면 주행 중 화면에 다시 들어왔을 때도 줌이 걸려
+    /// 사용자가 맞춰 둔 배율이 날아간다. 게이트를 여기 한 곳에 둔다.
+    func consumeRidingStartZoom() -> Double? {
+        guard !didApplyRidingStartZoom else { return nil }
+        didApplyRidingStartZoom = true
+        return Self.zoomLevel(for: .ridingStart)
+    }
+
+    /// 다음 라이딩 시작에 줌이 다시 걸리도록 되돌린다.
+    ///
+    /// **`endRiding`에서만 부를 것.** `stopNavigationMode`는 지도를 밀 때마다 불리므로
+    /// 거기서 되돌리면 추적을 껐다 켤 때마다 줌이 다시 걸린다.
+    func resetRidingStartZoom() {
+        didApplyRidingStartZoom = false
+    }
+
     // MARK: - Navigation Methods
     
     // 네비게이션 모드 시작

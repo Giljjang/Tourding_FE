@@ -38,4 +38,42 @@ struct RidingStartZoomTests {
         #expect(LocationManager.ridingStartZoom > 14, "너무 멀면 앞의 길이 안 보인다")
         #expect(LocationManager.ridingStartZoom < 19, "너무 가까우면 다음 안내가 화면 밖으로 나간다")
     }
+
+    // MARK: - 한 번만 적용
+
+    /// 라이딩 한 번에 줌은 **한 번만** 걸린다.
+    ///
+    /// 시작 경로가 여러 갈래다 — `flag` 전이(activateRidingLocationTracking),
+    /// 라이딩 시작 API(startRidingAPIProcess), 비정상 종료 복구(onAppear).
+    /// 정상 시작과 비정상 복구 모두 둘 이상이 연달아 돌기 때문에,
+    /// 호출부마다 줌을 넘기면 주행 중 화면 재진입에서도 다시 줌이 걸린다.
+    @Test func zoomIsConsumedOnlyOncePerRiding() {
+        let locationManager = LocationManager()
+
+        #expect(locationManager.consumeRidingStartZoom() == LocationManager.ridingStartZoom)
+        #expect(locationManager.consumeRidingStartZoom() == nil, "두 번째부터는 현재 줌을 유지한다")
+        #expect(locationManager.consumeRidingStartZoom() == nil)
+    }
+
+    /// 라이딩이 끝나면 다음 시작에 다시 걸린다
+    @Test func zoomIsAvailableAgainAfterReset() {
+        let locationManager = LocationManager()
+        _ = locationManager.consumeRidingStartZoom()
+
+        locationManager.resetRidingStartZoom()
+
+        #expect(locationManager.consumeRidingStartZoom() == LocationManager.ridingStartZoom)
+    }
+
+    /// 지도를 밀어 추적이 꺼졌다 재개돼도 줌은 다시 걸리지 않는다.
+    /// `stopNavigationMode`는 주행 중에 수시로 불리므로 여기서 리셋하면 안 된다.
+    @Test func stoppingNavigationDoesNotRearmZoom() {
+        let locationManager = LocationManager()
+        _ = locationManager.consumeRidingStartZoom()
+
+        locationManager.stopNavigationMode()
+
+        #expect(locationManager.consumeRidingStartZoom() == nil,
+                "추적을 껐다 켜는 것으로 줌이 다시 걸리면 주행 중 배율이 날아간다")
+    }
 }

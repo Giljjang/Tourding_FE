@@ -269,6 +269,9 @@ extension RidingViewModel {
 
         locationManager.stopLocationUpdates()
         locationManager.stopNavigationMode()
+        // 다음 라이딩 시작에 줌이 다시 걸리도록. stopNavigationMode에 두면
+        // 지도를 밀 때마다 리셋돼 추적 재개마다 줌이 걸린다.
+        locationManager.resetRidingStartZoom()
 
         if let firstLocation = routeLocation.first,
            let lat = Double(firstLocation.lat),
@@ -322,7 +325,7 @@ extension RidingViewModel {
         if let mapView {
             locationManager.startNavigationMode(
                 on: mapView,
-                zoomTo: LocationManager.zoomLevel(for: .ridingStart)
+                zoomTo: locationManager.consumeRidingStartZoom()
             )
             print("🧭 onChange - 네비게이션 모드 재시작")
         } else {
@@ -358,7 +361,7 @@ extension RidingViewModel {
             print("🧭 \(logPrefix) - 나침반 사용 가능 여부: \(CLLocationManager.headingAvailable())")
             locationManager.startNavigationMode(
                 on: mapView,
-                zoomTo: LocationManager.zoomLevel(for: .ridingStart)
+                zoomTo: locationManager.consumeRidingStartZoom()
             )
         } else {
             print("❌ \(logPrefix) - 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
@@ -367,7 +370,7 @@ extension RidingViewModel {
                 print("🧭 \(logPrefix) - 위치 없이 네비게이션 모드 시작 (위치 업데이트 대기)")
                 locationManager.startNavigationMode(
                 on: mapView,
-                zoomTo: LocationManager.zoomLevel(for: .ridingStart)
+                zoomTo: locationManager.consumeRidingStartZoom()
             )
             }
         }
