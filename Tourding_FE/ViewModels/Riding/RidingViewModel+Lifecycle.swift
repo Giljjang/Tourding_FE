@@ -15,7 +15,10 @@ extension RidingViewModel {
 
     @MainActor
     func configureLocationManager(_ locationManager: LocationManager) {
+        // 지도용·위치용 참조가 같은 인스턴스를 가리켜야 한다.
+        // 갈라지면 LocationManager가 두 벌 살아 GPS·나침반 스트림이 두 개 돈다.
         userLocationManager = locationManager
+        self.locationManager = locationManager
         if let mapView {
             locationManager.setMapView(mapView)
         }
@@ -266,7 +269,15 @@ extension RidingViewModel {
 
         locationManager.stopLocationUpdates()
         locationManager.stopNavigationMode()
-        locationManager.cancelAutoTrackingTimer()
+        // 시작 전 줌으로 되돌린다. **리셋보다 먼저** — 리셋이 기억해 둔 값을 비운다.
+        // 뒤로가기(라이딩 중)와 종료 버튼 모두 이 함수를 거치므로 여기 한 곳이면 된다.
+        if let mapView {
+            locationManager.restoreZoomBeforeRiding(on: mapView)
+        }
+
+        // 다음 라이딩 시작에 줌이 다시 걸리도록. stopNavigationMode에 두면
+        // 지도를 밀 때마다 리셋돼 추적 재개마다 줌이 걸린다.
+        locationManager.resetRidingStartZoom()
 
         if let firstLocation = routeLocation.first,
            let lat = Double(firstLocation.lat),
@@ -318,7 +329,7 @@ extension RidingViewModel {
         print("🌍 onChange - 위치 업데이트 재시작")
 
         if let mapView {
-            locationManager.startNavigationMode(on: mapView)
+            locationManager.startNavigationMode(on: mapView, start: .ridingStart)
             print("🧭 onChange - 네비게이션 모드 재시작")
         } else {
             print("❌ onChange - mapView가 nil이어서 네비게이션 모드 재시작 실패")
@@ -351,13 +362,13 @@ extension RidingViewModel {
             self.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
             print("🎯 \(logPrefix) - 카메라를 사용자 위치로 이동: \(coordinate.lat), \(coordinate.lng)")
             print("🧭 \(logPrefix) - 나침반 사용 가능 여부: \(CLLocationManager.headingAvailable())")
-            locationManager.startNavigationMode(on: mapView)
+            locationManager.startNavigationMode(on: mapView, start: .ridingStart)
         } else {
             print("❌ \(logPrefix) - 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
 
             if let mapView {
                 print("🧭 \(logPrefix) - 위치 없이 네비게이션 모드 시작 (위치 업데이트 대기)")
-                locationManager.startNavigationMode(on: mapView)
+                locationManager.startNavigationMode(on: mapView, start: .ridingStart)
             }
         }
     }

@@ -49,8 +49,8 @@
 - **Dependency Injection** - 의존성 주입을 통한 테스트 가능한 구조
 
 ### Map & Navigation
-- **네이버 지도 SDK (NMFMapView)** - 고성능 지도 표시 및 내비게이션
-- **NMap** - 실시간 위치 추적 및 나침반 기능
+- **네이버 지도 SDK (NMFMapView)** - 고성능 지도 표시 및 내비게이션 (헤딩-업 회전, 라이딩 시작 시 자동 확대·종료 시 복원)
+- **NMap** - 실시간 위치 추적 및 나침반 기능 (방위 판정은 `HeadingResolver` 한 곳, 진북 기준)
 - **Core Location** - 정확한 GPS 위치 서비스
 - **Custom Location Manager** - 효율적인 위치 추적 관리
 
@@ -174,7 +174,9 @@ Tourding_FETests/                 # Swift Testing (FixtureLoaderTests 등)
 - **편집 / 라이딩 모드**: 코스 편집(`flag=false`)과 실시간 네비게이션(`flag=true`) 분리
 - **경유지 드래그 앤 드롭**: 순서 변경 시 지도 마커·경로선 즉시 동기화
 - **실시간 네비게이션**: GPS 기반 정확한 길 안내
-- **나침반 모드**: 사용자 방향에 따른 카메라 자동 회전
+- **나침반 모드**: 사용자 방향에 따른 카메라 자동 회전 (진북 기준)
+- **지도 탐색**: 지도를 밀면 카메라 추적이 풀려 경로를 자유롭게 살펴볼 수 있고,
+  3m 이상 이동하거나 `경로 안내 재개` 버튼을 누르면 다시 따라옵니다
 - **마커 자동 관리**: 지나간 경로 마커 자동 제거 (30m 임계값)
 - **편의시설 토글**: 화장실, 편의점 등 주변 시설 실시간 표시
 - **동적 카메라**: 바텀시트 높이에 따른 카메라 시점 자동 조정
@@ -257,7 +259,7 @@ View → ViewModel → Repository(protocol)
 | `+API` | 서버/Mock API 호출 |
 | `+RouteReorder` | 경유지 DnD, 지도 동기화 |
 | `+Lifecycle` | appear, 라이딩 시작/종료, 포그라운드, 위치 콜백 |
-| `+LocationTracking` | 3m 이동 감지, 30m 마커 통과 |
+| `+LocationTracking` | 3m 이동 감지 + 추적 자동 재개, 30m 마커 통과 |
 | `+Utils` | 좌표 파싱, 포맷 |
 
 ### 경로 데이터 흐름
@@ -282,7 +284,7 @@ xcodebuild test -scheme Tourding_FE \
   -derivedDataPath /tmp/TourdingDD
 ```
 
-현재 **135개 통과 / 스킵 0**. 기능 추가·버그 수정·리팩토링 모두 실패하는 테스트를 먼저
+현재 **215개 통과 / 스킵 0**. 기능 추가·버그 수정·리팩토링 모두 실패하는 테스트를 먼저
 작성하는 TDD로 진행합니다.
 
 자세한 개발 가이드는 [`CLAUDE.md`](CLAUDE.md)를 참고하세요.

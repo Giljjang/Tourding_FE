@@ -103,7 +103,7 @@ struct RecommendRouteView: View {
             recommendRouteViewModel.description = description
             
             // 1. LocationManager 인스턴스를 recommendRouteViewModel에 전달
-            recommendRouteViewModel.userLocationManager = locationManager
+            recommendRouteViewModel.configureLocationManager(locationManager)
             
             // 2. API 호출 후 초기 카메라 위치 설정
             Task { [weak recommendRouteViewModel] in

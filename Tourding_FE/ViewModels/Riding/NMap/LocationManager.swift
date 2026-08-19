@@ -37,8 +37,6 @@ final class LocationManager: NSObject, ObservableObject {
     @Published var cameraPivotY: CGFloat = 0.3
     
     // MARK: - Auto Tracking Properties
-    private var touchTimer: Timer?
-    private let autoTrackingDelay: TimeInterval = 20.0 // 20초 후 자동 위치추적
     
     // MARK: - Initialization
     override init() {
@@ -201,21 +199,28 @@ final class LocationManager: NSObject, ObservableObject {
     }
     
     // 현재 위치로 카메라 이동
+    /// 사용자 위치 오버레이를 **보이게** 하고 위치·아이콘·방향을 맞춘다.
+    ///
+    /// `NMFLocationOverlay`는 기본이 숨김이라 이걸 부르기 전에는 마커가 그려지지 않는다.
+    /// 예전에는 이 코드가 `moveToCurrentLocation`(= "내 위치로 이동" 버튼) 안에만 있어서,
+    /// 버튼을 누르지 않고 라이딩을 시작하면 라이딩 중 위치 콜백이 올 때까지 마커가 없었다.
+    /// `distanceFilter`가 3m라 정지 상태에서는 그 콜백이 오지 않아 계속 안 보였다.
+    func showUserLocationOverlay(on mapView: NMFMapView, at coordinate: NMGLatLng) {
+        let locationOverlay = mapView.locationOverlay
+        locationOverlay.hidden = false
+        locationOverlay.location = coordinate
+        locationOverlay.icon = MarkerIcons.userMarker
+
+        updateLocationOverlayHeading(on: mapView)
+    }
+
     func moveToCurrentLocation(on mapView: NMFMapView) {
         guard let location = locationManager.location else { return }
         
         let lat = location.coordinate.latitude
         let lng = location.coordinate.longitude
-        
-        let locationOverlay = mapView.locationOverlay
-        locationOverlay.hidden = false
-        locationOverlay.location = NMGLatLng(lat: lat, lng: lng)
-        
-        // 사용자 위치 마커 설정
-        locationOverlay.icon = MarkerIcons.userMarker
-        
-        // 방향 설정
-        updateLocationOverlayHeading(on: mapView)
+
+        showUserLocationOverlay(on: mapView, at: NMGLatLng(lat: lat, lng: lng))
         
         // 카메라 중심점을 위쪽으로 조정
         let cameraUpdate = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng))
@@ -228,15 +233,107 @@ final class LocationManager: NSObject, ObservableObject {
     func updateLocationOverlayHeading(on mapView: NMFMapView) {
         let locationOverlay = mapView.locationOverlay
         
-        // 이미지가 오른쪽 하단을 가리키므로 -45도 오프셋 적용
-        let adjustedHeading = currentHeading - 45.0
+        // currentHeading은 이미 HeadingResolver가 고른 진북 기준 값이다.
+        // 여기서는 아이콘 보정만 더한다 — 오프셋 상수를 복제하지 말 것.
+        let adjustedHeading = HeadingResolver.normalized(
+            currentHeading + HeadingResolver.markerIconOffset
+        )
         locationOverlay.heading = CGFloat(adjustedHeading)
     }
     
+    // MARK: - Camera Zoom
+
+    /// 네비게이션 모드에 들어가는 경로.
+    enum NavigationStart {
+        /// 라이딩 시작 — 줌을 주행에 맞게 맞춘다
+        case ridingStart
+        /// 추적 재개 ("경로 안내 재개" 버튼 / 3m 자동 재개) — 줌을 건드리지 않는다
+        case resumeTracking
+    }
+
+    /// 라이딩 시작 시 **현재 줌에서** 얼마나 더 당길지.
+    ///
+    /// 절대 줌으로 두면 안 된다 — 처음에 16.5를 넣었다가 화면이 그대로였다.
+    /// 편집 화면이 이미 건물 외곽선·지번이 보이는 수준(17~18)이라 16.5는 축소 방향이었다.
+    /// 상대값이면 기준이 뭐든 반드시 확대된다.
+    static let ridingStartZoomDelta: Double = 3.0
+
+    /// 시작 줌을 계산한다. 지도의 최대 줌을 넘지 않는다.
+    static func ridingStartZoom(from current: Double, maxZoom: Double) -> Double {
+        min(current + ridingStartZoomDelta, maxZoom)
+    }
+
+    /// 이번 라이딩에서 시작 줌을 이미 적용했는가.
+    private var didApplyRidingStartZoom = false
+
+    /// 이번 호출에서 시작 줌을 걸어야 하는가. 라이딩당 **한 번만** true를 준다.
+    ///
+    /// 시작 경로가 여러 갈래고 서로 연달아 돈다 —
+    /// `flag` 전이(`activateRidingLocationTracking`), 라이딩 시작 API(`startRidingAPIProcess`),
+    /// 비정상 종료 복구(`onAppear` → `setupRidingNavigationOnAppear`).
+    /// 호출부마다 걸면 주행 중 화면에 다시 들어왔을 때도 걸려 배율이 날아간다.
+    ///
+    /// 위치가 없으면 열지 않는다 — `startNavigationMode`가 카메라를 못 옮기는데
+    /// 게이트만 닫히면 줌이 영영 걸리지 않는다.
+    func consumeRidingStartZoom() -> Bool {
+        guard currentLocation != nil else { return false }
+        guard !didApplyRidingStartZoom else { return false }
+
+        didApplyRidingStartZoom = true
+        return true
+    }
+
+    /// 라이딩 시작 줌을 걸기 전의 줌. 종료 시 여기로 되돌린다.
+    private var zoomBeforeRiding: Double?
+
+    /// 시작 줌을 걸기 직전의 줌을 기억한다.
+    func rememberZoomBeforeRiding(_ zoom: Double) {
+        zoomBeforeRiding = zoom
+    }
+
+    /// 기억해 둔 줌을 **한 번만** 내준다.
+    /// 두 번 되돌리면 그 사이 사용자가 조정한 줌을 덮는다.
+    func consumeZoomBeforeRiding() -> Double? {
+        defer { zoomBeforeRiding = nil }
+        return zoomBeforeRiding
+    }
+
+    /// 라이딩 시작 전 줌으로 되돌린다. 건 적이 없으면 아무것도 하지 않는다.
+    ///
+    /// 좌표·헤딩은 건드리지 않는다 — 종료 후 편집 모드는 북쪽-위로 돌아가고
+    /// 카메라 위치는 `restoreOriginalData` 쪽이 정한다.
+    func restoreZoomBeforeRiding(on mapView: NMFMapView) {
+        guard let zoom = consumeZoomBeforeRiding() else { return }
+
+        let current = mapView.cameraPosition
+        let position = NMFCameraPosition(
+            current.target,
+            zoom: zoom,
+            tilt: current.tilt,
+            heading: current.heading
+        )
+
+        let cameraUpdate = NMFCameraUpdate(position: position)
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: cameraPivotY)
+        cameraUpdate.animation = .easeOut
+        mapView.moveCamera(cameraUpdate)
+
+        print("🔍 라이딩 종료 — 줌 복원: \(current.zoom) → \(zoom)")
+    }
+
+    /// 다음 라이딩 시작에 줌이 다시 걸리도록 되돌린다.
+    ///
+    /// **`endRiding`에서만 부를 것.** `stopNavigationMode`는 지도를 밀 때마다 불리므로
+    /// 거기서 되돌리면 추적을 껐다 켤 때마다 줌이 다시 걸린다.
+    func resetRidingStartZoom() {
+        didApplyRidingStartZoom = false
+        zoomBeforeRiding = nil
+    }
+
     // MARK: - Navigation Methods
     
     // 네비게이션 모드 시작
-    func startNavigationMode(on mapView: NMFMapView) {
+    func startNavigationMode(on mapView: NMFMapView, start: NavigationStart = .resumeTracking) {
         isNavigationMode = true
         isLocationTrackingEnabled = true
         // print("🧭 네비게이션 모드 시작 - 위치추적 on")
@@ -252,38 +349,146 @@ final class LocationManager: NSObject, ObservableObject {
         // 현재 위치로 카메라 이동하고 헤딩 적용 (네비게이션 모드에서는 중앙에 위치)
         if let location = currentLocation {
             let coordinate = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
-            let cameraUpdate = NMFCameraUpdate(scrollTo: coordinate)
+
+            // 마커를 여기서 켠다. 안 켜면 "내 위치로 이동"을 누르지 않고 라이딩을 시작했을 때
+            // 3m를 움직이기 전까지 마커가 보이지 않는다.
+            showUserLocationOverlay(on: mapView, at: coordinate)
+
+            // 줌 게이트는 **여기서** 연다. 호출부에서 열면 위치가 없어 카메라를 못 옮기는
+            // 경우에도 소진돼 영영 걸리지 않는다.
+            let current = mapView.cameraPosition
+            let shouldZoom = start == .ridingStart && consumeRidingStartZoom()
+            let targetZoom = shouldZoom
+                ? Self.ridingStartZoom(from: current.zoom, maxZoom: mapView.maxZoomLevel)
+                : current.zoom
+
+            if shouldZoom {
+                rememberZoomBeforeRiding(current.zoom)
+                print("🔍 라이딩 시작 줌 적용: \(current.zoom) → \(targetZoom) (지도 최대 \(mapView.maxZoomLevel))")
+            } else if start == .ridingStart {
+                print("🔍 라이딩 시작 줌 건너뜀 — 이번 라이딩에서 이미 적용됨 (현재 \(current.zoom))")
+            }
+
+            // 좌표·줌·헤딩을 **한 번에** 맞춘다.
+            let position = NMFCameraPosition(
+                coordinate,
+                zoom: targetZoom,
+                tilt: current.tilt,
+                heading: HeadingResolver.cameraHeading(from: currentHeading)
+            )
+
+            let cameraUpdate = NMFCameraUpdate(position: position)
             cameraUpdate.pivot = CGPoint(x: 0.5, y: cameraPivotY)
-            cameraUpdate.animation = .easeIn
+            // 줌을 바꿀 때는 애니메이션 없이 즉시 맞춘다.
+            // 애니메이션 중에 헤딩 갱신(headingFilter 1도, 0.5초 스로틀)이 끼어들면
+            // updateCameraWithHeading이 `mapView.cameraPosition.zoom`으로 **중간 줌**을 읽어
+            // 그 값으로 카메라를 다시 세팅한다 — 줌이 목표에 닿기 전에 멈춘다.
+            cameraUpdate.animation = shouldZoom ? .none : .easeIn
             mapView.moveCamera(cameraUpdate)
-            
-            // 헤딩 적용
-            updateCameraWithHeading(on: mapView, location: location)
+        } else if start == .ridingStart {
+            print("🔍 라이딩 시작 줌 건너뜀 — 아직 측위 전 (currentLocation == nil)")
         }
     }
     
+    // MARK: - Camera Pivot
+
+    /// 바텀시트 위치별 카메라 피봇 Y. `nil`이면 카메라를 건드리지 않는다.
+    ///
+    /// 피봇은 `(0,0)`이 좌상단이라 값이 클수록 사용자가 화면 **아래쪽**에 놓인다.
+    /// 시트가 작을수록 지도가 넓게 보이므로 시점을 더 위로(값을 크게) 둔다.
+    static func cameraPivot(for position: BottomSheetPosition) -> CGFloat? {
+        switch position {
+        case .small:  return 0.6
+        case .medium: return 0.4
+        case .large:  return nil   // 지도가 거의 가려지므로 카메라를 건드리지 않는다
+        }
+    }
+
+    /// 시트 위치를 피봇에 반영한다.
+    ///
+    /// 편집 모드에서도 반드시 불러야 한다 — 안 부르면 "내 위치로 이동" 버튼이
+    /// 기본값 0.3을 쓰고, 라이딩을 했다 돌아온 경우엔 직전 라이딩의 값이 남는다.
+    func syncCameraPivot(for position: BottomSheetPosition) {
+        guard let pivot = Self.cameraPivot(for: position) else { return }
+        cameraPivotY = pivot
+    }
+
+    // MARK: - Camera Follow
+
+    /// 카메라가 사용자를 따라가야 하는가.
+    ///
+    /// 기준은 "라이딩 중인가"(`RidingViewModel.flag`)가 아니라 **"추적 중인가"**다.
+    /// 사용자가 지도를 밀면 `handleScreenTouch`가 추적을 끄는데, `flag`로 판정하면
+    /// 다음 GPS 갱신(`distanceFilter` 3m)에 카메라가 도로 사용자 위치로 스냅된다.
+    ///
+    /// `isLocationTrackingEnabled`가 아니라 `isNavigationMode`를 쓴다 —
+    /// 전자는 초기값이 `true`라 추적을 시작하기도 전에 따라가게 된다.
+    var shouldFollowUser: Bool { isNavigationMode }
+
+    /// 추적 중일 때만 카메라를 사용자 위치로 옮긴다.
+    ///
+    /// **카메라를 사용자에게 따라붙게 하는 코드는 전부 이 함수를 거칠 것.**
+    /// 호출부에서 `moveCamera`를 직접 부르면 판정이 복제되고, 그 복제본이 이 버그였다
+    /// (세 곳이 각자 판정하다 세 곳 모두 `flag`로 잘못 판정했다).
+    ///
+    /// - Returns: 실제로 카메라를 옮겼는지 여부
+    @discardableResult
+    func followUser(on mapView: NMFMapView, to coordinate: NMGLatLng) -> Bool {
+        guard shouldFollowUser else { return false }
+
+        let cameraUpdate = NMFCameraUpdate(scrollTo: coordinate)
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: cameraPivotY)
+        cameraUpdate.animation = .easeIn
+        mapView.moveCamera(cameraUpdate)
+        return true
+    }
+
     // 네비게이션 모드 종료
     func stopNavigationMode() {
         isNavigationMode = false
         isLocationTrackingEnabled = false
-        cancelAutoTrackingTimer() // 타이머 정리
         // print("🧭 네비게이션 모드 종료")
     }
     
-    // 위치추적 토글 (라이딩 중)
+    /// 위치추적 토글 (라이딩 중 "경로 안내 재개" 버튼)
+    ///
+    /// 상태 전이를 `mapView` 유무와 분리한다.
+    /// `currentMapView`는 `configureLocationManager`가 `onAppear`에서 **1회만**, 그것도
+    /// `if let mapView` 가드 뒤에서 설정하므로 nil로 남을 수 있다. 여기서 그 참조에 의존하면
+    /// 재개 버튼을 눌러도 추적이 켜지지 않는다. 카메라는 다음 위치 콜백이 `followUser`로 처리한다.
     @MainActor
     func toggleLocationTracking() {
-        isLocationTrackingEnabled.toggle()
-        print("📍 위치추적 상태 변경: \(isLocationTrackingEnabled)")
-        
-        if isLocationTrackingEnabled {
-            // 위치추적 on - 네비게이션 모드 시작
-            if let mapView = getCurrentMapView() {
-                startNavigationMode(on: mapView)
-            }
-        } else {
-            // 위치추적 off - 네비게이션 모드 종료
+        if shouldFollowUser {
             stopNavigationMode()
+        } else {
+            beginTracking()
+        }
+        print("📍 위치추적 상태 변경: \(isLocationTrackingEnabled)")
+    }
+
+    /// 지도를 밀어 추적이 꺼진 상태에서 사용자가 **실제로 움직였을 때** 추적을 되켠다.
+    ///
+    /// "얼마나 움직여야 하는가"는 호출부(`RidingViewModel.updateUserLocationAndCheckMarkers`)가
+    /// 판정한다. 여기는 "꺼져 있으면 켠다"만 책임진다.
+    ///
+    /// - Returns: 이번 호출로 재개됐는지
+    @discardableResult
+    func resumeTrackingIfStopped() -> Bool {
+        guard !shouldFollowUser else { return false }
+        beginTracking()
+        return true
+    }
+
+    /// 추적 상태를 켠다.
+    ///
+    /// `mapView` 참조가 아직 없어도 상태는 켠다 — `currentMapView`는 nil로 남을 수 있고,
+    /// 카메라는 다음 위치 콜백이 `followUser`로 처리한다.
+    private func beginTracking() {
+        isNavigationMode = true
+        isLocationTrackingEnabled = true
+
+        if let mapView = getCurrentMapView() {
+            startNavigationMode(on: mapView)
         }
     }
     
@@ -296,31 +501,8 @@ final class LocationManager: NSObject, ObservableObject {
         isLocationTrackingEnabled = false
         print("📍 위치추적 상태 변경: \(isLocationTrackingEnabled)")
         stopNavigationMode()
-        
-        // 20초 후 자동 위치추적 on 타이머 시작
-//        startAutoTrackingTimer()
     }
     
-    // 20초 후 자동 위치추적 on 타이머 시작
-    private func startAutoTrackingTimer() {
-        // 기존 타이머 취소
-        touchTimer?.invalidate()
-        
-        touchTimer = Timer.scheduledTimer(withTimeInterval: autoTrackingDelay, repeats: false) { [weak self] _ in
-            Task { @MainActor in
-                guard let self = self else { return }
-                
-                print("⏰ 20초 경과 - 자동 위치추적 on")
-                self.toggleLocationTracking()
-            }
-        }
-    }
-    
-    // 타이머 취소
-    func cancelAutoTrackingTimer() {
-        touchTimer?.invalidate()
-        touchTimer = nil
-    }
     
     // 현재 맵뷰 가져오기 (헬퍼 메서드)
     private func getCurrentMapView() -> NMFMapView? {
@@ -358,11 +540,12 @@ final class LocationManager: NSObject, ObservableObject {
         // print("🧭 카메라 업데이트 시작 - 현재 헤딩: \(currentHeading)도, 줌: \(currentCamera.zoom)")
         
         // 새로운 카메라 위치 생성 (헤딩 포함)
+        // 카메라 보정은 마커 보정과 별개다 — HeadingResolver 참조
         let newCameraPosition = NMFCameraPosition(
             coordinate,
             zoom: currentCamera.zoom,
             tilt: currentCamera.tilt,
-            heading: currentHeading
+            heading: HeadingResolver.cameraHeading(from: currentHeading)
         )
         
         // 카메라 업데이트 - 네비게이션 모드에서는 화면 중앙에 위치
@@ -390,7 +573,7 @@ extension LocationManager {
         mapView.cancelTransitions()
         
         // 네비게이션 모드에서는 현재 위치 기반으로 카메라 업데이트
-        if isNavigationMode, let location = currentLocation {
+        if shouldFollowUser, let location = currentLocation {
             let coordinate = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
             let cameraUpdate = NMFCameraUpdate(scrollTo: coordinate)
             cameraUpdate.pivot = CGPoint(x: 0.5, y: yPivot)
@@ -453,15 +636,15 @@ extension LocationManager: CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateHeading newHeading: CLHeading) {
         // print("🧭 didUpdateHeading 호출됨 - 정확도: \(newHeading.headingAccuracy)")
         
-        // 나침반 데이터가 부정확한 경우 무시
-        if newHeading.headingAccuracy < 0 {
+        // 방위 판정은 HeadingResolver 한 곳에 있다 — 여기서 원본을 직접 고르지 말 것.
+        // 자북을 그대로 쓰면 진북 기준인 지도가 편각만큼(서울 약 9도) 틀어져 회전한다.
+        guard let resolved = HeadingResolver.mapHeading(from: newHeading) else {
             // print("❌ 나침반 데이터가 부정확함 - 무시")
             return
         }
-        
-        // 자북(magnetic north) 기준 방향 사용
+
         let oldHeading = currentHeading
-        currentHeading = newHeading.magneticHeading
+        currentHeading = resolved
         
         // print("🧭 헤딩 변경: \(oldHeading)도 → \(currentHeading)도")
         

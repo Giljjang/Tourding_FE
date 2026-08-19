@@ -16,7 +16,6 @@ final class MapViewController: UIViewController {
     
     // MARK: - Properties
     private var mapView: NMFNaverMapView?
-    let locationManager = LocationManager()
     private let locationButton = UIButton(type: .custom)
     // ViewModel은 앱 수명, 이 컨트롤러는 화면 수명이다. strong으로 잡으면 순환이 생겨
     // deinit이 실행되지 않고 CLLocationManager가 화면을 떠난 뒤에도 계속 돈다.
@@ -36,7 +35,6 @@ final class MapViewController: UIViewController {
     
     // MARK: - Callbacks
     var onLocationUpdate: ((CLLocation) -> Void)?
-    var onMapTap: ((NMGLatLng) -> Void)?
     
     // MARK: - Managers
     var markerManager: MarkerManager?
@@ -46,7 +44,6 @@ final class MapViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupMap()
-        setupLocationManager()
     }
     
     deinit {
@@ -56,12 +53,8 @@ final class MapViewController: UIViewController {
     
     // MARK: - Cleanup
     private func cleanupResources() {
-        // 위치 업데이트 중지
-        locationManager.stopLocationUpdates()
-        
         // 콜백 해제
         onLocationUpdate = nil
-        onMapTap = nil
         
         // 마커 매니저 정리
         markerManager?.clearAllMarkers()
@@ -106,20 +99,6 @@ final class MapViewController: UIViewController {
         pathManager = PathManager(mapView: mapView.mapView)
     }
     
-    private func setupLocationManager() {
-        var isFirstLocationUpdate = true
-        
-        // 위치 업데이트 콜백은 RidingView에서 설정하므로 여기서는 설정하지 않음
-        // 대신 onLocationUpdate 콜백이 호출될 때 MapViewController의 기능도 실행하도록 수정
-        
-        // 나침반 방향 업데이트 콜백 추가
-        locationManager.onHeadingUpdate = { [weak self] heading in
-            self?.updateUserLocationBearing(heading)
-        }
-        
-        locationManager.startLocationUpdates()
-    }
-    
     // LocationManager 설정 메서드 추가
     func setupUserLocationManager(_ userLocationManager: LocationManager) {
         self.userLocationManager = userLocationManager
@@ -129,21 +108,18 @@ final class MapViewController: UIViewController {
         userLocationManager.onHeadingUpdate = { [weak self, weak userLocationManager] heading in
             guard let self = self,
                   let userLocationManager,
-                  let mapView = self.mapView?.mapView,
-                  userLocationManager.isNavigationMode else {
-//                print("❌ MapViewController: 헤딩 콜백 조건 불만족")
-                return
-            }
-            
-//            print("🗺️ MapViewController: 헤딩 콜백 호출됨 - \(heading.magneticHeading)도")
-            
-            // 사용자 마커 방향 업데이트
-            userLocationManager.updateLocationOverlayHeading(on: mapView)
-            
-            // 네비게이션 모드에서 헤딩 업데이트 시 카메라 회전
-            if let location = userLocationManager.currentLocation {
-                userLocationManager.updateNavigationCamera(on: mapView, location: location)
-            }
+                  let mapView = self.mapView?.mapView else { return }
+
+            // 마커 방향은 추적 여부와 무관하게 갱신한다.
+            // 예전에는 MapViewController의 자체 LocationManager가 이 일을 했고 그쪽에는
+            // 추적 가드가 없었다 — 인스턴스를 없애면서 그 동작을 여기로 옮긴다.
+            self.updateUserLocationBearing(heading)
+
+            // 카메라 회전만 추적 판정을 따른다
+            guard userLocationManager.shouldFollowUser,
+                  let location = userLocationManager.currentLocation else { return }
+
+            userLocationManager.updateNavigationCamera(on: mapView, location: location)
         }
         
         // 위치 업데이트 콜백 설정 (네비게이션 모드용)
@@ -210,24 +186,6 @@ final class MapViewController: UIViewController {
         }
     }
     
-    // MARK: - Location Methods
-    private func setupInitialCameraPosition(location: CLLocation) {
-        // ridingViewModel.flag가 true일 때만 사용자 위치로 카메라 이동
-        guard let ridingViewModel = ridingViewModel, ridingViewModel.flag,
-              let mapView = mapView else {
-            return
-        }
-        
-        let lat = location.coordinate.latitude
-        let lng = location.coordinate.longitude
-        
-        // 초기 카메라 위치를 사용자 현재 위치로 설정
-        let cameraUpdate = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng))
-        let pivotY = userLocationManager?.cameraPivotY ?? 0.5
-        cameraUpdate.pivot = CGPoint(x: 0.5, y: pivotY)
-        cameraUpdate.animation = .easeIn
-        mapView.mapView.moveCamera(cameraUpdate)
-    }
     
     func updateUserLocation(_ location: CLLocation) {
         guard let mapView = mapView else {
@@ -238,74 +196,42 @@ final class MapViewController: UIViewController {
         let lat = location.coordinate.latitude
         let lng = location.coordinate.longitude
         
-        let locationOverlay = mapView.mapView.locationOverlay
-        locationOverlay.hidden = false
-        locationOverlay.location = NMGLatLng(lat: lat, lng: lng)
-        
-        // 사용자 위치 마커를 항상 userMarker으로 설정
-        locationOverlay.icon = MarkerIcons.userMarker
-        
+        // 오버레이 표시는 LocationManager 한 곳에서 한다 — 여기서 복제하지 말 것
+        userLocationManager?.showUserLocationOverlay(
+            on: mapView.mapView,
+            at: NMGLatLng(lat: lat, lng: lng)
+        )
+
         print("📍 MapViewController: 사용자 위치 마커 업데이트 완료 - \(lat), \(lng)")
         
-        // ridingViewModel.flag가 true일 때만 카메라 이동
-        guard let ridingViewModel = ridingViewModel, ridingViewModel.flag else {
-            return
+        // 추적 중일 때만 카메라가 따라간다.
+        // 판정은 LocationManager.shouldFollowUser 한 곳에 있다 — 여기서 복제하지 말 것.
+        let didFollow = userLocationManager?.followUser(
+            on: mapView.mapView,
+            to: NMGLatLng(lat: lat, lng: lng)
+        ) ?? false
+
+        if didFollow {
+            print("📷 MapViewController: 카메라 업데이트 완료")
         }
-        
-        // 바텀시트 높이에 따른 동적 피봇 조정
-        let cameraUpdate = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng))
-        let pivotY = userLocationManager?.cameraPivotY ?? 0.5
-        cameraUpdate.pivot = CGPoint(x: 0.5, y: pivotY)
-        cameraUpdate.animation = .easeIn
-        
-        mapView.mapView.moveCamera(cameraUpdate)
-        
-        print("📷 MapViewController: 카메라 업데이트 완료 (피봇: \(pivotY))")
     }
     
-    // 라이딩 중 LocationManager에서 호출되는 메서드
-    private func updateUserLocationForRiding(_ location: CLLocation) {
-        guard let mapView = mapView else {
-            print("❌ mapView가 nil입니다")
-            return
-        }
-        
-        let lat = location.coordinate.latitude
-        let lng = location.coordinate.longitude
-        
-        let locationOverlay = mapView.mapView.locationOverlay
-        locationOverlay.hidden = false
-        locationOverlay.location = NMGLatLng(lat: lat, lng: lng)
-        
-        // 사용자 위치 마커를 항상 userMarker으로 설정
-        locationOverlay.icon = MarkerIcons.userMarker
-        
-        // 카메라 이동은 RidingViewModel에서 제어하므로 여기서는 제거
-        // ridingViewModel.updateUserLocationAndCheckMarkers에서 카메라 업데이트를 처리
-    }
     
     // 나침반 방향 업데이트 메서드 추가
     private func updateUserLocationBearing(_ heading: CLHeading) {
-        // 나침반 데이터가 부정확한 경우 무시
-        if heading.headingAccuracy < 0 {
+        // 판정은 HeadingResolver 한 곳에 있다.
+        // 예전에는 여기(진북 우선)와 LocationManager(자북)가 같은 오버레이에
+        // 서로 다른 기준의 값을 써서, 어느 쪽이 마지막에 이겼는지에 따라 마커가 달라졌다.
+        guard let adjustedHeading = HeadingResolver.markerHeading(from: heading) else {
             return
         }
-        
+
         guard let mapView = mapView else {
             print("❌ mapView가 nil입니다")
             return
         }
-        
-        let locationOverlay = mapView.mapView.locationOverlay
-        
-        // 이미지가 오른쪽 하단을 가리키므로 -45도 오프셋 적용
-        // magneticHeading: 자북 기준 (0-359도)
-        // trueHeading: 진북 기준 (더 정확하지만 GPS가 필요)
-        let bearing = heading.trueHeading >= 0 ? heading.trueHeading : heading.magneticHeading
-        let adjustedHeading = bearing - 45.0
-        
-        // NMFLocationOverlay의 heading 속성 사용
-        locationOverlay.heading = CGFloat(adjustedHeading)
+
+        mapView.mapView.locationOverlay.heading = CGFloat(adjustedHeading)
     }
 }
 

@@ -134,6 +134,44 @@ struct RidingStartRecoveryTests {
         #expect(viewModel.markerIcons.count == viewModel.markerCoordinates.count)
     }
 
+    // MARK: - routeSummaryId (AI 경로 재설정의 필수 입력)
+
+    /// 라이딩 중에는 "사용 중" 경로의 id를 들고 있어야 한다.
+    /// 편집 모드의 draft id를 그대로 두면 AI 재설정이 엉뚱한 경로를 건드린다.
+    @Test func normalStartUpdatesRouteSummaryIdToUsedRoute() async throws {
+        let repository = makeRepository()
+        let viewModel = makeTestRidingViewModel(repository: repository)
+        viewModel.routeLocation = TestRoute.startTwoWaypointsGoal
+
+        try await startRiding(viewModel, isNotNormal: nil)
+
+        #expect(viewModel.routeTotal?.routeSummaryId == 60,
+                "라이딩 시작 POST 응답의 id로 갱신돼야 한다")
+        #expect(viewModel.routeTotal?.isUsed == true)
+    }
+
+    /// 정상 시작은 요약만 갱신한다 — 편집 모드에서 그린 경유지를 덮으면 안 된다
+    @Test func normalStartKeepsEditedRouteLocation() async throws {
+        let repository = makeRepository()
+        let viewModel = makeTestRidingViewModel(repository: repository)
+        viewModel.routeLocation = TestRoute.startTwoWaypointsGoal   // 4개
+
+        try await startRiding(viewModel, isNotNormal: nil)
+
+        #expect(viewModel.routeLocation.count == Self.locationCount,
+                "POST 응답의 locations로 덮어쓰면 사용자가 편집한 결과가 바뀐다")
+    }
+
+    /// 비정상 복구도 사용 중 경로 id를 들고 있어야 한다
+    @Test func abnormalRecoveryUpdatesRouteSummaryId() async throws {
+        let repository = makeRepository()
+        let viewModel = makeTestRidingViewModel(repository: repository)
+
+        try await startRiding(viewModel, isNotNormal: true)
+
+        #expect(viewModel.routeTotal?.routeSummaryId == 60)
+    }
+
     /// 경로선도 백업 대상이다
     @Test func backupKeepsPathCoordinates() async throws {
         let repository = makeRepository()

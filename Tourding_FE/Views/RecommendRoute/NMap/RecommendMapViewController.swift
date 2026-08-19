@@ -16,7 +16,6 @@ final class RecommendMapViewController: UIViewController {
     
     // MARK: - Properties
     private var mapView: NMFNaverMapView?
-    let locationManager = LocationManager()
     private let locationButton = UIButton(type: .custom)
     /// ViewModel을 소유하면 안 된다 — 순환이 생겨 화면을 떠나도 지도와 GPS가 살아남는다
     weak var recommendRouteViewModel: RecommendRouteViewModel?
@@ -29,7 +28,6 @@ final class RecommendMapViewController: UIViewController {
     
     // MARK: - Callbacks
     var onLocationUpdate: ((CLLocation) -> Void)?
-    var onMapTap: ((NMGLatLng) -> Void)?
     
     // MARK: - Managers
     var markerManager: MarkerManager?
@@ -39,7 +37,6 @@ final class RecommendMapViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupMap()
-        setupLocationManager()
     }
     
     deinit {
@@ -50,11 +47,9 @@ final class RecommendMapViewController: UIViewController {
     // MARK: - Cleanup
     private func cleanupResources() {
         // 위치 업데이트 중지
-        locationManager.stopLocationUpdates()
         
         // 콜백 해제
         onLocationUpdate = nil
-        onMapTap = nil
         
         // 마커 매니저 정리
         markerManager?.clearAllMarkers()
@@ -97,12 +92,6 @@ final class RecommendMapViewController: UIViewController {
         
         markerManager = MarkerManager(mapView: mapView.mapView)
         pathManager = PathManager(mapView: mapView.mapView)
-    }
-    
-    private func setupLocationManager() {
-        var isFirstLocationUpdate = true
-        
-        locationManager.startLocationUpdates()
     }
     
     // LocationManager 설정 메서드 추가
