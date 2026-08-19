@@ -451,11 +451,12 @@ final class LocationManager: NSObject, ObservableObject {
         // print("🧭 카메라 업데이트 시작 - 현재 헤딩: \(currentHeading)도, 줌: \(currentCamera.zoom)")
         
         // 새로운 카메라 위치 생성 (헤딩 포함)
+        // 카메라 보정은 마커 보정과 별개다 — HeadingResolver 참조
         let newCameraPosition = NMFCameraPosition(
             coordinate,
             zoom: currentCamera.zoom,
             tilt: currentCamera.tilt,
-            heading: currentHeading
+            heading: HeadingResolver.cameraHeading(from: currentHeading)
         )
         
         // 카메라 업데이트 - 네비게이션 모드에서는 화면 중앙에 위치

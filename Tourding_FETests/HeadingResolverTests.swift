@@ -106,4 +106,44 @@ struct HeadingResolverTests {
         #expect(HeadingResolver.normalized(markerValue - HeadingResolver.markerIconOffset) == mapValue,
                 "마커 방위에서 아이콘 오프셋을 되돌리면 지도 방위와 같아야 한다")
     }
+
+    // MARK: - 카메라 방위 보정
+
+    /// 카메라 보정은 마커 보정과 **별개 손잡이**다.
+    ///
+    /// 마커 보정(`markerIconOffset`)은 아이콘 그림이 정북을 안 가리켜서 되돌리는 값이고,
+    /// 카메라 보정은 지도 자체를 돌린다. 둘은 원인이 다르므로 한 값으로 묶으면 안 된다.
+    ///
+    /// 값의 근거는 실기기 관측이다 — 마커를 맞춘 뒤에도 지도 회전이 나침반과 약 20도 어긋났다.
+    @Test func cameraOffsetIsSeparateFromMarkerOffset() {
+        #expect(HeadingResolver.cameraHeadingOffset == -20)
+        #expect(HeadingResolver.cameraHeadingOffset != HeadingResolver.markerIconOffset)
+    }
+
+    @Test func cameraHeadingAppliesOffset() {
+        #expect(HeadingResolver.cameraHeading(from: 90) == 70)
+    }
+
+    /// 보정으로 음수가 되면 정규화한다
+    @Test func cameraHeadingNormalizesNegativeResult() {
+        #expect(HeadingResolver.cameraHeading(from: 5) == 345)
+    }
+
+    /// 카메라와 마커는 같은 원본에서 나오되 보정만 다르다
+    @Test func cameraAndMarkerDifferOnlyByTheirOffsets() throws {
+        let source = try #require(
+            HeadingResolver.mapHeading(trueHeading: 200, magneticHeading: 191, accuracy: 5)
+        )
+        let camera = HeadingResolver.cameraHeading(from: source)
+        let marker = try #require(
+            HeadingResolver.markerHeading(trueHeading: 200, magneticHeading: 191, accuracy: 5)
+        )
+
+        let delta = HeadingResolver.normalized(marker - camera)
+        let expected = HeadingResolver.normalized(
+            HeadingResolver.markerIconOffset - HeadingResolver.cameraHeadingOffset
+        )
+
+        #expect(delta == expected, "두 값의 차이는 보정값 차이여야 한다")
+    }
 }

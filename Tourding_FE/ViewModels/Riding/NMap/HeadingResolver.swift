@@ -33,6 +33,22 @@ enum HeadingResolver {
     /// 반영되는 것이 확인됐다. 20도 안팎은 21pt 아이콘에서 눈에 잘 띄지 않을 뿐이다.)
     static let markerIconOffset: CLLocationDirection = 6.5
 
+    /// 지도 카메라 방위 보정각. **`markerIconOffset`과 별개 손잡이다.**
+    ///
+    /// 마커 보정은 아이콘 그림이 정북을 안 가리켜서 되돌리는 값이고,
+    /// 이건 지도 자체를 돌린다. 원인이 다르므로 한 값으로 묶지 말 것.
+    ///
+    /// 값의 근거는 **실기기 관측**이다 — 마커를 맞춘 뒤에도 지도 회전이 나침반과 약 20도 어긋났다.
+    ///
+    /// 부호 규약: `heading`은 "카메라가 바라보는 방위"라 값이 **커지면 지도 내용물이
+    /// 반시계(왼쪽)로** 돈다. 따라서 음수인 이 값은 지도를 시계(오른쪽)로 돌린다.
+    static let cameraHeadingOffset: CLLocationDirection = -20
+
+    /// 지도 카메라에 넣을 최종 방위. `mapHeading`이 고른 진북 기준 값에 카메라 보정만 더한다.
+    static func cameraHeading(from resolved: CLLocationDirection) -> CLLocationDirection {
+        normalized(resolved + cameraHeadingOffset)
+    }
+
     /// 지도 카메라에 넣을 방위. **진북 기준**이다.
     ///
     /// NMap의 heading은 진북 기준인데 `magneticHeading`을 그대로 넣으면
