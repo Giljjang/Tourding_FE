@@ -80,7 +80,7 @@ struct OnboardingSurveyView: View {
                     .background(viewModel.isCurrentStepValid ? Color.gray5 : Color.gray2)
                     .cornerRadius(10)
             }
-            .disabled(!viewModel.isCurrentStepValid)
+            .disabled(!viewModel.isCurrentStepValid || viewModel.isSubmitting)
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
@@ -92,7 +92,11 @@ struct OnboardingSurveyView: View {
 
     private func handlePrimaryAction() {
         if isLastStep {
-            onComplete()
+            Task {
+                if await viewModel.submitRidingProfile() {
+                    onComplete()
+                }
+            }
         } else {
             viewModel.goToNextStep()
         }

@@ -56,6 +56,29 @@ final class UserRepository: UserRepositoryProtocol {
             throw NetworkError.serverError(httpResponse.statusCode)
         }
     }
+    func updateRidingProfile(userId: Int, request: UpdateRidingProfileRequest) async throws -> UserRidingProfileResponse {
+        guard let url = URL(string: "\(BASE_URL)/user/\(userId)/riding-profile") else {
+            throw NetworkError.invalidURL
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "PUT"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.setValue("*/*", forHTTPHeaderField: "accept")
+        urlRequest.httpBody = try JSONEncoder().encode(request)
+
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NetworkError.invalidResponse
+        }
+        guard httpResponse.statusCode == 200 else {
+            throw NetworkError.serverError(httpResponse.statusCode)
+        }
+
+        return try JSONDecoder().decode(UserRidingProfileResponse.self, from: data)
+    }
+
     func revokeUser(userId: Int, authorizationCode: String) async throws {
         guard let url = URL(string: "\(BASE_URL)/user/revoke?userId=\(userId)&authorizationCode=\(authorizationCode)") else {
             throw NetworkError.invalidURL
