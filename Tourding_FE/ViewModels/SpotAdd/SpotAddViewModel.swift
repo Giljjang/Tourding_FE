@@ -330,6 +330,8 @@ final class SpotAddViewModel: ObservableObject {
         }
         
         isLoading = true
+        // 해제를 do 블록 안에 두면 실패 시 로딩 오버레이가 영구히 남는다
+        defer { isLoading = false }
 
         // wayPoints (0, last 제외 + updatedData 마지막에 추가)
         let middlePoints = originalData.dropFirst().dropLast()
@@ -387,8 +389,6 @@ final class SpotAddViewModel: ObservableObject {
         
         do {
             _ = try await routeRepository.postRoutes(requestBody: requestBody)
-
-            isLoading = false
         } catch {
             print("POST ERROR: /routes \(error)")
         }
