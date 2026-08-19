@@ -11,6 +11,14 @@ import NMapsMap
 
 //MARK: - 사용자 위치 추적 및 업데이트
 extension RidingViewModel {
+
+    /// 사용자가 **실제로 움직였다**고 볼 최소 거리(m).
+    ///
+    /// 카메라 추적 자동 재개와 위치 갱신 판정이 같은 값을 쓴다.
+    /// 라이딩 속도(15km/h)에서는 1초가 채 안 되는 거리이므로, 지도를 밀어 살펴보는
+    /// 시간을 더 주려면 이 값을 키우면 된다.
+    static let userMovementThreshold: Double = 3.0
+
     // 사용자 위치 업데이트 시 호출하여 지나간 마커 확인 및 제거
     func updateUserLocationAndCheckMarkers(_ newLocation: NMGLatLng) async {
         print("🔄 === 위치 업데이트 시작 ===")
@@ -35,8 +43,8 @@ extension RidingViewModel {
         let hasLocationChanged: Bool
         if let previousLocation = currentUserLocation {
             let distance = calculateDistance(from: previousLocation, to: newLocation)
-            hasLocationChanged = distance > 3.0 // 3미터 이상 변경시에만
-            print("📍 위치 거리 계산: \(String(format: "%.2f", distance))m (임계값: 3.0m)")
+            hasLocationChanged = distance > Self.userMovementThreshold
+            print("📍 위치 거리 계산: \(String(format: "%.2f", distance))m (임계값: \(Self.userMovementThreshold)m)")
         } else {
             hasLocationChanged = true // 첫 번째 위치 업데이트
             print("📍 첫 번째 위치 업데이트")
@@ -53,6 +61,15 @@ extension RidingViewModel {
             print("📍 현재 가이드 리스트 개수: \(guideList.count)")
             print("📍 현재 마커 개수: \(markerCoordinates.count)")
             
+            // 지도를 밀어 추적이 꺼진 상태라도, 사용자가 실제로 움직였으면 추적을 되켠다.
+            // 상태 전이는 LocationManager가 소유한다 — 여기서는 "움직였는가"만 판정한다.
+            let resumed = await MainActor.run {
+                userLocationManager?.resumeTrackingIfStopped() == true
+            }
+            if resumed {
+                print("🧭 \(Self.userMovementThreshold)m 이상 이동 - 추적 자동 재개")
+            }
+
             // 마커 체크와 카메라 업데이트를 순차적으로 실행하여 간섭 방지
             await checkAndRemovePassedMarkers()
             await updateCameraToUserLocation()

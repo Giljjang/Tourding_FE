@@ -14,6 +14,7 @@
 
 import Foundation
 import CoreLocation
+import NMapsMap
 import Testing
 @testable import Tourding_FE
 
@@ -91,6 +92,72 @@ struct CameraFollowTests {
         #expect(locationManager.shouldFollowUser == true, "전제: 추적이 켜진 상태")
 
         locationManager.toggleLocationTracking()
+
+        #expect(locationManager.shouldFollowUser == false)
+    }
+
+    // MARK: - 이동 감지 자동 재개
+
+    /// 라이딩 중 지도를 밀어 추적이 꺼진 ViewModel + LocationManager 한 쌍.
+    /// `guideList`가 비어 있으면 `updateUserLocationAndCheckMarkers`가 조기 반환하므로 채워 둔다.
+    private func makeRidingWithTrackingStopped() -> (RidingViewModel, LocationManager) {
+        let viewModel = makeTestRidingViewModel()
+        let locationManager = LocationManager()
+
+        viewModel.userLocationManager = locationManager
+        viewModel.flag = true
+        viewModel.guideList = [
+            GuideModel(sequenceNum: 0, distance: 100, duration: 30,
+                       instructions: "직진", locationName: "지점0", pointIndex: 0,
+                       type: 6, lon: "129.0", lat: "36.0")
+        ]
+
+        locationManager.isNavigationMode = true
+        locationManager.handleScreenTouch()
+
+        return (viewModel, locationManager)
+    }
+
+    /// 지도를 민 뒤라도 사용자가 실제로 움직이면 추적이 되켜진다
+    @Test func movingResumesTrackingAfterPan() {
+        let locationManager = LocationManager()
+        locationManager.isNavigationMode = true
+        locationManager.handleScreenTouch()
+        #expect(locationManager.shouldFollowUser == false, "전제: 지도를 밀어 추적이 꺼진 상태")
+
+        let resumed = locationManager.resumeTrackingIfStopped()
+
+        #expect(resumed == true)
+        #expect(locationManager.shouldFollowUser == true)
+    }
+
+    /// 이미 추적 중이면 아무 일도 하지 않는다
+    @Test func resumeIsNoOpWhileAlreadyTracking() {
+        let locationManager = LocationManager()
+        locationManager.isNavigationMode = true
+
+        #expect(locationManager.resumeTrackingIfStopped() == false)
+        #expect(locationManager.shouldFollowUser == true)
+    }
+
+    /// 라이딩 중 3m 이상 움직이면 추적이 자동 재개된다
+    @Test func ridingUserMovingBeyondThresholdResumesTracking() async {
+        let (viewModel, locationManager) = makeRidingWithTrackingStopped()
+        viewModel.currentUserLocation = NMGLatLng(lat: 36.0, lng: 129.0)
+
+        // 위도 +0.0001 ≈ 11.1m
+        await viewModel.updateUserLocationAndCheckMarkers(NMGLatLng(lat: 36.0001, lng: 129.0))
+
+        #expect(locationManager.shouldFollowUser == true)
+    }
+
+    /// 3m 미만이면 재개되지 않는다 — GPS가 조금 튀는 것만으로 되켜지면 안 된다
+    @Test func ridingUserMovingBelowThresholdDoesNotResumeTracking() async {
+        let (viewModel, locationManager) = makeRidingWithTrackingStopped()
+        viewModel.currentUserLocation = NMGLatLng(lat: 36.0, lng: 129.0)
+
+        // 위도 +0.00001 ≈ 1.1m
+        await viewModel.updateUserLocationAndCheckMarkers(NMGLatLng(lat: 36.00001, lng: 129.0))
 
         #expect(locationManager.shouldFollowUser == false)
     }

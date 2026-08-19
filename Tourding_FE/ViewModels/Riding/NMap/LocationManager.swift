@@ -310,13 +310,32 @@ final class LocationManager: NSObject, ObservableObject {
     func toggleLocationTracking() {
         if shouldFollowUser {
             stopNavigationMode()
-            print("📍 위치추적 상태 변경: \(isLocationTrackingEnabled)")
-            return
+        } else {
+            beginTracking()
         }
+        print("📍 위치추적 상태 변경: \(isLocationTrackingEnabled)")
+    }
 
+    /// 지도를 밀어 추적이 꺼진 상태에서 사용자가 **실제로 움직였을 때** 추적을 되켠다.
+    ///
+    /// "얼마나 움직여야 하는가"는 호출부(`RidingViewModel.updateUserLocationAndCheckMarkers`)가
+    /// 판정한다. 여기는 "꺼져 있으면 켠다"만 책임진다.
+    ///
+    /// - Returns: 이번 호출로 재개됐는지
+    @discardableResult
+    func resumeTrackingIfStopped() -> Bool {
+        guard !shouldFollowUser else { return false }
+        beginTracking()
+        return true
+    }
+
+    /// 추적 상태를 켠다.
+    ///
+    /// `mapView` 참조가 아직 없어도 상태는 켠다 — `currentMapView`는 nil로 남을 수 있고,
+    /// 카메라는 다음 위치 콜백이 `followUser`로 처리한다.
+    private func beginTracking() {
         isNavigationMode = true
         isLocationTrackingEnabled = true
-        print("📍 위치추적 상태 변경: \(isLocationTrackingEnabled)")
 
         if let mapView = getCurrentMapView() {
             startNavigationMode(on: mapView)
