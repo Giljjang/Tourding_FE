@@ -105,4 +105,44 @@ struct RidingStartZoomTests {
 
         #expect(locationManager.consumeRidingStartZoom() == true, "측위 후 첫 시작에 걸린다")
     }
+
+    // MARK: - 종료 시 되돌리기
+
+    /// 라이딩을 끝내면 시작 전 줌으로 되돌린다.
+    /// 뒤로가기(라이딩 중)와 종료 버튼 모두 `endRiding`을 거치므로 한 곳에서 처리된다.
+    @Test func remembersZoomBeforeRidingAndGivesItBack() {
+        let locationManager = makeLocatedManager()
+
+        locationManager.rememberZoomBeforeRiding(14.0)
+
+        #expect(locationManager.consumeZoomBeforeRiding() == 14.0)
+    }
+
+    /// 되돌린 뒤에는 남아 있지 않다 — 두 번 되돌리면 엉뚱한 줌으로 튄다
+    @Test func zoomBeforeRidingIsConsumedOnce() {
+        let locationManager = makeLocatedManager()
+        locationManager.rememberZoomBeforeRiding(14.0)
+
+        _ = locationManager.consumeZoomBeforeRiding()
+
+        #expect(locationManager.consumeZoomBeforeRiding() == nil)
+    }
+
+    /// 줌을 건 적이 없으면 되돌릴 것도 없다.
+    /// 편집 모드에서 뒤로가기만 한 경우가 여기 해당한다.
+    @Test func nothingToRestoreWhenZoomWasNeverApplied() {
+        let locationManager = makeLocatedManager()
+
+        #expect(locationManager.consumeZoomBeforeRiding() == nil)
+    }
+
+    /// 다음 라이딩을 위해 게이트를 되돌릴 때 기억해 둔 줌도 함께 비운다
+    @Test func resetClearsRememberedZoom() {
+        let locationManager = makeLocatedManager()
+        locationManager.rememberZoomBeforeRiding(14.0)
+
+        locationManager.resetRidingStartZoom()
+
+        #expect(locationManager.consumeZoomBeforeRiding() == nil)
+    }
 }

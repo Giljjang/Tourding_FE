@@ -269,6 +269,12 @@ extension RidingViewModel {
 
         locationManager.stopLocationUpdates()
         locationManager.stopNavigationMode()
+        // 시작 전 줌으로 되돌린다. **리셋보다 먼저** — 리셋이 기억해 둔 값을 비운다.
+        // 뒤로가기(라이딩 중)와 종료 버튼 모두 이 함수를 거치므로 여기 한 곳이면 된다.
+        if let mapView {
+            locationManager.restoreZoomBeforeRiding(on: mapView)
+        }
+
         // 다음 라이딩 시작에 줌이 다시 걸리도록. stopNavigationMode에 두면
         // 지도를 밀 때마다 리셋돼 추적 재개마다 줌이 걸린다.
         locationManager.resetRidingStartZoom()

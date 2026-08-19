@@ -283,12 +283,51 @@ final class LocationManager: NSObject, ObservableObject {
         return true
     }
 
+    /// 라이딩 시작 줌을 걸기 전의 줌. 종료 시 여기로 되돌린다.
+    private var zoomBeforeRiding: Double?
+
+    /// 시작 줌을 걸기 직전의 줌을 기억한다.
+    func rememberZoomBeforeRiding(_ zoom: Double) {
+        zoomBeforeRiding = zoom
+    }
+
+    /// 기억해 둔 줌을 **한 번만** 내준다.
+    /// 두 번 되돌리면 그 사이 사용자가 조정한 줌을 덮는다.
+    func consumeZoomBeforeRiding() -> Double? {
+        defer { zoomBeforeRiding = nil }
+        return zoomBeforeRiding
+    }
+
+    /// 라이딩 시작 전 줌으로 되돌린다. 건 적이 없으면 아무것도 하지 않는다.
+    ///
+    /// 좌표·헤딩은 건드리지 않는다 — 종료 후 편집 모드는 북쪽-위로 돌아가고
+    /// 카메라 위치는 `restoreOriginalData` 쪽이 정한다.
+    func restoreZoomBeforeRiding(on mapView: NMFMapView) {
+        guard let zoom = consumeZoomBeforeRiding() else { return }
+
+        let current = mapView.cameraPosition
+        let position = NMFCameraPosition(
+            current.target,
+            zoom: zoom,
+            tilt: current.tilt,
+            heading: current.heading
+        )
+
+        let cameraUpdate = NMFCameraUpdate(position: position)
+        cameraUpdate.pivot = CGPoint(x: 0.5, y: cameraPivotY)
+        cameraUpdate.animation = .easeOut
+        mapView.moveCamera(cameraUpdate)
+
+        print("🔍 라이딩 종료 — 줌 복원: \(current.zoom) → \(zoom)")
+    }
+
     /// 다음 라이딩 시작에 줌이 다시 걸리도록 되돌린다.
     ///
     /// **`endRiding`에서만 부를 것.** `stopNavigationMode`는 지도를 밀 때마다 불리므로
     /// 거기서 되돌리면 추적을 껐다 켤 때마다 줌이 다시 걸린다.
     func resetRidingStartZoom() {
         didApplyRidingStartZoom = false
+        zoomBeforeRiding = nil
     }
 
     // MARK: - Navigation Methods
@@ -324,6 +363,7 @@ final class LocationManager: NSObject, ObservableObject {
                 : current.zoom
 
             if shouldZoom {
+                rememberZoomBeforeRiding(current.zoom)
                 print("🔍 라이딩 시작 줌 적용: \(current.zoom) → \(targetZoom) (지도 최대 \(mapView.maxZoomLevel))")
             } else if start == .ridingStart {
                 print("🔍 라이딩 시작 줌 건너뜀 — 이번 라이딩에서 이미 적용됨 (현재 \(current.zoom))")
