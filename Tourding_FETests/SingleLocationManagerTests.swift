@@ -39,7 +39,7 @@ struct SingleLocationManagerTests {
     /// MapViewController는 LocationManager를 **소유하지 않는다**. 주입만 받는다.
     ///
     /// 저장 프로퍼티를 다시 추가하는 회귀를 잡기 위해 Mirror로 직접 확인한다.
-    /// (`userLocationManager`는 weak 옵셔널이고 이 테스트에서는 주입하지 않으므로 nil이다.)
+    /// (`userLocationManager`는 주입받는 참조이고 이 테스트에서는 주입하지 않으므로 nil이다.)
     @Test func mapViewControllerOwnsNoLocationManager() {
         let controller = MapViewController()
 

@@ -87,7 +87,7 @@ private static func makeRouteRepository() -> RouteRepositoryProtocol {
 |------|------|
 | `+API.swift` | 서버/Mock 호출, `postRouteDragNDropAPI` |
 | `+RouteReorder.swift` | 경유지 DnD — 지도 동기화, 디바운스 POST, `persistRouteOrderAfterReorder` |
-| `+LocationTracking.swift` | 3m 이동, 30m 마커 통과 |
+| `+LocationTracking.swift` | 3m 이동 판정 + 추적 자동 재개(`userMovementThreshold`), 30m 마커 통과 |
 | `+Utils.swift` | 좌표 파싱, 포맷 |
 | `+Lifecycle.swift` | appear, riding start/end, foreground, location tracking |
 
@@ -134,9 +134,11 @@ SheetContentView.onDrag/onDrop
 ```
 NMapView → MapViewRepresentable → MapViewController
   → PathManager (Douglas-Peucker), MarkerManager
+LocationManager → HeadingResolver (방위 판정)
 ```
 
 `MapViewRepresentable.updateUIView`에서 ViewModel에 `pathManager` 포함 전체 매니저 연결.
+`LocationManager`는 여기서 주입하지 않는다 — `configureLocationManager` 참조.
 
 ### 지도 참조 소유권 (중요)
 
@@ -150,7 +152,46 @@ strong으로 잡으면 화면을 떠난 뒤에도 `MapViewController`와 그 `CL
 한 세트씩 쌓인다 — 앱 수명인 라이딩 쪽(1세트 잔존)보다 나쁘다.
 
 **새 지도 참조를 추가할 때도 `weak`을 유지할 것.**
-회귀 방지 테스트: `MapBindingLifetimeTests`, `RecommendMapBindingLifetimeTests`
+
+`LocationManager`는 **화면당 하나**다. 소유자는 `RidingView`·`RecommendRouteView`의
+`@StateObject` 하나뿐이고, `MapViewController`·`RecommendMapViewController`는
+자체 인스턴스를 만들지 않고 주입만 받는다 — `configureLocationManager`가 ViewModel의
+`locationManager`와 `userLocationManager`를 같은 객체로 맞춘다.
+**`LocationManager`는 생성만으로 GPS가 켜지므로** VC에 저장 프로퍼티를 되살리면 스트림이 두 벌 돈다.
+
+회귀 방지 테스트: `MapBindingLifetimeTests`, `RecommendMapBindingLifetimeTests`,
+`SingleLocationManagerTests`
+
+### 카메라 추적 판정 (중요)
+
+**카메라가 사용자를 따라갈지는 `LocationManager.shouldFollowUser` 하나로 판정한다.**
+"라이딩 중인가"(`flag`)가 아니라 **"추적 중인가"**(`isNavigationMode`)가 기준이다.
+`flag`로 판정하면 사용자가 지도를 밀어 추적을 꺼도 다음 GPS 갱신(3m)에 카메라가 도로 스냅된다.
+
+**카메라를 사용자에게 따라붙게 하는 코드는 전부 `followUser(on:to:)`를 거칠 것.**
+호출부에서 `moveCamera`를 직접 부르면 판정이 복제된다 — 세 곳이 각자 판정하다
+세 곳 모두 `flag`로 잘못 판정한 것이 이 버그였다.
+
+추적이 꺼져도 사용자가 `userMovementThreshold`(3m) 이상 움직이면
+`resumeTrackingIfStopped()`가 자동으로 되켠다. 상태 전이는 `beginTracking()` 한 곳에 있다.
+
+회귀 방지 테스트: `CameraFollowTests`
+
+### 방위(heading) 판정 (중요)
+
+**`HeadingResolver` 하나로 판정한다.** 카메라와 사용자 마커가 같은 원본을 쓰도록 강제한다.
+
+NMap의 heading은 **진북 기준**이라 `magneticHeading`을 그대로 넣으면
+편각만큼(서울 약 9도) 지도가 틀어져 회전한다. `trueHeading`은 Core Location이 편각을
+이미 반영해 주므로 편각 상수를 들고 있을 필요가 없다 — 음수(구하지 못함)일 때만 자북으로 폴백한다.
+
+`markerIconOffset`(-45)은 **편각 보정이 아니라 아이콘 에셋 보정**이다.
+에셋을 교체하면 같이 바뀌어야 한다. 이 값을 호출부에 복제하지 말 것.
+
+이전에는 `LocationManager`가 자북에서, `MapViewController`가 진북 우선에서 각각 -45를 빼
+같은 `locationOverlay.heading`에 서로 다른 기준의 값을 썼다.
+
+회귀 방지 테스트: `HeadingResolverTests`
 
 ### 마커 통과 판정 (A)
 
@@ -164,9 +205,12 @@ strong으로 잡으면 화면을 떠난 뒤에도 `MapViewController`와 그 `CL
 
 ### 미해결 이슈
 
-1. **LocationManager 이중 인스턴스** — `RidingView` `@StateObject locationManager` vs `MapViewController.locationManager`
-2. **바텀시트 카메라 피봇** — `RidingView.onChange(currentPosition)` 로직 ViewModel 이전 검토
-3. **POST /routes** — 서버는 `RoutesModel` 반환, 앱은 `EmptyResponse`로 무시
+1. **바텀시트 카메라 피봇** — `RidingView.onChange(currentPosition)` 로직 ViewModel 이전 검토
+2. **지도 터치 감지 레이어** — 추적 중에만 존재하고 지도 위에 얹혀 있어, 첫 드래그가
+   추적만 끄고 지도는 밀리지 않는다 (`RidingView`의 투명 제스처 레이어)
+3. **`POST /routes` 응답을 버리는 호출부** — 호출 6곳 중 응답을 쓰는 곳은 라이딩 시작 하나뿐.
+   특히 경유지 DnD는 응답을 버리고 `GET /routes/path`를 다시 부른다
+   (단 `applyRouteBundle`을 그대로 쓰면 `locations`까지 반영돼 드래그 순서가 덮인다 — path만 골라야 한다)
 
 ---
 
@@ -344,12 +388,35 @@ xcodebuild test -scheme Tourding_FE \
   - 반영 로직을 `applyRouteBundle` / `applyGuideMarkers`로 추출 — 편집 모드도 같은 함수를 쓴다
   - 손대기 전에 특성화 테스트(`RidingStartRecoveryTests`)로 현재 동작을 먼저 잠갔다
 
+- [x] **라이딩 카메라·방위·위치 인스턴스 정리 (TDD)** — 테스트 168개, 스킵 0
+  - **추적을 꺼도 카메라가 스냅** — 카메라를 옮기는 세 곳이 `isNavigationMode`가 아니라
+    `flag`로 판정했다. 지도를 밀어놔도 다음 GPS 갱신(3m)에 도로 돌아왔다.
+    판정을 `shouldFollowUser` / `followUser(on:to:)` 한 곳으로 모았다
+  - **3m 이동 시 추적 자동 재개** — `resumeTrackingIfStopped()` + `userMovementThreshold` 상수화.
+    주의: 15km/h에서 3m는 약 0.7초다. 지도를 살펴볼 여유를 주려면 이 값을 키워야 한다
+  - **지도가 자북 기준으로 회전** — NMap의 heading은 진북 기준인데 `magneticHeading`을
+    그대로 넣어 한국에서 약 9도 틀어졌다. `HeadingResolver`로 판정을 모으고 `trueHeading` 우선으로.
+    `-45` 하드코딩 2곳도 `markerIconOffset` 하나로 통합
+  - **LocationManager 이중 인스턴스** — 라이딩·추천 코스 두 화면 모두 VC가 자체 인스턴스를
+    소유해 GPS가 두 벌 돌았다. 추천 코스 쪽은 콜백조차 없이 `startLocationUpdates()`만 불렀다.
+    VC의 저장 프로퍼티를 없애고 주입만 받게 했다
+  - **스팟 추가 POST 실패 시 로딩 미해제** — `isLoading` 해제가 `do` 블록 안에만 있었다
+
 ### 다음
 - [ ] **AI 기능 착수** — 서버 준비 완료(`/ai/routes/adjustments/text`·`/voice`,
       `/routes/recommendations`, `/user/{id}/riding-profile`), `routeSummaryId` 보관 완료
+- [ ] **경로선 재그리기 가드** — `MapViewRepresentable.updateUIView`가 `updateMap()`을 무조건 부르고
+      `PathManager.setCoordinates`가 좌표 비교 없이 매번 단순화 + 오버레이 전체 재부착을 한다.
+      마커도 매번 전량 재생성(`MarkerManager.addMarkers`가 `clearMarkers`로 시작).
+      **주의**: 좌표 *개수*로만 가드하면 DnD 재정렬이 반영되지 않는다
 - [ ] `PathSimplifier` + `PathSimplificationMetrics` + perf A/B 로깅
+      — Douglas-Peucker 실측: 258좌표 fixture에서 239개(7.4% 감소), 최대 이탈 0.87m.
+      실효가 거의 없다. tolerance를 키우면 이탈이 10m대라 자전거 경로엔 못 쓴다.
+      순수 타입 추출과 테스트가 먼저다 (현재 `PathManager` 테스트 0건)
 - [ ] RidingViewModel Mock 시나리오 테스트 확대
-- [ ] LocationManager 이중 인스턴스 정리 (`MapViewController.locationManager` vs `userLocationManager`)
+      — `RidingViewModel`을 만드는 14개 파일이 전부 `FakeRouteRepository`를 쓴다.
+      `MockRouteRepository` 시나리오(`.withWaypoints`/`.simple`) 기반 테스트는 0건.
+      미커버: `+Utils` 전부, `+Lifecycle`의 진입·복귀·포그라운드
 
 ### 보류 (판단이 끝났고 지금은 안 함)
 - **에러를 사용자에게 노출** — 실패가 전부 `print`로만 남는다. 서버 500이 정리된 뒤
@@ -359,7 +426,8 @@ xcodebuild test -scheme Tourding_FE \
 - **`POST /routes` 본문 조립이 `SpotAddViewModel`·`DetailSpotViewModel`에 복붙돼 있음**
   — 두 화면이 같은 본문을 만드는지는 `RouteAddRequestTests.bothEntryPointsProduceIdenticalRequestBody`가 잠근다.
   공용 빌더(`RouteRequestBuilder`) 추출은 미완
-- `POST /routes` 응답 타입 불일치 (`RoutesModel` vs `EmptyResponse`)
+- `POST /routes` 응답을 버리는 호출부 — 6곳 중 소비는 라이딩 시작 하나뿐
+  (`EmptyResponse`는 선언만 남은 데드 타입)
 - `UserRepository`의 요청 조립만 `NetworkService` 밖에 남음
   (세션·상태 판정·에러 타입은 통일 완료)
 - `print` → OSLog

@@ -17,12 +17,29 @@ API/Mock → RidingViewModel+API → @Published pathCoordinates
 
 ## MapViewRepresentable 연결
 
-`updateUIView`에서 ViewModel에 주입: `locationManager`, `mapView`, `markerManager`, `pathManager`, `mapViewController`
+`updateUIView`에서 ViewModel에 주입: `mapView`, `markerManager`, `pathManager`, `mapViewController`
+
+`LocationManager`는 여기서 주입하지 않는다 — `configureLocationManager`(onAppear)가
+`locationManager`·`userLocationManager`를 **같은 인스턴스**로 맞춘다.
 
 ## PathManager
 
 - Douglas-Peucker (`tolerance: 0.00001`), 이중 NMFPath
+- 실측: 258좌표 fixture에서 239개(7.4% 감소), 최대 이탈 0.87m — 실효가 거의 없다
 - **예정**: `PathSimplifier` 분리 + `PathSimplificationMetrics` (pure Swift, 테스트 가능)
+
+## HeadingResolver
+
+방위 판정 **단일 지점**. 카메라와 마커가 같은 원본을 쓰도록 강제한다.
+
+- `mapHeading` — **진북 기준**. `trueHeading` 우선, 음수면 `magneticHeading` 폴백.
+  NMap의 heading이 진북 기준이라 자북을 그대로 넣으면 한국에서 약 9도 틀어진다
+- `markerHeading` — 같은 원본에 `markerIconOffset`(-45)만 더한다
+- `markerIconOffset`은 **편각 보정이 아니라 아이콘 에셋 보정**이다. 호출부에 복제 금지
+- `normalized` — `0..<360`
+
+`CLHeading`은 공개 이니셜라이저가 없어 테스트에서 만들 수 없다. 판정은 원시값 순수 함수가 갖고
+`CLHeading` 어댑터는 필드 추출만 한다. (테스트: `HeadingResolverTests`)
 
 ## RidingViewModel extensions
 
@@ -30,7 +47,7 @@ API/Mock → RidingViewModel+API → @Published pathCoordinates
 |------|------|
 | `+API.swift` | 서버/Mock 호출, `postRouteDragNDropAPI` (POST만, 마커 갱신 없음) |
 | `+RouteReorder.swift` | 경유지 DnD 오케스트레이션 — `syncMapAfterRouteReorder`, `persistRouteOrderAfterReorder`, 디바운스 POST |
-| `+LocationTracking.swift` | 3m 이동, 30m 마커 통과 |
+| `+LocationTracking.swift` | 3m 이동 판정 + 추적 자동 재개(`userMovementThreshold`), 30m 마커 통과 |
 | `+Utils.swift` | 좌표 파싱, 포맷 |
 | `+Lifecycle.swift` | appear, riding start/end, foreground, `setupRidingLocationCallback` |
 
@@ -48,6 +65,18 @@ API/Mock → RidingViewModel+API → @Published pathCoordinates
 
 **View 책임**: UI, 바텀시트 카메라 피봇(`currentPosition`), 위치 권한 모달, ViewModel 위임  
 **금지**: View에 API 호출·위치 콜백 인라인 정의 추가
+
+## 카메라 추적 판정
+
+**`LocationManager.shouldFollowUser` 하나로 판정한다.** 기준은 "라이딩 중인가"(`flag`)가 아니라
+**"추적 중인가"**(`isNavigationMode`)다. `flag`로 판정하면 지도를 밀어 추적을 꺼도
+다음 GPS 갱신(3m)에 카메라가 도로 스냅된다.
+
+**카메라를 따라붙게 하는 코드는 전부 `followUser(on:to:)`를 거칠 것** — `moveCamera` 직접 호출 금지.
+세 곳이 각자 판정하다 세 곳 모두 `flag`로 잘못 판정한 것이 이 버그였다.
+
+추적이 꺼져도 `userMovementThreshold`(3m) 이상 움직이면 `resumeTrackingIfStopped()`가 되켠다.
+상태 전이는 `beginTracking()` 한 곳. (테스트: `CameraFollowTests`)
 
 ## 경유지 드래그앤드롭
 
@@ -77,12 +106,20 @@ API/Mock → RidingViewModel+API → @Published pathCoordinates
 `RidingViewModel`의 `locationManager`/`userLocationManager`/`mapView`/`markerManager`/`pathManager`/
 `mapViewController`는 **전부 weak**, `MapViewController.ridingViewModel`도 **weak**.
 소유자는 화면이고 ViewModel은 앱 수명이므로 strong으로 잡으면 화면 이탈 후에도 GPS가 계속 돈다.
-새 지도 참조를 추가할 때도 weak 유지. (테스트: `MapBindingLifetimeTests`)
+새 지도 참조를 추가할 때도 weak 유지.
+
+`LocationManager`는 **화면당 하나**(`RidingView`/`RecommendRouteView`의 `@StateObject`).
+VC는 자체 인스턴스를 만들지 않고 주입만 받는다 — **생성만으로 GPS가 켜지므로**
+VC에 저장 프로퍼티를 되살리면 스트림이 두 벌 돈다.
+
+(테스트: `MapBindingLifetimeTests`, `RecommendMapBindingLifetimeTests`, `SingleLocationManagerTests`)
 
 ## 미해결 이슈
 
-- `MapViewController.locationManager` vs `RidingView` `@StateObject locationManager` 이중 GPS 인스턴스
 - `RidingView.onChange(currentPosition)` 바텀시트 카메라 피봇 — ViewModel 이전 검토
+- 지도 터치 감지 레이어 — 추적 중에만 존재하고 지도 위에 얹혀 있어, 첫 드래그가
+  추적만 끄고 지도는 밀리지 않는다
+- 경로선·마커 재그리기 — `updateUIView`마다 좌표 비교 없이 전량 재생성
 
 ## View / DnD / Lifecycle 수정 시
 

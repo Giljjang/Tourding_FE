@@ -27,7 +27,10 @@ alwaysApply: false
 | GET | /routes/riding-recommend |
 | POST | /routes/toilet, /routes/convenience-store |
 
-`isUsed`: `false` 편집 / `true` 라이딩 — `RidingViewModel.flag`와 연동
+`isUsed`: 서버의 어느 경로(draft / 사용 완료)를 읽고 쓸지 가른다.
+
+판정은 `RidingViewModel.isUsedRoute` (= `flag || routeSource.isUsed`) **하나**다.
+모든 `get*API`의 기본값이 이 값을 쓴다. `flag`만으로 판정하면 최근 경로를 편집할 때 draft를 읽는다.
 
 ## Mock (구현됨)
 
