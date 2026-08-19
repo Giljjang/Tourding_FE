@@ -75,21 +75,21 @@ struct HeadingResolverTests {
     /// 렌더된 아이콘의 실제 방향이 SVG 좌표 계산과 다르며, 어디서 어긋나는지는 미규명이다.
     /// 값은 관측을 따른다 — 바꿀 일이 생기면 계산이 아니라 실기기에서 확인할 것.
     @Test func markerIconOffsetMatchesDeviceObservation() {
-        #expect(HeadingResolver.markerIconOffset == -8.5)
+        #expect(HeadingResolver.markerIconOffset == -38.5)
     }
 
     /// 마커는 아이콘 오프셋을 뺀 값을 쓴다
     @Test func markerHeadingAppliesIconOffset() {
         let resolved = HeadingResolver.markerHeading(trueHeading: 90, magneticHeading: 99, accuracy: 5)
 
-        #expect(resolved == 81.5, "진북 90에 아이콘 보정 -8.5를 더한 값")
+        #expect(resolved == 51.5, "진북 90에 아이콘 보정 -38.5를 더한 값")
     }
 
     /// 오프셋을 빼서 음수가 되면 정규화한다 — 예전에는 -35 같은 값이 그대로 들어갔다
     @Test func markerHeadingNormalizesNegativeResult() {
         let resolved = HeadingResolver.markerHeading(trueHeading: 5, magneticHeading: 5, accuracy: 5)
 
-        #expect(resolved == 356.5, "5 - 8.5 = -3.5 → 356.5로 정규화되어야 한다")
+        #expect(resolved == 326.5, "5 - 38.5 = -33.5 → 326.5로 정규화되어야 한다")
     }
 
     /// 마커와 카메라는 **같은 원본**에서 나와야 한다.
