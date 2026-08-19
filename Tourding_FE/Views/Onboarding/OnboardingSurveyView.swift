@@ -74,12 +74,13 @@ struct OnboardingSurveyView: View {
             Button(action: handlePrimaryAction) {
                 Text(isLastStep ? "완료하기" : "다음으로")
                     .font(.pretendardSemiBold(size: 16))
-                    .foregroundColor(.customwhite)
+                    .foregroundColor(viewModel.isCurrentStepValid ? .customwhite : .gray3)
                     .frame(maxWidth: .infinity)
                     .frame(height: 54)
-                    .background(Color.gray5)
+                    .background(viewModel.isCurrentStepValid ? Color.gray5 : Color.gray2)
                     .cornerRadius(10)
             }
+            .disabled(!viewModel.isCurrentStepValid)
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
