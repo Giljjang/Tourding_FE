@@ -48,4 +48,32 @@ struct SingleLocationManagerTests {
         #expect(owned == false,
                 "MapViewController가 자체 LocationManager를 가지면 GPS가 두 벌 돈다")
     }
+
+    // MARK: - 추천 코스 화면
+
+    /// 추천 코스 화면도 같은 구조였다. 그쪽 자체 인스턴스는 콜백조차 없이
+    /// `startLocationUpdates()`만 불러 — 아무 일도 하지 않으면서 GPS만 켰다.
+    @Test func recommendMapViewControllerOwnsNoLocationManager() {
+        let controller = RecommendMapViewController()
+
+        let owned = Mirror(reflecting: controller).children.contains { $0.value is LocationManager }
+
+        #expect(owned == false,
+                "추천 코스 화면이 자체 LocationManager를 가지면 GPS가 두 벌 돈다")
+    }
+
+    /// 추천 코스 ViewModel도 두 참조가 같은 인스턴스를 가리켜야 한다
+    @Test func recommendViewModelSharesOneLocationManager() {
+        let viewModel = RecommendRouteViewModel(
+            tourRepository: FakeTourRepository(),
+            routeRepository: FakeRouteRepository(),
+            userSession: FakeUserSession(userId: 49)
+        )
+        let manager = LocationManager()
+
+        viewModel.configureLocationManager(manager)
+
+        #expect(viewModel.userLocationManager === manager)
+        #expect(viewModel.locationManager === manager)
+    }
 }

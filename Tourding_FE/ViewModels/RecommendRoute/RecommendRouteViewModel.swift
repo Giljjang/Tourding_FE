@@ -29,6 +29,14 @@ final class RecommendRouteViewModel: ObservableObject {
     // 화면에 들어갈 때마다 한 세트씩 쌓인다.
     //
     // 회귀 방지: RecommendMapBindingLifetimeTests
+    /// 지도용·위치용 참조를 같은 인스턴스로 맞춘다.
+    /// 갈라지면 LocationManager가 두 벌 살아 GPS가 두 개 돈다.
+    @MainActor
+    func configureLocationManager(_ locationManager: LocationManager) {
+        userLocationManager = locationManager
+        self.locationManager = locationManager
+    }
+
     weak var locationManager: LocationManager?
     weak var userLocationManager: LocationManager?
     weak var mapView: NMFMapView?

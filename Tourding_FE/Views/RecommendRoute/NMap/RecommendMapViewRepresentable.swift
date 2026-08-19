@@ -82,7 +82,6 @@ struct RecommendMapViewRepresentable: UIViewRepresentable {
         
         // RecommendRouteViewModel에 LocationManager, NMFMapView, MarkerManager, PathManager 설정 (viewDidLoad 완료 후)
         if let recommendRouteViewModel = recommendRouteViewModel {
-            recommendRouteViewModel.locationManager = mapViewController.locationManager
             if let nmfMapView = mapViewController.nmfMapView {
                 recommendRouteViewModel.mapView = nmfMapView
             }
