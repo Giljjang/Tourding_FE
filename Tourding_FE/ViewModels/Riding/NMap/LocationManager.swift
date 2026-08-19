@@ -256,7 +256,7 @@ final class LocationManager: NSObject, ObservableObject {
     /// 절대 줌으로 두면 안 된다 — 처음에 16.5를 넣었다가 화면이 그대로였다.
     /// 편집 화면이 이미 건물 외곽선·지번이 보이는 수준(17~18)이라 16.5는 축소 방향이었다.
     /// 상대값이면 기준이 뭐든 반드시 확대된다.
-    static let ridingStartZoomDelta: Double = 1.5
+    static let ridingStartZoomDelta: Double = 3.0
 
     /// 시작 줌을 계산한다. 지도의 최대 줌을 넘지 않는다.
     static func ridingStartZoom(from current: Double, maxZoom: Double) -> Double {
@@ -324,7 +324,9 @@ final class LocationManager: NSObject, ObservableObject {
                 : current.zoom
 
             if shouldZoom {
-                print("🔍 라이딩 시작 줌: \(current.zoom) → \(targetZoom)")
+                print("🔍 라이딩 시작 줌 적용: \(current.zoom) → \(targetZoom) (지도 최대 \(mapView.maxZoomLevel))")
+            } else if start == .ridingStart {
+                print("🔍 라이딩 시작 줌 건너뜀 — 이번 라이딩에서 이미 적용됨 (현재 \(current.zoom))")
             }
 
             // 좌표·줌·헤딩을 **한 번에** 맞춘다.
@@ -343,6 +345,8 @@ final class LocationManager: NSObject, ObservableObject {
             // 그 값으로 카메라를 다시 세팅한다 — 줌이 목표에 닿기 전에 멈춘다.
             cameraUpdate.animation = shouldZoom ? .none : .easeIn
             mapView.moveCamera(cameraUpdate)
+        } else if start == .ridingStart {
+            print("🔍 라이딩 시작 줌 건너뜀 — 아직 측위 전 (currentLocation == nil)")
         }
     }
     
