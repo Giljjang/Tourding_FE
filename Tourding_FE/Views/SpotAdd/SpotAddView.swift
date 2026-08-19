@@ -325,9 +325,6 @@ struct SpotAddView: View {
                 .onTapGesture {
                     let req = ReqDetailModel(contentid: spot.contentid, contenttypeid: spot.contenttypeid)
 
-                    // 🔎 [Diag] 임시 진단 — 원인 확정 후 제거
-                    print("🔎 [Diag/Push] from=SpotAddList title=\(spot.title) contentid=\(req.contentid) contenttypeid=\(req.contenttypeid)")
-
                     navigationManager.push(.DetailSpotView(isSpotAdd: true, detailId: req))
                 }
                 .onAppear {

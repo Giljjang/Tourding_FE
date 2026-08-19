@@ -229,11 +229,6 @@ final class SpotAddViewModel: ObservableObject {
 
             let filteredResults = results.filter { $0.typeCode != "C01" }
 
-            // 🔎 [Diag] 임시 진단 — 상세 조회 실패 스팟 특정용. 원인 확정 후 제거
-            for s in filteredResults {
-                print("🔎 [Diag/List] title=\(s.title) contentid=\(s.contentid) contenttypeid=\(s.contenttypeid) typeCode=\(s.typeCode)")
-            }
-
             if isFirstPage {
                 spots = filteredResults
                 if filteredResults.isEmpty {
@@ -391,7 +386,7 @@ final class SpotAddViewModel: ObservableObject {
         print("requestBody.contentId: \(requestBody.contentId)")
         
         do {
-            let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
+            _ = try await routeRepository.postRoutes(requestBody: requestBody)
 
             isLoading = false
         } catch {
