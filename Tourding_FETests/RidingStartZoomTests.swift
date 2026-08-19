@@ -2,16 +2,17 @@
 //  RidingStartZoomTests.swift
 //  Tourding_FETests
 //
-//  라이딩을 시작할 때 카메라 줌을 맞춘다.
+//  라이딩을 시작할 때 카메라를 조금 당긴다.
 //
-//  줌을 설정하는 코드가 저장소 어디에도 없어 NMap 기본값을 그대로 썼다.
-//  편집 모드는 경로 전체를 보느라 멀리 있는데, 라이딩 중에는 앞의 길이 보여야 한다.
+//  처음엔 절대 줌(16.5)을 넣었는데 화면이 그대로였다.
+//  편집 화면이 이미 건물 외곽선·지번이 보이는 수준(17~18)이라 16.5는 **축소** 방향이었다.
+//  그래서 절대값이 아니라 **현재 줌 기준 상대값**으로 당긴다 — 기준이 뭐든 반드시 확대된다.
 //
-//  **추적 재개에는 적용하면 안 된다.** "경로 안내 재개" 버튼이나 3m 자동 재개는
-//  주행 중에 일어나는데, 그때 줌을 덮으면 사용자가 조정해 둔 배율이 날아간다.
-//  그 구분이 이 테스트의 핵심이다.
+//  두 가지를 잠근다.
+//  ① 값 계산 — 현재 줌에서 얼마나, 최대 줌을 넘지 않게
+//  ② 게이트 — "처음 그 화면에 들어갔을 때" 한 번만
 //
-//  실제 카메라 이동은 NMFMapView가 필요해 테스트하지 않는다. 정책만 잠근다.
+//  실제 카메라 이동은 NMFMapView가 필요해 테스트하지 않는다.
 //
 
 import CoreLocation
@@ -22,45 +23,52 @@ import Testing
 @MainActor
 struct RidingStartZoomTests {
 
-    /// 측위가 끝난 상태의 매니저. 줌 소비는 `currentLocation`이 있어야 일어난다.
+    /// 측위가 끝난 상태의 매니저. 줌 게이트는 `currentLocation`이 있어야 열린다.
     private func makeLocatedManager() -> LocationManager {
         let locationManager = LocationManager()
         locationManager.currentLocation = CLLocation(latitude: 36.0, longitude: 129.0)
         return locationManager
     }
 
-    /// 라이딩 시작에는 줌을 맞춘다
-    @Test func ridingStartHasZoomLevel() {
-        #expect(LocationManager.zoomLevel(for: .ridingStart) == LocationManager.ridingStartZoom)
+    // MARK: - 값 계산
+
+    /// 현재 줌에서 그만큼 더 당긴다
+    @Test func zoomsInFromWhateverTheCurrentZoomIs() {
+        #expect(LocationManager.ridingStartZoom(from: 14, maxZoom: 21)
+                == 14 + LocationManager.ridingStartZoomDelta)
+        #expect(LocationManager.ridingStartZoom(from: 17.4, maxZoom: 21)
+                == 17.4 + LocationManager.ridingStartZoomDelta)
     }
 
-    /// **핵심** — 추적 재개에는 줌을 건드리지 않는다.
-    /// 주행 중에 사용자가 맞춰 둔 배율을 덮으면 안 된다.
-    @Test func resumingTrackingKeepsCurrentZoom() {
-        #expect(LocationManager.zoomLevel(for: .resumeTracking) == nil)
+    /// **핵심** — 확대여야 한다. 절대값을 쓰다 축소되는 실수를 했다
+    @Test func deltaZoomsInNotOut() {
+        #expect(LocationManager.ridingStartZoomDelta > 0)
+        #expect(LocationManager.ridingStartZoom(from: 18, maxZoom: 21) > 18)
     }
 
-    /// 값이 지도에서 쓸 수 있는 범위여야 한다.
-    /// NMap 줌은 0(세계) ~ 21(건물) 범위이고, 내비게이션은 거리 수준이다.
-    @Test func ridingStartZoomIsAStreetLevelValue() {
-        #expect(LocationManager.ridingStartZoom > 14, "너무 멀면 앞의 길이 안 보인다")
-        #expect(LocationManager.ridingStartZoom < 19, "너무 가까우면 다음 안내가 화면 밖으로 나간다")
+    /// 지도의 최대 줌을 넘지 않는다
+    @Test func doesNotExceedMaxZoom() {
+        #expect(LocationManager.ridingStartZoom(from: 20.5, maxZoom: 21) == 21)
+        #expect(LocationManager.ridingStartZoom(from: 21, maxZoom: 21) == 21)
     }
 
-    // MARK: - 한 번만 적용
+    /// 한 번에 너무 많이 당기면 다음 안내가 화면 밖으로 나간다
+    @Test func deltaIsModest() {
+        #expect(LocationManager.ridingStartZoomDelta <= 3)
+    }
+
+    // MARK: - 게이트
 
     /// 라이딩 한 번에 줌은 **한 번만** 걸린다.
     ///
-    /// 시작 경로가 여러 갈래다 — `flag` 전이(activateRidingLocationTracking),
-    /// 라이딩 시작 API(startRidingAPIProcess), 비정상 종료 복구(onAppear).
-    /// 정상 시작과 비정상 복구 모두 둘 이상이 연달아 돌기 때문에,
-    /// 호출부마다 줌을 넘기면 주행 중 화면 재진입에서도 다시 줌이 걸린다.
+    /// 시작 경로가 여러 갈래고 서로 연달아 돈다 — `flag` 전이, 라이딩 시작 API,
+    /// 비정상 종료 복구. 호출부마다 걸면 주행 중 화면 재진입에서도 다시 걸린다.
     @Test func zoomIsConsumedOnlyOncePerRiding() {
         let locationManager = makeLocatedManager()
 
-        #expect(locationManager.consumeRidingStartZoom() == LocationManager.ridingStartZoom)
-        #expect(locationManager.consumeRidingStartZoom() == nil, "두 번째부터는 현재 줌을 유지한다")
-        #expect(locationManager.consumeRidingStartZoom() == nil)
+        #expect(locationManager.consumeRidingStartZoom() == true)
+        #expect(locationManager.consumeRidingStartZoom() == false, "두 번째부터는 현재 줌 유지")
+        #expect(locationManager.consumeRidingStartZoom() == false)
     }
 
     /// 라이딩이 끝나면 다음 시작에 다시 걸린다
@@ -70,38 +78,31 @@ struct RidingStartZoomTests {
 
         locationManager.resetRidingStartZoom()
 
-        #expect(locationManager.consumeRidingStartZoom() == LocationManager.ridingStartZoom)
+        #expect(locationManager.consumeRidingStartZoom() == true)
     }
 
-    /// 지도를 밀어 추적이 꺼졌다 재개돼도 줌은 다시 걸리지 않는다.
-    /// `stopNavigationMode`는 주행 중에 수시로 불리므로 여기서 리셋하면 안 된다.
+    /// 지도를 밀어 추적이 꺼졌다 재개돼도 다시 걸리지 않는다.
+    /// `stopNavigationMode`는 주행 중 수시로 불리므로 여기서 리셋하면 안 된다.
     @Test func stoppingNavigationDoesNotRearmZoom() {
         let locationManager = makeLocatedManager()
         _ = locationManager.consumeRidingStartZoom()
 
         locationManager.stopNavigationMode()
 
-        #expect(locationManager.consumeRidingStartZoom() == nil,
+        #expect(locationManager.consumeRidingStartZoom() == false,
                 "추적을 껐다 켜는 것으로 줌이 다시 걸리면 주행 중 배율이 날아간다")
     }
 
-    // MARK: - 적용할 수 없으면 소비하지 않는다
-
-    /// **위치가 없으면 카메라를 옮길 수 없으므로 줌도 소비하면 안 된다.**
-    ///
-    /// `startNavigationMode`는 `currentLocation`이 있을 때만 카메라를 옮긴다.
-    /// 그런데 게이트가 호출부에서 먼저 열리면, GPS 첫 측위 전에 시작 경로가 돌 때
-    /// 줌이 적용되지 않은 채 소비돼 영영 걸리지 않는다.
-    /// 시작 경로가 셋이라 그중 하나만 위치 없이 먼저 돌아도 잃는다.
-    @Test func zoomIsNotConsumedWithoutLocation() {
+    /// 위치가 없으면 카메라를 옮길 수 없으므로 게이트도 열지 않는다.
+    /// 열어버리면 줌이 적용되지 않은 채 소진돼 영영 걸리지 않는다.
+    @Test func gateStaysClosedWithoutLocation() {
         let locationManager = LocationManager()
 
         #expect(locationManager.currentLocation == nil, "전제: 아직 측위 전")
-        #expect(locationManager.consumeRidingStartZoom() == nil, "적용할 수 없으면 소비도 안 한다")
+        #expect(locationManager.consumeRidingStartZoom() == false)
 
         locationManager.currentLocation = CLLocation(latitude: 36.0, longitude: 129.0)
 
-        #expect(locationManager.consumeRidingStartZoom() == LocationManager.ridingStartZoom,
-                "측위 후 첫 시작에 줌이 걸려야 한다")
+        #expect(locationManager.consumeRidingStartZoom() == true, "측위 후 첫 시작에 걸린다")
     }
 }

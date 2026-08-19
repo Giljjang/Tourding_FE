@@ -251,42 +251,36 @@ final class LocationManager: NSObject, ObservableObject {
         case resumeTracking
     }
 
-    /// 라이딩 시작 시 맞추는 줌 레벨.
+    /// 라이딩 시작 시 **현재 줌에서** 얼마나 더 당길지.
     ///
-    /// 편집 모드는 경로 전체를 보느라 멀리 있는데, 라이딩 중에는 앞의 길이 보여야 한다.
-    /// NMap 줌은 0(세계)~21(건물) 범위이고 이 값은 거리 수준이다.
-    /// 더 당기거나 물리려면 이 값만 바꾸면 된다.
-    static let ridingStartZoom: Double = 16.5
+    /// 절대 줌으로 두면 안 된다 — 처음에 16.5를 넣었다가 화면이 그대로였다.
+    /// 편집 화면이 이미 건물 외곽선·지번이 보이는 수준(17~18)이라 16.5는 축소 방향이었다.
+    /// 상대값이면 기준이 뭐든 반드시 확대된다.
+    static let ridingStartZoomDelta: Double = 1.5
 
-    /// 이 진입에서 줌을 맞출 것인가. `nil`이면 현재 줌을 유지한다.
-    ///
-    /// **추적 재개에는 맞추지 않는다.** 주행 중에 일어나는 일이라
-    /// 사용자가 조정해 둔 배율을 덮으면 안 된다.
-    static func zoomLevel(for start: NavigationStart) -> Double? {
-        switch start {
-        case .ridingStart:    return ridingStartZoom
-        case .resumeTracking: return nil
-        }
+    /// 시작 줌을 계산한다. 지도의 최대 줌을 넘지 않는다.
+    static func ridingStartZoom(from current: Double, maxZoom: Double) -> Double {
+        min(current + ridingStartZoomDelta, maxZoom)
     }
 
     /// 이번 라이딩에서 시작 줌을 이미 적용했는가.
     private var didApplyRidingStartZoom = false
 
-    /// 라이딩 시작 줌을 **한 번만** 내준다. 두 번째부터는 `nil`(현재 줌 유지).
+    /// 이번 호출에서 시작 줌을 걸어야 하는가. 라이딩당 **한 번만** true를 준다.
     ///
-    /// 시작 경로가 여러 갈래이고 서로 연달아 돈다 —
+    /// 시작 경로가 여러 갈래고 서로 연달아 돈다 —
     /// `flag` 전이(`activateRidingLocationTracking`), 라이딩 시작 API(`startRidingAPIProcess`),
     /// 비정상 종료 복구(`onAppear` → `setupRidingNavigationOnAppear`).
-    /// 호출부마다 줌을 넘기면 주행 중 화면에 다시 들어왔을 때도 줌이 걸려
-    /// 사용자가 맞춰 둔 배율이 날아간다. 게이트를 여기 한 곳에 둔다.
-    func consumeRidingStartZoom() -> Double? {
-        // 위치가 없으면 startNavigationMode가 카메라를 옮기지 않는다.
-        // 그때 소비하면 줌이 적용되지 않은 채 게이트만 닫혀 영영 걸리지 않는다.
-        guard currentLocation != nil else { return nil }
-        guard !didApplyRidingStartZoom else { return nil }
+    /// 호출부마다 걸면 주행 중 화면에 다시 들어왔을 때도 걸려 배율이 날아간다.
+    ///
+    /// 위치가 없으면 열지 않는다 — `startNavigationMode`가 카메라를 못 옮기는데
+    /// 게이트만 닫히면 줌이 영영 걸리지 않는다.
+    func consumeRidingStartZoom() -> Bool {
+        guard currentLocation != nil else { return false }
+        guard !didApplyRidingStartZoom else { return false }
 
         didApplyRidingStartZoom = true
-        return Self.zoomLevel(for: .ridingStart)
+        return true
     }
 
     /// 다음 라이딩 시작에 줌이 다시 걸리도록 되돌린다.
@@ -300,7 +294,7 @@ final class LocationManager: NSObject, ObservableObject {
     // MARK: - Navigation Methods
     
     // 네비게이션 모드 시작
-    func startNavigationMode(on mapView: NMFMapView, zoomTo zoom: Double? = nil) {
+    func startNavigationMode(on mapView: NMFMapView, start: NavigationStart = .resumeTracking) {
         isNavigationMode = true
         isLocationTrackingEnabled = true
         // print("🧭 네비게이션 모드 시작 - 위치추적 on")
@@ -321,13 +315,22 @@ final class LocationManager: NSObject, ObservableObject {
             // 3m를 움직이기 전까지 마커가 보이지 않는다.
             showUserLocationOverlay(on: mapView, at: coordinate)
 
-            // 좌표·줌·헤딩을 **한 번에** 맞춘다.
-            // 따로 옮기면 뒤이은 헤딩 갱신이 애니메이션 중인 카메라를 읽어
-            // 방금 지정한 줌을 이전 값으로 되돌린다.
+            // 줌 게이트는 **여기서** 연다. 호출부에서 열면 위치가 없어 카메라를 못 옮기는
+            // 경우에도 소진돼 영영 걸리지 않는다.
             let current = mapView.cameraPosition
+            let shouldZoom = start == .ridingStart && consumeRidingStartZoom()
+            let targetZoom = shouldZoom
+                ? Self.ridingStartZoom(from: current.zoom, maxZoom: mapView.maxZoomLevel)
+                : current.zoom
+
+            if shouldZoom {
+                print("🔍 라이딩 시작 줌: \(current.zoom) → \(targetZoom)")
+            }
+
+            // 좌표·줌·헤딩을 **한 번에** 맞춘다.
             let position = NMFCameraPosition(
                 coordinate,
-                zoom: zoom ?? current.zoom,
+                zoom: targetZoom,
                 tilt: current.tilt,
                 heading: HeadingResolver.cameraHeading(from: currentHeading)
             )
@@ -338,7 +341,7 @@ final class LocationManager: NSObject, ObservableObject {
             // 애니메이션 중에 헤딩 갱신(headingFilter 1도, 0.5초 스로틀)이 끼어들면
             // updateCameraWithHeading이 `mapView.cameraPosition.zoom`으로 **중간 줌**을 읽어
             // 그 값으로 카메라를 다시 세팅한다 — 줌이 목표에 닿기 전에 멈춘다.
-            cameraUpdate.animation = zoom == nil ? .easeIn : .none
+            cameraUpdate.animation = shouldZoom ? .none : .easeIn
             mapView.moveCamera(cameraUpdate)
         }
     }
