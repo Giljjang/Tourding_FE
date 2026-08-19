@@ -295,10 +295,7 @@ struct SheetContentView: View {
     private func handleSpotTap(item: LocationNameModel) {
         // 상세보기 뷰로 이동
         let req = ReqDetailModel(contentid: item.contentId, contenttypeid: item.contentTypeId)
-
-        // 🔎 [Diag] 임시 진단 — 원인 확정 후 제거
-        print("🔎 [Diag/Push] from=RouteList name=\(item.name) contentid=\(req.contentid) contenttypeid=\(req.contenttypeid)")
-
+        
         navigationManager.push(.DetailSpotView(isSpotAdd: false, detailId: req))
     }
     
