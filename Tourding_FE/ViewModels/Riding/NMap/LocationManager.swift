@@ -201,21 +201,28 @@ final class LocationManager: NSObject, ObservableObject {
     }
     
     // 현재 위치로 카메라 이동
+    /// 사용자 위치 오버레이를 **보이게** 하고 위치·아이콘·방향을 맞춘다.
+    ///
+    /// `NMFLocationOverlay`는 기본이 숨김이라 이걸 부르기 전에는 마커가 그려지지 않는다.
+    /// 예전에는 이 코드가 `moveToCurrentLocation`(= "내 위치로 이동" 버튼) 안에만 있어서,
+    /// 버튼을 누르지 않고 라이딩을 시작하면 라이딩 중 위치 콜백이 올 때까지 마커가 없었다.
+    /// `distanceFilter`가 3m라 정지 상태에서는 그 콜백이 오지 않아 계속 안 보였다.
+    func showUserLocationOverlay(on mapView: NMFMapView, at coordinate: NMGLatLng) {
+        let locationOverlay = mapView.locationOverlay
+        locationOverlay.hidden = false
+        locationOverlay.location = coordinate
+        locationOverlay.icon = MarkerIcons.userMarker
+
+        updateLocationOverlayHeading(on: mapView)
+    }
+
     func moveToCurrentLocation(on mapView: NMFMapView) {
         guard let location = locationManager.location else { return }
         
         let lat = location.coordinate.latitude
         let lng = location.coordinate.longitude
-        
-        let locationOverlay = mapView.locationOverlay
-        locationOverlay.hidden = false
-        locationOverlay.location = NMGLatLng(lat: lat, lng: lng)
-        
-        // 사용자 위치 마커 설정
-        locationOverlay.icon = MarkerIcons.userMarker
-        
-        // 방향 설정
-        updateLocationOverlayHeading(on: mapView)
+
+        showUserLocationOverlay(on: mapView, at: NMGLatLng(lat: lat, lng: lng))
         
         // 카메라 중심점을 위쪽으로 조정
         let cameraUpdate = NMFCameraUpdate(scrollTo: NMGLatLng(lat: lat, lng: lng))
@@ -255,6 +262,11 @@ final class LocationManager: NSObject, ObservableObject {
         // 현재 위치로 카메라 이동하고 헤딩 적용 (네비게이션 모드에서는 중앙에 위치)
         if let location = currentLocation {
             let coordinate = NMGLatLng(lat: location.coordinate.latitude, lng: location.coordinate.longitude)
+
+            // 마커를 여기서 켠다. 안 켜면 "내 위치로 이동"을 누르지 않고 라이딩을 시작했을 때
+            // 3m를 움직이기 전까지 마커가 보이지 않는다.
+            showUserLocationOverlay(on: mapView, at: coordinate)
+
             let cameraUpdate = NMFCameraUpdate(scrollTo: coordinate)
             cameraUpdate.pivot = CGPoint(x: 0.5, y: cameraPivotY)
             cameraUpdate.animation = .easeIn

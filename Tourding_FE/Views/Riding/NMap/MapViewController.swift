@@ -216,13 +216,12 @@ final class MapViewController: UIViewController {
         let lat = location.coordinate.latitude
         let lng = location.coordinate.longitude
         
-        let locationOverlay = mapView.mapView.locationOverlay
-        locationOverlay.hidden = false
-        locationOverlay.location = NMGLatLng(lat: lat, lng: lng)
-        
-        // 사용자 위치 마커를 항상 userMarker으로 설정
-        locationOverlay.icon = MarkerIcons.userMarker
-        
+        // 오버레이 표시는 LocationManager 한 곳에서 한다 — 여기서 복제하지 말 것
+        userLocationManager?.showUserLocationOverlay(
+            on: mapView.mapView,
+            at: NMGLatLng(lat: lat, lng: lng)
+        )
+
         print("📍 MapViewController: 사용자 위치 마커 업데이트 완료 - \(lat), \(lng)")
         
         // 추적 중일 때만 카메라가 따라간다.
