@@ -280,6 +280,11 @@ xcodebuild test -scheme Tourding_FE \
 
 **새 fixture 추가 시**: JSON 파일 + `FixtureLoaderTests` 디코딩 검증
 
+**커밋 메시지에 `Co-Authored-By: Claude ...` 트레일러를 넣지 마라.**
+GitHub이 이걸 공동 작성자로 해석해 저장소 기여도에 표시한다.
+이미 main에 들어간 14개(`bfb8cf8`~`9505123`)는 협업 중이라 되돌리지 않기로 했고,
+앞으로 만드는 커밋에만 적용한다.
+
 ---
 
 ## Cursor Rules
