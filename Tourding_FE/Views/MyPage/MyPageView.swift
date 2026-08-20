@@ -28,7 +28,14 @@ struct MyPageView: View {
                 headerText
                 headerView
                     .padding(.bottom, 16)
-                
+
+                CustomButtonView.withNavigation(
+                    title: "라이딩 스타일 설정",
+                    destination: .RidingStyleSettingsView,
+                    navigationManager: navigationManager
+                )
+                .padding(.bottom, 6)
+
                 CustomButtonView.withNavigation(
                     title: "개인정보처리방침",
                     destination: .ServiceView,
@@ -100,7 +107,21 @@ struct MyPageView: View {
                 }
                 Spacer()
             } // : VStack
+
+            if modalManager.isToastMessage {
+                ToastMessageView()
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .offset(y: 243)
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            withAnimation(.easeInOut) {
+                                modalManager.isToastMessage = false
+                            }
+                        }
+                    }
+            } // : if modalManager.isToastMessage
         }
+        .animation(.easeInOut, value: modalManager.isToastMessage)
         .background(Color.customwhite)
     }
     
