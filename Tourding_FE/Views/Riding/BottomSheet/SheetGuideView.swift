@@ -84,7 +84,7 @@ struct SheetGuideView: View {
                         wasLastRunNormal = true // 정상 종료됐을 때 기록
                         print("wasLastRunNormal: \(wasLastRunNormal)")
                         navigationManager.popToRoot()
-                        modalManager.isToastMessage = true
+                        modalManager.showToast(message: "라이딩이 종료되었어요")
                     }
                 )
             }){

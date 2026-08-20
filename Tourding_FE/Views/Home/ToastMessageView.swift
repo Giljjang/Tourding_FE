@@ -8,15 +8,17 @@
 import SwiftUI
 
 struct ToastMessageView: View {
+    @EnvironmentObject var modalManager: ModalManager
+
     var body: some View {
         HStack(spacing: 8){
             Image("toast")
                 .padding(.leading, 20)
-            
-            Text("라이딩이 종료되었어요")
+
+            Text(modalManager.toastMessage)
                 .foregroundColor(.white)
                 .font(.pretendardMedium(size: 16))
-            
+
             Spacer()
         } // : HStack
         .frame(height: 50)
@@ -28,4 +30,5 @@ struct ToastMessageView: View {
 
 #Preview {
     ToastMessageView()
+        .environmentObject(ModalManager())
 }

@@ -69,12 +69,24 @@ struct Tourding_FEApp: App {
                 NavigationStack(path: $navigationManager.path) {
                     // 🎯 조건문을 NavigationStack 내부로 이동
                     if loginViewModel.isLoggedIn {
-                        TabContentView(viewModel: viewModels)
-                            .navigationDestination(for: ViewType.self) { path in
+                        if !loginViewModel.hasCompletedOnboarding {
+                            // 최초 회원가입 후 첫 진입에서만 노출, 완료 시 다시 뜨지 않음
+                            OnboardingSurveyView(onComplete: {
+                                loginViewModel.completeOnboarding()
+                            })
+                        } else {
+                            TabContentView(viewModel: viewModels)
+                                .navigationDestination(for: ViewType.self) { path in
                                 switch path {
                                     // case 추가해서 탭뷰 제외 뷰 넣으면 됨
                                 case .LoginView:
                                     LoginView()
+                                case .OnboardingSurveyView:
+                                    OnboardingSurveyView(onComplete: {
+                                        navigationManager.pop()
+                                    })
+                                case .RidingStyleSettingsView:
+                                    RidingStyleSettingsView()
                                 case .ServiceView:
                                     ServiceView()
                                 case .RidingView(let isNotNormal, let isStart, let routeSource):
@@ -110,6 +122,7 @@ struct Tourding_FEApp: App {
                                     EmptyView()
                                 }
                             } // : navigationDestination
+                        } // : hasCompletedOnboarding else
                     } else {
                         LoginView()
                     }

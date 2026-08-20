@@ -35,3 +35,40 @@ struct UserInfo: Codable {
     let email: String
     let loginProvider: String // "kakao" 또는 "apple"
 }
+
+// MARK: - 라이딩 프로필(온보딩 설문) 요청/응답 모델
+// PUT /user/{id}/riding-profile
+struct RouteOptionDto: Codable {
+    let cyclingProfile: String
+    let fastRoute: Bool
+    let avoidSteps: Bool
+    let avoidFords: Bool
+    let skillLevel: String
+
+    init(cyclingProfile: String, fastRoute: Bool, avoidSteps: Bool, avoidFords: Bool, skillLevel: String) {
+        self.cyclingProfile = cyclingProfile
+        self.fastRoute = fastRoute
+        self.avoidSteps = avoidSteps
+        self.avoidFords = avoidFords
+        self.skillLevel = skillLevel
+    }
+
+    init(bikeType: BikeType, skillLevel: RidingSkillLevel, fastRoute: Bool, avoidSteps: Bool, avoidFords: Bool) {
+        self.init(
+            cyclingProfile: bikeType.apiValue,
+            fastRoute: fastRoute,
+            avoidSteps: avoidSteps,
+            avoidFords: avoidFords,
+            skillLevel: skillLevel.apiValue
+        )
+    }
+}
+
+struct UpdateRidingProfileRequest: Codable {
+    let routeOption: RouteOptionDto
+}
+
+struct UserRidingProfileResponse: Codable {
+    let userId: Int
+    let routeOption: RouteOptionDto
+}

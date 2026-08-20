@@ -49,6 +49,8 @@ extension Color {
 
     static let main = Color(hex: "#00E1FF")       // 밝은 청록색
     static let mainCalm = Color(hex: "#00D7F3")   // 차분한 청록색
+    static let mainLight = Color(hex: "#ECFDFF")  // 옅은 청록색 (선택된 카드 배경)
+    static let mainDark = Color(hex: "#00B0C8")   // 진한 청록색 (선택된 pill 텍스트)
     
     static let warningRed = Color(hex: "FF4949")
 }
