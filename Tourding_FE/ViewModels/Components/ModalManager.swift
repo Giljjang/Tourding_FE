@@ -33,6 +33,12 @@ final class ModalManager: ObservableObject {
     
     // 토스트 메시지
     @Published var isToastMessage: Bool = false
+    @Published var toastMessage: String = "라이딩이 종료되었어요"
+
+    func showToast(message: String) {
+        self.toastMessage = message
+        self.isToastMessage = true
+    }
     
     func showModal(
         title: String,

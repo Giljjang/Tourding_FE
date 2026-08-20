@@ -46,11 +46,11 @@ final class OnboardingSurveyViewModel: ObservableObject {
         }
 
         let routeOption = RouteOptionDto(
-            cyclingProfile: bikeType.apiValue,
+            bikeType: bikeType,
+            skillLevel: skillLevel,
             fastRoute: isFastCourseEnabled,
             avoidSteps: isStairAvoidanceEnabled,
-            avoidFords: isWaterAvoidanceEnabled,
-            skillLevel: skillLevel.apiValue
+            avoidFords: isWaterAvoidanceEnabled
         )
 
         isSubmitting = true

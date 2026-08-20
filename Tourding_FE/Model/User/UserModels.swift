@@ -44,6 +44,24 @@ struct RouteOptionDto: Codable {
     let avoidSteps: Bool
     let avoidFords: Bool
     let skillLevel: String
+
+    init(cyclingProfile: String, fastRoute: Bool, avoidSteps: Bool, avoidFords: Bool, skillLevel: String) {
+        self.cyclingProfile = cyclingProfile
+        self.fastRoute = fastRoute
+        self.avoidSteps = avoidSteps
+        self.avoidFords = avoidFords
+        self.skillLevel = skillLevel
+    }
+
+    init(bikeType: BikeType, skillLevel: RidingSkillLevel, fastRoute: Bool, avoidSteps: Bool, avoidFords: Bool) {
+        self.init(
+            cyclingProfile: bikeType.apiValue,
+            fastRoute: fastRoute,
+            avoidSteps: avoidSteps,
+            avoidFords: avoidFords,
+            skillLevel: skillLevel.apiValue
+        )
+    }
 }
 
 struct UpdateRidingProfileRequest: Codable {
