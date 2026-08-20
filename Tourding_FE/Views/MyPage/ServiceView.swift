@@ -27,7 +27,7 @@ struct ServiceView: View {
                     Spacer()
                 }
 
-                Text("개인정보처리방침")
+                Text("이용약관")
                     .font(.pretendardMedium(size: 18))
                     .foregroundColor(Color.gray5)
             }

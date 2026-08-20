@@ -35,9 +35,15 @@ struct MyPageView: View {
                     navigationManager: navigationManager
                 )
                 .padding(.bottom, 6)
+                
+                Divider()
+                    .padding(.leading, 16)
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 6)
+                    .foregroundColor(Color.gray1)
 
                 CustomButtonView.withNavigation(
-                    title: "개인정보처리방침",
+                    title: "이용약관",
                     destination: .ServiceView,
                     navigationManager: navigationManager
                 )
