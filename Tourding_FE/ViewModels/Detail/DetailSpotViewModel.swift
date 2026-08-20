@@ -15,15 +15,19 @@ final class DetailSpotViewModel: ObservableObject {
     @Published var currentPosition: DetailBottomSheetPosition = .standard
     
     @Published var routeLocation: [LocationNameModel] = []
+    @Published var errorMessage: String? = nil
     
     private let tourRepository: TourRepositoryProtocol
     private let routeRepository: RouteRepositoryProtocol
-    
+    private let userSession: UserSessionProviding
+
     init(
         tourRepository: TourRepositoryProtocol,
-        routeRepository: RouteRepositoryProtocol) {
+        routeRepository: RouteRepositoryProtocol,
+        userSession: UserSessionProviding) {
             self.tourRepository = tourRepository
             self.routeRepository = routeRepository
+            self.userSession = userSession
     }
     
     //MARK: - Utils
@@ -109,11 +113,9 @@ final class DetailSpotViewModel: ObservableObject {
             
             print("ReqDetailModel: \(requestBody)")
             let response = try await tourRepository.getTourAreaDetail(requestBody: requestBody)
-            
-//            print("Detail: \(response)")
-            
+
             detailData = response
-            
+
         } catch {
             print("GET ERROR: /tour/area-detail \(error)")
         }
@@ -122,14 +124,15 @@ final class DetailSpotViewModel: ObservableObject {
     
     @MainActor
     func getRouteLocationAPI() async {
-        
+
         isLoading = true
-        
-        guard let userId = KeychainHelper.loadUid()  else {
+        defer { isLoading = false }
+
+        guard let userId = userSession.userId else {
             print("⏭️ postRouteAPI skipped: userId is nil")
             return
         }
-        
+
         do {
             let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: false)
             routeLocation = response
@@ -139,26 +142,45 @@ final class DetailSpotViewModel: ObservableObject {
         } catch {
             print("GET ERROR: /routes/location-name \(error)")
         }
-        isLoading = false
     }
     
+    /// 스팟 추가 진입점.
+    ///
+    /// onAppear는 상세 정보를 먼저 받고 getRouteLocationAPI를 나중에 부른다.
+    /// 상세가 그려진 순간 추가 버튼을 누를 수 있으므로 그때 경로가 비어 있을 수 있다.
+    /// 그대로 postRouteAPI에 넘기면 guard에 걸려 POST가 나가지 않는데도 화면은 넘어간다.
+    @MainActor
+    func addSpotToRoute(_ spot: SpotData) async {
+        if routeLocation.isEmpty {
+            await getRouteLocationAPI()
+        }
+
+        guard !routeLocation.isEmpty else {
+            errorMessage = "경로 정보를 불러오지 못해 스팟을 추가하지 못했습니다."
+            print("❌ 스팟 추가 중단 - 경로 데이터 없음")
+            return
+        }
+
+        await postRouteAPI(originalData: routeLocation, updatedData: spot)
+    }
+
     @MainActor
     func postRouteAPI(originalData: [LocationNameModel], updatedData: SpotData) async {
-        
+
         isLoading = true
-        
-        guard let userId = KeychainHelper.loadUid()  else {
+        defer { isLoading = false }
+
+        guard let userId = userSession.userId else {
             print("⏭️ postRouteAPI skipped: userId is nil")
             return
         }
-        
+
         guard let start = originalData.first,
               let end = originalData.last else {
             print("❌ originalData가 비어있거나 start/end가 없음")
-            isLoading = false
             return
         }
-        
+
         print("🔵 start: \(start), end: \(end)")
 
         // wayPoints (0, last 제외 + updatedData 마지막에 추가)
@@ -176,14 +198,14 @@ final class DetailSpotViewModel: ObservableObject {
         }
         let locateName = locateNames.joined(separator: ",")
 
-        // typeCode (0번, 마지막 제외 + updatedData.typeCode를 마지막 앞에 삽입)
-        var typeCodes = originalData.dropFirst().dropLast().map { $0.typeCode }
-        if typeCodes.count >= 1 {
-            typeCodes.insert(updatedData.typeCode, at: typeCodes.count - 1)
-        } else {
-            typeCodes.append(updatedData.typeCode)
-        }
-        let typeCode = typeCodes.joined(separator: ",")
+        // typeCode (0, last 제외 + updatedData 마지막에 추가)
+        //
+        // wayPoints·contentId와 같은 "끝에 붙이기" 규칙이어야 한다.
+        // locateName은 도착지가 배열에 남아 있어 count-1이 "도착지 앞"이지만,
+        // 여기는 dropLast()로 도착지를 이미 뺐으므로 count-1이 "마지막 경유지 앞"이 되어
+        // 새 스팟과 마지막 경유지의 카테고리가 서로 뒤바뀐다.
+        let typeCodes = originalData.dropFirst().dropLast().map { $0.typeCode }
+        let typeCode = (typeCodes + [updatedData.typeCode]).joined(separator: ",")
         
         // contentId (0, last 제외 + updatedData 마지막에 추가)
         let contentIds = originalData.dropFirst().dropLast()
@@ -194,11 +216,12 @@ final class DetailSpotViewModel: ObservableObject {
         let contents = (contentIdList + [updatedContentId]).joined(separator: ",")
         
         // contentTypeId (0, last 제외 + updatedData 마지막에 추가)
-        let contentTypeId = originalData.dropFirst().dropLast()
-        let contentTypeIdList = contentTypeId.map {
-            "\($0.contentId)"
+        // 관광타입(12/14/32/39…)이 들어가는 자리다. contentId를 넣으면 안 된다.
+        let contentTypeIds = originalData.dropFirst().dropLast()
+        let contentTypeIdList = contentTypeIds.map {
+            "\($0.contentTypeId)"
         }
-        let updatedContentTypeId = "\(updatedData.contentid)"
+        let updatedContentTypeId = "\(updatedData.contenttypeid)"
         let contentTypes = (contentTypeIdList + [updatedContentTypeId]).joined(separator: ",")
 
         let requestBody = RequestRouteModel(
@@ -215,13 +238,10 @@ final class DetailSpotViewModel: ObservableObject {
         
         do {
             print("🔵 API 호출 시작")
-            let _: () = try await routeRepository.postRoutes(requestBody: requestBody)
+            try await routeRepository.postRoutes(requestBody: requestBody)
             print("🔵 API 호출 성공")
-
-            isLoading = false
         } catch {
             print("❌ POST ERROR: /routes \(error)")
-            isLoading = false
         }
     }
 }

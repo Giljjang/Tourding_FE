@@ -45,3 +45,6 @@ private var header: some View { ... }
 - View에 API 호출·복잡한 오케스트레이션 추가
 - 관련 없는 파일 포맷팅 변경
 - `print` 남발 (향후 `AppLogger` 도입 예정)
+- **`isLoading` 해제를 `do` 블록 안에 두는 것** — 실패하면 로딩 오버레이가 영구히 남는다.
+  `isLoading = true` 직후 `defer { isLoading = false }`로 짝을 맞출 것.
+  (가드에 걸려 요청이 나가지 않는 경로에서는 애초에 켜지 않는다)

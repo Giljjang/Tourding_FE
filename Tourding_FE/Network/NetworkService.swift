@@ -9,6 +9,18 @@ import Foundation
 
 enum NetworkService {
 
+    /// 타임아웃을 건 전용 세션.
+    ///
+    /// URLSession.shared는 요청 60초·리소스 7일이 기본이다. 라이딩 시작 오버레이가
+    /// 터치를 흡수하는 동안 재시도까지 겹치면 화면이 수 분간 잠긴다.
+    /// 20초 근거: 가장 무거운 /routes(80KB대, ORS 전체 재계산)가 실측 1~3초에 끝난다.
+    static let session: URLSession = {
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 20
+        configuration.timeoutIntervalForResource = 60
+        return URLSession(configuration: configuration)
+    }()
+
     // #region agent log
     private static var searchLocationRequestSeq = 0
     private static let searchLocationSeqLock = NSLock()
@@ -164,11 +176,17 @@ enum NetworkService {
             }
             
             // 네트워크 요청 실행
+            //
+            // URL·본문은 릴리즈에서 찍지 않는다. URL 쿼리에 authorizationCode가 실리는
+            // 엔드포인트가 있고(`revokeUser`), 본문에는 userId·좌표가 그대로 들어간다.
+            // 릴리즈 콘솔은 sysdiagnose로 빠져나간다.
+            #if DEBUG
             print("🔵 네트워크 요청 시작: \(request.url?.absoluteString ?? "URL 없음")")
             print("🔵 HTTP Method: \(request.httpMethod ?? "GET")")
             if let body = request.httpBody {
                 print("🔵 Request Body: \(String(data: body, encoding: .utf8) ?? "디코딩 실패")")
             }
+            #endif
 
             // #region agent log
             let debugSeq = request.url?.absoluteString.contains("search-location") == true
@@ -189,7 +207,7 @@ enum NetworkService {
             let data: Data
             let response: URLResponse
             
-           (data, response) = try await URLSession.shared.data(for: request)
+           (data, response) = try await session.data(for: request)
            
            print("🔵 네트워크 응답 받음")
            if let httpResponse = response as? HTTPURLResponse {
@@ -211,13 +229,16 @@ enum NetworkService {
                 )
             }
             // #endregion
-//           print("🔵 Response Data: \(String(data: data, encoding: .utf8) ?? "디코딩 실패")")
-            
             if let httpResponse = response as? HTTPURLResponse,
-               let defindedErrorCode = NetworkErrorCode(rawValue: httpResponse.statusCode) {
+               let statusError = HTTPStatusValidator.error(for: httpResponse.statusCode, body: data) {
+                // 본문에 서버가 실어 보낸 사용자 데이터가 들어올 수 있다.
+                // 상태 코드만 릴리즈에 남기고 본문은 DEBUG에서만 본다.
+                print("HTTP \(httpResponse.statusCode) 실패")
+                #if DEBUG
                 print("HTTP \(httpResponse.statusCode) body:",
                       String(data: data, encoding: .utf8) ?? "<no body>")
-                throw ErrorType.serverDefinedError(defindedErrorCode)
+                #endif
+                throw statusError
             }
             
             do {
@@ -226,10 +247,46 @@ enum NetworkService {
                 return decodedResponse
             } catch {
                 print("Decoding error: \(error)")
+                #if DEBUG
                 print("Response data: \(String(data: data, encoding: .utf8) ?? "Unable to convert to string")")
+                #endif
                 throw ErrorType.decodingFailure(underlying: error)
             }
         }
+}
+
+//MARK: - HTTP 상태 판정
+
+/// 서버가 4xx 본문에 실어 보내는 에러. AI 엔드포인트가 이 형태를 쓴다.
+/// 예: {"code":"AI_STT_FAILED","message":"음성을 인식하지 못했습니다."}
+struct ServerErrorBody: Decodable {
+    let code: String
+    let message: String
+}
+
+/// 상태코드 → 에러 판정. URLSession 없이 테스트할 수 있도록 순수 함수로 분리한다.
+enum HTTPStatusValidator {
+    static func error(for statusCode: Int, body: Data? = nil) -> ErrorType? {
+        if (200..<300).contains(statusCode) { return nil }
+
+        // 서버가 본문에 code/message를 실어 보냈으면 그걸 쓴다.
+        // AI 엔드포인트는 이 형태로 실패 사유를 구분해준다
+        // (AI_STT_FAILED / AI_UNSUPPORTED_REQUEST / ROUTE_SUMMARY_NOT_FOUND …).
+        // 형태가 다르면(스프링 기본 에러 본문 등) 아래 기존 판정으로 떨어진다.
+        if let body,
+           let parsed = try? JSONDecoder().decode(ServerErrorBody.self, from: body) {
+            return .serverError(code: parsed.code, message: parsed.message, statusCode: statusCode)
+        }
+
+        // 사용자 문구가 정의된 코드는 그대로 보존한다
+        if let known = NetworkErrorCode(rawValue: statusCode) {
+            return .serverDefinedError(known)
+        }
+
+        // 목록에 없는 코드(429·504 등)를 통과시키면 본문 디코딩으로 흘러가
+        // decodingFailure로 둔갑한다. 코드를 그대로 실어 올린다.
+        return .invalidResponse(statusCode: statusCode)
+    }
 }
 
 //MARK: - Error 처리
@@ -269,13 +326,35 @@ enum NetworkErrorCode: Int {
 }
 
 enum ErrorType: Error {
+    /// 다시 걸면 될 수 있는 실패인가.
+    ///
+    /// 이 서버의 500은 결정적이다 — 실측상 /routes/path 500이 3회 연속 같은 답을 받았다.
+    /// 재시도는 낭비이고, 이미 무너진 서버를 더 밀어붙인다.
+    var isRetryable: Bool {
+        switch self {
+        case .networkFailure:
+            return true
+        case .serverDefinedError(let code):
+            return code == .serviceUnavailable          // 503만
+        case .invalidResponse(let statusCode):
+            return statusCode == 408 || statusCode == 429
+        case .serverError(_, _, let statusCode):
+            // 본문이 있어도 재시도 여부는 상태코드가 정한다
+            return statusCode == 408 || statusCode == 429 || statusCode == 503
+        case .invalidURL, .decodingFailure, .unknown:
+            return false
+        }
+    }
+
     case invalidURL
     case networkFailure(underlying: Error)
     case invalidResponse(statusCode: Int)
     case decodingFailure(underlying: Error)
     case unknown(underlying: Error)
     case serverDefinedError(NetworkErrorCode)
-    
+    /// 서버가 본문에 code/message를 실어 보낸 에러 (AI 엔드포인트 등)
+    case serverError(code: String, message: String, statusCode: Int)
+
     var localizedDescription: String {
         switch self {
         case .invalidURL:
@@ -290,6 +369,8 @@ enum ErrorType: Error {
             return "An unknown error occurred: \(err.localizedDescription)"
         case .serverDefinedError(let code):
             return code.showErrorDescription
+        case .serverError(_, let message, _):
+            return message
         }
     }
 }
@@ -346,14 +427,14 @@ extension NetworkService {
         }
         
         // downloadTask 실행
-        let (tempURL, response) = try await URLSession.shared.download(for: request)
+        let (tempURL, response) = try await session.download(for: request)
         
         // HTTP 상태 코드 체크
         if let httpResponse = response as? HTTPURLResponse {
             print("🔹 HTTP Status Code: \(httpResponse.statusCode)")
             
-            if let definedError = NetworkErrorCode(rawValue: httpResponse.statusCode) {
-                throw ErrorType.serverDefinedError(definedError)
+            if let statusError = HTTPStatusValidator.error(for: httpResponse.statusCode) {
+                throw statusError
             }
         }
         

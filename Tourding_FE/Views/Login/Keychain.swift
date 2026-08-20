@@ -12,16 +12,44 @@ import KakaoSDKUser
 import KakaoSDKAuth
 
 struct KeychainHelper {
-    static func save(key: String, value: String) {
-        if let data = value.data(using: .utf8) {
-            let query: [String: Any] = [
-                kSecClass as String: kSecClassGenericPassword,
-                kSecAttrAccount as String: key,
-                kSecValueData as String: data
-            ]
-            SecItemDelete(query as CFDictionary)
-            SecItemAdd(query as CFDictionary, nil)
-        }
+    /// 항목이 다른 기기로 복원되지 않도록 하는 접근 속성.
+    /// `ThisDeviceOnly`가 없으면 암호화 백업을 통해 토큰이 다른 기기에서 되살아난다.
+    private static let accessibility = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+
+    private static func accountQuery(_ account: String) -> [String: Any] {
+        [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: account
+        ]
+    }
+
+    @discardableResult
+    private static func store(_ value: String, forAccount account: String) -> OSStatus {
+        guard let data = value.data(using: .utf8) else { return errSecParam }
+
+        let query = accountQuery(account)
+        SecItemDelete(query as CFDictionary)
+
+        var addQuery = query
+        addQuery[kSecValueData as String] = data
+        addQuery[kSecAttrAccessible as String] = accessibility
+
+        return SecItemAdd(addQuery as CFDictionary, nil)
+    }
+
+    @discardableResult
+    static func save(key: String, value: String) -> OSStatus {
+        store(value, forAccount: key)
+    }
+
+    /// 로그아웃 시 지워야 하는 세션 항목 일체.
+    /// 애플 표시용 이름·이메일은 최초 인증 때만 받을 수 있으므로 보존한다.
+    static func clearSession() {
+        clearAllTokens()
+        deleteUid()
+        delete(key: "appleUserId")
+        delete(key: "appleAuthorizationCode")
+        delete(key: "loginProvider")
     }
 
     static func load(key: String) -> String? {
@@ -56,17 +84,9 @@ struct KeychainHelper {
     
     //MARK: - 이건 로컬 서버에서 받아온 uid 저장용
     
-    static func saveUid(key: Int) {
-        let value = String(key) // Int → String 변환
-        if let data = value.data(using: .utf8) {
-            let query: [String: Any] = [
-                kSecClass as String: kSecClassGenericPassword,
-                kSecAttrAccount as String: "uid",   // 항상 고정된 이름
-                kSecValueData as String: data
-            ]
-            SecItemDelete(query as CFDictionary)
-            SecItemAdd(query as CFDictionary, nil)
-        }
+    @discardableResult
+    static func saveUid(key: Int) -> OSStatus {
+        store(String(key), forAccount: "uid")   // 항상 고정된 이름
     }
 
     static func loadUid() -> Int? {
@@ -143,7 +163,7 @@ func saveKakaoToken(token: OAuthToken) {
 
 func loadKakaoToken(completion: @escaping (Bool) -> Void) {
     if let accessToken = KeychainHelper.load(key: "accessToken") {
-        print("🔐 Loaded AccessToken: \(accessToken)")
+        print("🔐 AccessToken 로드됨")
         UserApi.shared.accessTokenInfo { tokenInfo, error in
             if let _ = tokenInfo {
                 print("✅ Token is valid. User is logged in.")

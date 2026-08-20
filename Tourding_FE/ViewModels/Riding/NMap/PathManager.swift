@@ -14,6 +14,10 @@ final class PathManager {
     private let pathOverlay = NMFPath()
     private let innerPathOverlay = NMFPath() // 안쪽 테두리용
     private var pathCoordinates: [NMGLatLng] = []
+
+    /// 마지막으로 `setCoordinates`에 들어온 **원본** 좌표.
+    /// `pathCoordinates`는 단순화된 결과라 입력과 직접 비교할 수 없다.
+    private var lastRequestedCoordinates: [NMGLatLng] = []
     private weak var mapView: NMFMapView?
     
     // MARK: - Initialization
@@ -34,6 +38,7 @@ final class PathManager {
         innerPathOverlay.mapView = nil
         
         // 좌표 배열 정리
+        lastRequestedCoordinates.removeAll()
         pathCoordinates.removeAll()
         
         // 지도 뷰 참조 해제 (weak 참조이므로 nil 할당 가능)
@@ -54,7 +59,7 @@ final class PathManager {
         
         // 메인 경로선 설정
         innerPathOverlay.width = 8 // 경로선 너비를 늘려서 마커와 겹치도록
-        innerPathOverlay.color = UIColor(hex: "#00E1FF")
+        innerPathOverlay.color = UIColor(hex: "#2C333A")
         innerPathOverlay.outlineWidth = 0
         
         // 패턴 이미지 설정
@@ -71,6 +76,16 @@ final class PathManager {
 //        print("✅ 경로선 지도에 추가 완료")
     }
     
+    /// 이미 요청된 좌표열과 같은지. **순서까지** 본다.
+    ///
+    /// 개수만 비교하면 경유지 DnD 재정렬(개수 동일, 순서 변경)이 화면에 반영되지 않는다.
+    /// `NMGLatLng`은 클래스라 참조 비교로는 매번 새 인스턴스가 와서 가드가 발동하지 않는다 —
+    /// 반드시 값으로 비교한다. (`PathManagerTests`가 둘 다 잠근다)
+    static func isSameSequence(_ lhs: [NMGLatLng], _ rhs: [NMGLatLng]) -> Bool {
+        guard lhs.count == rhs.count else { return false }
+        return zip(lhs, rhs).allSatisfy { $0.lat == $1.lat && $0.lng == $1.lng }
+    }
+
     // MARK: - Public Methods
     func addCoordinate(_ coordinate: NMGLatLng) {
         pathCoordinates.append(coordinate)
@@ -78,105 +93,28 @@ final class PathManager {
     }
     
     func setCoordinates(_ coordinates: [NMGLatLng]) {
-        // 메모리 사용량 로깅
-        let originalCount = coordinates.count
-        print("🛣️ 경로선 좌표 최적화 시작: 원본 \(originalCount)개")
-        
-        // 메모리 최적화: 경로선 좌표 단순화
-        pathCoordinates = simplifyPathCoordinates(coordinates)
-        
-        let optimizedCount = pathCoordinates.count
-        let reductionRate = originalCount > 0 ? Double(originalCount - optimizedCount) / Double(originalCount) * 100 : 0
-        print("🛣️ 경로선 좌표 최적화 완료: \(optimizedCount)개 (약 \(String(format: "%.1f", reductionRate))% 감소)")
-        
+        // updateUIView가 SwiftUI 갱신마다 updateMap()을 부른다.
+        // 좌표가 그대로면 단순화도 오버레이 재부착도 할 필요가 없다.
+        guard !Self.isSameSequence(coordinates, lastRequestedCoordinates) else { return }
+        lastRequestedCoordinates = coordinates
+
+        pathCoordinates = PathSimplifier.simplify(coordinates)
+
+        let metrics = PathSimplificationMetrics(
+            originalCount: coordinates.count,
+            simplifiedCount: pathCoordinates.count
+        )
+        print("🛣️ 경로선 좌표 단순화: \(metrics.originalCount)개 → \(metrics.simplifiedCount)개 "
+              + "(\(String(format: "%.1f", metrics.reductionRate))% 감소)")
+
         drawPath()
     }
     
-    // 경로선 좌표 단순화 (메모리 최적화)
-    private func simplifyPathCoordinates(_ coordinates: [NMGLatLng]) -> [NMGLatLng] {
-        guard coordinates.count > 2 else { return coordinates }
-        
-        // Douglas-Peucker 알고리즘을 사용한 경로선 단순화
-        let tolerance: Double = 0.00001 // 약 1미터 정도의 허용 오차
-        return douglasPeucker(coordinates, tolerance: tolerance)
-    }
-    
-    // Douglas-Peucker 알고리즘 구현
-    private func douglasPeucker(_ points: [NMGLatLng], tolerance: Double) -> [NMGLatLng] {
-        guard points.count > 2 else { return points }
-        
-        // 첫 번째와 마지막 점 사이의 거리가 허용 오차보다 작으면 단순화
-        if points.count <= 3 {
-            return points
-        }
-        
-        // 가장 먼 점 찾기
-        var maxDistance = 0.0
-        var maxIndex = 0
-        
-        let firstPoint = points[0]
-        let lastPoint = points[points.count - 1]
-        
-        for i in 1..<points.count - 1 {
-            let distance = perpendicularDistance(points[i], lineStart: firstPoint, lineEnd: lastPoint)
-            if distance > maxDistance {
-                maxDistance = distance
-                maxIndex = i
-            }
-        }
-        
-        // 허용 오차보다 큰 거리가 있으면 재귀적으로 분할
-        if maxDistance > tolerance {
-            let leftPoints = Array(points[0...maxIndex])
-            let rightPoints = Array(points[maxIndex..<points.count])
-            
-            let leftSimplified = douglasPeucker(leftPoints, tolerance: tolerance)
-            let rightSimplified = douglasPeucker(rightPoints, tolerance: tolerance)
-            
-            // 중복 제거 (마지막 점과 첫 번째 점이 같을 수 있음)
-            return leftSimplified + Array(rightSimplified.dropFirst())
-        } else {
-            // 허용 오차 내에 있으면 첫 번째와 마지막 점만 반환
-            return [firstPoint, lastPoint]
-        }
-    }
-    
-    // 점과 선 사이의 수직 거리 계산
-    private func perpendicularDistance(_ point: NMGLatLng, lineStart: NMGLatLng, lineEnd: NMGLatLng) -> Double {
-        let A = point.lat - lineStart.lat
-        let B = point.lng - lineStart.lng
-        let C = lineEnd.lat - lineStart.lat
-        let D = lineEnd.lng - lineStart.lng
-        
-        let dot = A * C + B * D
-        let lenSq = C * C + D * D
-        
-        if lenSq == 0 {
-            return sqrt(A * A + B * B)
-        }
-        
-        let param = dot / lenSq
-        
-        var xx: Double, yy: Double
-        
-        if param < 0 {
-            xx = lineStart.lat
-            yy = lineStart.lng
-        } else if param > 1 {
-            xx = lineEnd.lat
-            yy = lineEnd.lng
-        } else {
-            xx = lineStart.lat + param * C
-            yy = lineStart.lng + param * D
-        }
-        
-        let dx = point.lat - xx
-        let dy = point.lng - yy
-        
-        return sqrt(dx * dx + dy * dy)
-    }
     
     func clearPath() {
+        // 오버레이를 떼면 가드도 풀어야 한다.
+        // 안 그러면 같은 좌표로 복원할 때(restoreOriginalData·refreshMapDisplay) 다시 안 그려진다.
+        lastRequestedCoordinates.removeAll()
         pathCoordinates.removeAll()
         pathOverlay.mapView = nil
         innerPathOverlay.mapView = nil
@@ -234,7 +172,7 @@ final class PathManager {
         
         // 메인 경로선 스타일 재설정
         innerPathOverlay.width = 8 // 경로선 너비를 늘려서 마커와 겹치도록
-        innerPathOverlay.color = UIColor(hex: "#00E1FF")
+        innerPathOverlay.color = UIColor(hex: "#2C333A")
         innerPathOverlay.outlineWidth = 0
         
         // 패턴 이미지 재설정

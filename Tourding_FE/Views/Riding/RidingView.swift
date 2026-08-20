@@ -89,11 +89,13 @@ struct RidingView: View {
                 
                 backButton
                 
-                if ridingViewModel.flag {
+                if ridingViewModel.flag { // 라이딩 중일 때
                     
                     toiletButton
                     
                     csButton
+                    
+                    AICourseEditButton
                     
                 } // : if
                 
@@ -241,19 +243,18 @@ struct RidingView: View {
                 return
             }
             
-            // 바텀시트 위치에 따른 카메라 피봇 조정
-            let yPivot: CGFloat
-            switch newValue {
-            case .small:
-                yPivot = 0.6  // 바텀시트가 작을 때 카메라 시점을 더 위로
-            case .medium:
-                yPivot = 0.4  // 중간 크기일 때 적당한 위치
-            case .large:
+            // 바텀시트 위치에 따른 카메라 피봇. 매핑은 LocationManager가 갖는다.
+            guard let yPivot = LocationManager.cameraPivot(for: newValue) else {
                 return  // large일 때는 아무것도 하지 않음
             }
-            
-            // flag가 false일 때는 pivot만 조정 (현재 보고 있는 화면 위치 유지)
-            // flag가 true일 때는 사용자 위치로 카메라 이동
+
+            // 편집·라이딩 **양쪽 모두** 피봇을 저장한다.
+            // 편집에서 저장하지 않으면 "내 위치로 이동" 버튼이 시트 높이를 반영하지 못하고,
+            // 라이딩을 했다 돌아온 경우엔 직전 라이딩의 값이 그대로 남는다.
+            ridingViewModel.userLocationManager?.syncCameraPivot(for: newValue)
+
+            // 편집 모드는 pivot만 조정 (보고 있는 화면 위치 유지).
+            // 라이딩 중에는 **추적 중일 때만** 사용자 위치로 따라간다 — 판정은 LocationManager에 있다.
             if !ridingViewModel.flag {
                 // 현재 카메라가 보고 있는 중심 좌표를 기준으로 pivot만 조정
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -265,17 +266,12 @@ struct RidingView: View {
                     mapView.moveCamera(cameraUpdate)
                 }
             } else {
-                // 라이딩 중일 때는 사용자 위치로 카메라 이동
                 guard let userLocationManager = ridingViewModel.userLocationManager else { return }
-                
-                // pivot 상태 저장 (userLocationManager에 저장)
-                userLocationManager.cameraPivotY = yPivot
-                print("📷 바텀시트 높이 변경: 피봇을 \(yPivot)으로 설정")
                 
                 // 애니메이션 충돌 방지를 위해 약간의 지연 후 실행
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    // moveToCurrentLocation 호출하여 현재 위치로 카메라 이동
-                    userLocationManager.moveToCurrentLocation(on: mapView)
+                    // 추적 중이면 사용자 위치로, 아니면 보던 위치를 유지한 채 피봇만 조정
+                    userLocationManager.updateCameraPivot(on: mapView, yPivot: yPivot)
                 }
             }
         }
@@ -363,6 +359,7 @@ struct RidingView: View {
             } // : HStack
             .background(ridingViewModel.showToilet ? Color.gray5 : Color.white)
             .cornerRadius(12)
+            .shadow(color: .black.opacity(0.02), radius: 10, x: 0, y: 6)
         }
         .position(x: 110, y:SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : toiletButton
@@ -386,9 +383,49 @@ struct RidingView: View {
             } // : HStack
             .background(ridingViewModel.showConvenienceStore ? Color.gray5 : Color.white)
             .cornerRadius(12)
+            .shadow(color: .black.opacity(0.02), radius: 10, x: 0, y: 6)
         }
         .position(x: 208, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : csButton
+    
+    private var AICourseEditButton: some View {
+        Button(action:{
+            // AI 코스수정 기능 추가 예정
+        }){
+            HStack(spacing: 2){
+                Image("ai_course_btn")
+                    .padding(.vertical, 9)
+                    .padding(.leading, 12)
+                
+                Text("AI 코스수정")
+                    .foregroundColor(.gray5)
+                    .font(.pretendardMedium(size: 14))
+                    .padding(.trailing, 14)
+            } // : HStack
+            .background(Color.white)
+            .cornerRadius(12)
+            .shadow(color: .black.opacity(0.02), radius: 10, x: 0, y: 6)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(Self.aiBorderGradient, lineWidth: 1)
+            )
+        }
+        .position(x: 316, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
+    } // : AICourseEditButton
+
+    /// AI 코스수정 버튼 테두리 — Figma GRADIENT_LINEAR (2774:17889)
+    ///
+    /// startPoint·endPoint가 0...1을 벗어나는 건 의도된 값이다.
+    /// Figma의 gradientTransform을 역변환한 결과이고, 그래서 버튼에 실제로 보이는 건
+    /// 그라데이션의 가운데 구간(약 t=0.2~0.9)이다. 0,0 → 1,1로 바꾸면 색이 달라진다.
+    private static let aiBorderGradient = LinearGradient(
+        stops: [
+            .init(color: Color(hex: "#00E1FF"), location: 0),
+            .init(color: Color(hex: "#CEB4FF"), location: 1)
+        ],
+        startPoint: UnitPoint(x: 0.074, y: -0.925),
+        endPoint:   UnitPoint(x: 0.829, y: 1.625)
+    )
     
     //MARK: - Lifecycle helpers
 

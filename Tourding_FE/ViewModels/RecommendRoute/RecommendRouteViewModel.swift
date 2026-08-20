@@ -21,12 +21,28 @@ final class RecommendRouteViewModel: ObservableObject {
     @Published var description: String = ""
     
     // MARK: - 지도 관련 프로퍼티
-    var locationManager: LocationManager?
-    var userLocationManager: LocationManager?
-    var mapView: NMFMapView?
-    var markerManager: MarkerManager?
-    var pathManager: PathManager?
-    var mapViewController: RecommendMapViewController?
+    //
+    // 전부 weak이다. 소유자는 화면이다 — Coordinator가 RecommendMapViewController를
+    // 보유하고, updateUIView가 갱신마다 이 여섯 개를 다시 연결한다.
+    // strong으로 잡으면 VC와 양방향 순환이 생겨 화면을 pop해도 둘 다 해제되지 않고,
+    // VC가 소유한 LocationManager까지 살아남아 GPS가 계속 돈다.
+    // 화면에 들어갈 때마다 한 세트씩 쌓인다.
+    //
+    // 회귀 방지: RecommendMapBindingLifetimeTests
+    /// 지도용·위치용 참조를 같은 인스턴스로 맞춘다.
+    /// 갈라지면 LocationManager가 두 벌 살아 GPS가 두 개 돈다.
+    @MainActor
+    func configureLocationManager(_ locationManager: LocationManager) {
+        userLocationManager = locationManager
+        self.locationManager = locationManager
+    }
+
+    weak var locationManager: LocationManager?
+    weak var userLocationManager: LocationManager?
+    weak var mapView: NMFMapView?
+    weak var markerManager: MarkerManager?
+    weak var pathManager: PathManager?
+    weak var mapViewController: RecommendMapViewController?
     
     
     // MARK: - 지도 관련 프로퍼티
@@ -39,10 +55,14 @@ final class RecommendRouteViewModel: ObservableObject {
     private let tourRepository: TourRepositoryProtocol
     private let routeRepository: RouteRepositoryProtocol
     
+    private let userSession: UserSessionProviding
+
     init(tourRepository: TourRepositoryProtocol,
-         routeRepository: RouteRepositoryProtocol) {
+         routeRepository: RouteRepositoryProtocol,
+         userSession: UserSessionProviding) {
         self.tourRepository = tourRepository
         self.routeRepository = routeRepository
+        self.userSession = userSession
     }
     
     // MARK: - 메모리 정리
@@ -73,7 +93,7 @@ final class RecommendRouteViewModel: ObservableObject {
     //MARK: - API 호출
     @MainActor
     func getRoutesTotalAPI() async {
-        guard let userId = KeychainHelper.loadUid() else {
+        guard let userId = userSession.userId else {
             print("❌ userId가 nil입니다")
             return
         }
@@ -94,106 +114,72 @@ final class RecommendRouteViewModel: ObservableObject {
     
     @MainActor
     func getRouteLocationAPI() async {
-        guard let userId = KeychainHelper.loadUid() else {
+        guard let userId = userSession.userId else {
             print("❌ userId가 nil입니다")
             return
         }
         
         isLoading = true
         
-        // 재시도 메커니즘 (최대 3회)
-        var retryCount = 0
-        let maxRetries = 3
-        
-        while retryCount < maxRetries {
-            do {
-                let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: false)
-                routeLocation = response
-                
-                markerCoordinates = routeLocation.compactMap { item in
-                    if let lat = Double(item.lat), let lon = Double(item.lon) {
-                        return NMGLatLng(lat: lat, lng: lon)
-                    } else {
-                        return nil
-                    }
-                }
-                
-                markerIcons = routeLocation.enumerated().map { (index, item) in
-                    switch item.type {
-                    case "Start":
-                        return MarkerIcons.startMarker
-                    case "Goal":
-                        return MarkerIcons.goalMarker
-                    case "WayPoint":
-                        return MarkerIcons.numberMarker(index) // index 사용
-                    default:
-                        return MarkerIcons.numberMarker(0)
-                    }
-                }
-                
-                // 성공하면 루프 종료
-                break
-                
-            } catch {
-                retryCount += 1
-                print("❌ 경로 위치 API 호출 실패 (시도 \(retryCount)/\(maxRetries)): \(error)")
-                
-                if retryCount < maxRetries {
-                    // 재시도 전 잠시 대기
-                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1초 대기
+        let response = await RetryPolicy.run(label: "경로 위치 API") {
+            try await self.routeRepository.getRoutesLocationName(userId: userId, isUsed: false)
+        }
+
+        if let response {
+            routeLocation = response
+
+            markerCoordinates = routeLocation.compactMap { item in
+                if let lat = Double(item.lat), let lon = Double(item.lon) {
+                    return NMGLatLng(lat: lat, lng: lon)
                 } else {
-                    print("❌ 경로 위치 API 호출 최종 실패")
+                    return nil
+                }
+            }
+
+            markerIcons = routeLocation.enumerated().map { (index, item) in
+                switch item.type {
+                case "Start":
+                    return MarkerIcons.startMarker
+                case "Goal":
+                    return MarkerIcons.goalMarker
+                case "WayPoint":
+                    return MarkerIcons.numberMarker(index) // index 사용
+                default:
+                    return MarkerIcons.numberMarker(0)
                 }
             }
         }
-        
+
         isLoading = false
     }
     
     //초기 출발지, 도착지만 입력시 POST
     @MainActor
     func getRoutePathAPI() async {
-        guard let userId = KeychainHelper.loadUid() else {
+        guard let userId = userSession.userId else {
             print("❌ userId가 nil입니다")
             return
         }
         
         isLoading = true
         
-        // 재시도 메커니즘 (최대 3회)
-        var retryCount = 0
-        let maxRetries = 3
-        
-        while retryCount < maxRetries {
-            do {
-                let response = try await routeRepository.getRoutesPath(userId: userId, isUsed: false)
-                routeMapPaths = response
-                
-                pathCoordinates = routeMapPaths.compactMap { item in
-                    if let lat = Double(item.lat),
-                       let lon = Double(item.lon) {
-                        return NMGLatLng(lat: lat, lng: lon)
-                    } else {
-                        return nil // 변환 실패 시 무시
-                    }
-                }
-                
-                // 성공하면 루프 종료
-                break
-                
-            } catch {
-                retryCount += 1
-                print("❌ 경로 경로선 API 호출 실패 (시도 \(retryCount)/\(maxRetries)): \(error)")
-                
-                if retryCount < maxRetries {
-                    // 재시도 전 잠시 대기
-                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1초 대기
+        let response = await RetryPolicy.run(label: "경로 경로선 API") {
+            try await self.routeRepository.getRoutesPath(userId: userId, isUsed: false)
+        }
+
+        if let response {
+            routeMapPaths = response
+
+            pathCoordinates = routeMapPaths.compactMap { item in
+                if let lat = Double(item.lat),
+                   let lon = Double(item.lon) {
+                    return NMGLatLng(lat: lat, lng: lon)
                 } else {
-                    print("❌ 경로 경로선 API 호출 최종 실패")
+                    return nil // 변환 실패 시 무시
                 }
             }
         }
-        
+
         isLoading = false
     }
 }

@@ -11,6 +11,14 @@ import NMapsMap
 
 //MARK: - 사용자 위치 추적 및 업데이트
 extension RidingViewModel {
+
+    /// 사용자가 **실제로 움직였다**고 볼 최소 거리(m).
+    ///
+    /// 카메라 추적 자동 재개와 위치 갱신 판정이 같은 값을 쓴다.
+    /// 라이딩 속도(15km/h)에서는 1초가 채 안 되는 거리이므로, 지도를 밀어 살펴보는
+    /// 시간을 더 주려면 이 값을 키우면 된다.
+    static let userMovementThreshold: Double = 3.0
+
     // 사용자 위치 업데이트 시 호출하여 지나간 마커 확인 및 제거
     func updateUserLocationAndCheckMarkers(_ newLocation: NMGLatLng) async {
         print("🔄 === 위치 업데이트 시작 ===")
@@ -35,8 +43,8 @@ extension RidingViewModel {
         let hasLocationChanged: Bool
         if let previousLocation = currentUserLocation {
             let distance = calculateDistance(from: previousLocation, to: newLocation)
-            hasLocationChanged = distance > 3.0 // 3미터 이상 변경시에만
-            print("📍 위치 거리 계산: \(String(format: "%.2f", distance))m (임계값: 3.0m)")
+            hasLocationChanged = distance > Self.userMovementThreshold
+            print("📍 위치 거리 계산: \(String(format: "%.2f", distance))m (임계값: \(Self.userMovementThreshold)m)")
         } else {
             hasLocationChanged = true // 첫 번째 위치 업데이트
             print("📍 첫 번째 위치 업데이트")
@@ -53,6 +61,15 @@ extension RidingViewModel {
             print("📍 현재 가이드 리스트 개수: \(guideList.count)")
             print("📍 현재 마커 개수: \(markerCoordinates.count)")
             
+            // 지도를 밀어 추적이 꺼진 상태라도, 사용자가 실제로 움직였으면 추적을 되켠다.
+            // 상태 전이는 LocationManager가 소유한다 — 여기서는 "움직였는가"만 판정한다.
+            let resumed = await MainActor.run {
+                userLocationManager?.resumeTrackingIfStopped() == true
+            }
+            if resumed {
+                print("🧭 \(Self.userMovementThreshold)m 이상 이동 - 추적 자동 재개")
+            }
+
             // 마커 체크와 카메라 업데이트를 순차적으로 실행하여 간섭 방지
             await checkAndRemovePassedMarkers()
             await updateCameraToUserLocation()
@@ -73,35 +90,36 @@ extension RidingViewModel {
         print("🎯 마커 개수: \(markerCoordinates.count)")
         print("🎯 임계값: \(markerPassThreshold)m")
         
-        // 가장 가까운 마커의 인덱스 찾기
-        var closestMarkerIndex: Int? = nil
-        var minDistance = Double.infinity
-        
+        // 임계값 안에 마커가 있는지만 본다.
+        //
+        // 이전에는 "가장 가까운" 마커를 찾아 0...그 인덱스를 한꺼번에 지웠다.
+        // 그래서 30m 안에 마커가 둘 이상 들어오거나 GPS가 튀면 그 사이 안내가
+        // 화면에 한 번도 뜨지 않고 사라졌다. 실제 fixture에 20.7m·21.2m 간격 구간이 있다.
+        //
+        // 한 번의 위치 갱신에 한 칸만 소비한다. 여러 칸 밀렸으면 다음 갱신들로 따라잡는다
+        // (위치 콜백이 3m 이동마다 오므로 두 칸이면 약 6m 주행).
+        var nearestDistance = Double.infinity
+        var hasMarkerWithinThreshold = false
+
         for (index, markerCoord) in markerCoordinates.enumerated() {
             let distance = calculateDistance(from: userLocation, to: markerCoord)
             print("🎯 마커[\(index)]: \(markerCoord.lat), \(markerCoord.lng) - 거리: \(String(format: "%.2f", distance))m")
-            
-            if distance <= markerPassThreshold && distance < minDistance {
-                minDistance = distance
-                closestMarkerIndex = index
-                print("🎯 새로운 가장 가까운 마커 발견! 인덱스: \(index), 거리: \(String(format: "%.2f", distance))m")
+
+            if distance <= markerPassThreshold {
+                hasMarkerWithinThreshold = true
+                nearestDistance = min(nearestDistance, distance)
             }
         }
-        
-        // 가장 가까운 마커를 지나갔다면, 그 마커 이전의 모든 마커들 제거
-        if let closestIndex = closestMarkerIndex {
-            let removedCount = closestIndex + 1
-            
-            print("✅ 🎯 가까운 마커 발견! 인덱스: \(closestIndex), 거리: \(String(format: "%.2f", minDistance))m")
-            print("✅ 제거할 마커 개수: \(removedCount)개")
-            print("✅ 제거할 마커 인덱스: 0~\(closestIndex)")
-            
+
+        if hasMarkerWithinThreshold {
+            print("✅ 🎯 임계값 안 마커 있음 (최근접 \(String(format: "%.2f", nearestDistance))m) - 맨 앞 한 칸만 소비")
+
             // guideList의 좌표를 지날 때 showToilet과 showConvenienceStore 상태에 따라 토글 함수 호출
             await checkAndToggleFacilities(userLocation: userLocation)
-            
+
             // @MainActor를 사용하여 동기적으로 처리
-            await removePassedMarkers(removedCount: removedCount, closestIndex: closestIndex)
-            
+            await removePassedMarkers(removedCount: 1, closestIndex: 0)
+
         } else {
             print("⏸️ 가까운 마커 없음 (임계값: \(markerPassThreshold)m)")
             print("⏸️ 모든 마커가 \(markerPassThreshold)m보다 멀리 있음")
@@ -232,14 +250,13 @@ extension RidingViewModel {
             return 
         }
         
-        let cameraUpdate = NMFCameraUpdate(scrollTo: userLocation)
-        // 바텀시트 높이에 따른 동적 피봇 조정 (하드코딩 제거)
-        cameraUpdate.pivot = CGPoint(x: 0.5, y: userLocationManager.cameraPivotY)
-        cameraUpdate.animation = .easeIn
-        mapView.moveCamera(cameraUpdate)
-        
+        // 추적 중일 때만 따라간다 — 판정은 LocationManager 한 곳에 있다
+        guard userLocationManager.followUser(on: mapView, to: userLocation) else {
+            print("📷 추적이 꺼져 있어 카메라를 옮기지 않음")
+            return
+        }
+
         print("📷 카메라가 사용자 위치로 업데이트됨: \(userLocation.lat), \(userLocation.lng)")
-        print("📷 사용자가 움직였으므로 카메라가 따라감 (피봇: \(userLocationManager.cameraPivotY))")
     }
     
     // 지도에서 마커 업데이트 (@MainActor로 동기 처리)

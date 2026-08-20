@@ -124,14 +124,9 @@ struct SpotAdditionalView: View {
         )
         .onReceive(dsviewModel.$currentLocation.compactMap { $0 }) { coord in
             Task {
-                do {
-                    let res = try await KakaoLocalService.reverseGeocode(
-                        x: coord.longitude, y: coord.latitude
-                    )
-                    let r = res.documents.first(where: { $0.regionType == "H" }) ?? res.documents.first
-                } catch {
-                    // 필요 시 에러 토스트/라벨
-                }
+                // 역지오코딩 호출이 있었으나 결과를 쓸 곳이 없어(지역명 표시 UI 부재)
+                // 위치가 바뀔 때마다 카카오 API를 부르고 버렸다. 호출을 제거한다.
+                // 지역명을 표시하게 되면 SpotSearchView처럼 되살릴 것.
                 requestSpots(for: coord)
             }
         }

@@ -206,7 +206,7 @@ struct DetailSpotView: View {
                     Task { [weak detailViewModel] in
                         do {
                             try Task.checkCancellation()
-                            await detailViewModel?.postRouteAPI(originalData: detailViewModel?.routeLocation ?? [], updatedData: spot)
+                            await detailViewModel?.addSpotToRoute(spot)
                             
                             try Task.checkCancellation()
                             await detailViewModel?.getRouteLocationAPI()

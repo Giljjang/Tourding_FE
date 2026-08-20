@@ -424,8 +424,18 @@ struct HomeView: View {
                         Task { [weak viewModel] in
                             do {
                                 try Task.checkCancellation()
-                                await viewModel?.postRouteByNameAPI(start: item.departure, goal: item.arrival)
-                                
+                                // 저장에 실패하면 넘어가지 않는다.
+                                // draft에는 옛 코스가 남아 있어, 넘어가면 그걸 추천 코스인 양 보여준다.
+                                let saved = await viewModel?.postRouteByNameAPI(
+                                    start: item.departure,
+                                    goal: item.arrival
+                                ) ?? false
+
+                                guard saved else {
+                                    print("🚫 추천 코스 저장 실패 - 화면 전환 중단")
+                                    return
+                                }
+
                                 await MainActor.run {
                                     navigationManager.push(.RecommendRouteView(
                                         routeName: "\(item.courseName) \(item.courseType)",

@@ -89,23 +89,23 @@ struct SheetGuideView: View {
                 )
             }){
                 HStack(spacing: 0) {
-                    Image("icon_close")
                     
                     Text("종료")
-                        .foregroundColor(.white)
-                        .font(.pretendardSemiBold(size: 16))
+                        .foregroundColor(Color(hex: "#FF4949"))
+                        .font(.pretendardSemiBold(size: 14))
+                        .frame(height: 22)
                 } // : HStack
                 .padding(.vertical, 6)
-                .padding(.leading, 6)
+                .padding(.leading, 12)
                 .padding(.trailing, 12)
-                .background(Color(hex: "#FF4949"))
+                .background(Color(hex: "#FFE3E3"))
                 .cornerRadius(10)
             }
-            .padding(.top, 3)
-            .padding(.trailing, 16)
+            .padding(.top, 4)
+            .padding(.trailing, 17)
         } // : HStack
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.bottom, 19)
+        .padding(.bottom, 20)
     } // : header
 }
 
