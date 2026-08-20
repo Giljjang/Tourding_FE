@@ -30,7 +30,6 @@ struct MapViewRepresentable: UIViewRepresentable {
     
     // MARK: - Callbacks
     var onLocationUpdate: ((CLLocation) -> Void)?
-    var onMapTap: ((NMGLatLng) -> Void)?
     
     // MARK: - UIViewRepresentable
     func makeUIView(context: Context) -> UIView {
@@ -48,7 +47,6 @@ struct MapViewRepresentable: UIViewRepresentable {
         mapViewController.csMarkerCoordinates = csMarkerCoordinates
         mapViewController.csMarkerIcons = csMarkerIcons
         
-        mapViewController.onMapTap = onMapTap
         
         // ridingViewModel 전달
         mapViewController.ridingViewModel = ridingViewModel
@@ -93,11 +91,9 @@ struct MapViewRepresentable: UIViewRepresentable {
         mapViewController.csMarkerCoordinates = csMarkerCoordinates
         mapViewController.csMarkerIcons = csMarkerIcons
         mapViewController.onLocationUpdate = onLocationUpdate
-        mapViewController.onMapTap = onMapTap
         
         // RidingViewModel에 LocationManager, NMFMapView, MarkerManager, PathManager 설정 (viewDidLoad 완료 후)
         if let ridingViewModel = ridingViewModel {
-            ridingViewModel.locationManager = mapViewController.locationManager
             if let nmfMapView = mapViewController.nmfMapView {
                 ridingViewModel.mapView = nmfMapView
             }

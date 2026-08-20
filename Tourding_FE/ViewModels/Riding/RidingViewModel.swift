@@ -13,6 +13,16 @@ final class RidingViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var isStartingRiding: Bool = false // 라이딩 시작하기 전용 로딩 상태
     @Published var flag: Bool = false // 라이딩 전 <-> 라이딩 후 화면 변경
+
+    /// 이 화면이 다루는 경로의 출처. 편집 모드 API·재정렬 POST의 `isUsed` 판정 단일 소스.
+    /// `handleInitialEntry`에서 1회 저장한다.
+    @Published var routeSource: RidingRouteSource = .draft
+
+    /// 이 화면이 읽고 써야 할 경로가 서버의 "사용 완료" 경로인지.
+    /// `flag`(라이딩 중인가)만으로 판정하면 최근 경로를 편집할 때 draft를 읽는다.
+    var isUsedRoute: Bool {
+        flag || routeSource.isUsed
+    }
     
     //라이딩 시작 전
     @Published var routeLocation: [LocationNameModel] = []
@@ -30,12 +40,16 @@ final class RidingViewModel: ObservableObject {
     @Published var csList: [FacilityInfoModel] = []
     
     // MARK: - 지도 관련 프로퍼티
-    var locationManager: LocationManager?
-    var userLocationManager: LocationManager?
-    var mapView: NMFMapView?
-    var markerManager: MarkerManager?
-    var pathManager: PathManager?
-    var mapViewController: MapViewController?
+    //
+    // 전부 weak — 소유자는 화면(MapViewController / RidingView의 @StateObject)이고
+    // RidingViewModel은 앱 수명 동안 살아 있다. strong으로 잡으면 화면을 떠난 뒤에도
+    // MapViewController와 그 CLLocationManager가 해제되지 않아 GPS·지도가 계속 살아남는다.
+    weak var locationManager: LocationManager?
+    weak var userLocationManager: LocationManager?
+    weak var mapView: NMFMapView?
+    weak var markerManager: MarkerManager?
+    weak var pathManager: PathManager?
+    weak var mapViewController: MapViewController?
     
     
     // MARK: - 지도 관련 프로퍼티
@@ -67,13 +81,27 @@ final class RidingViewModel: ObservableObject {
 
     /// 경유지 드래그 디바운스 POST Task
     var reorderPersistTask: Task<Void, Never>?
+
+    /// 편의시설 마커 갱신 Task — 화면 이탈·라이딩 종료 시 취소해야 한다
+    var toiletMarkerTask: Task<Void, Never>?
+    var convenienceStoreMarkerTask: Task<Void, Never>?
+
+    /// 라이딩 시작(가이드 로드까지) Task — `endRiding`에서 취소한다
+    var ridingStartTask: Task<Void, Never>?
+
+    /// 편집 모드 총계 갱신 디바운스 Task
+    var routeTotalRefreshTask: Task<Void, Never>?
     
+    let userSession: UserSessionProviding
+
     init(routeRepository: RouteRepositoryProtocol,
-         kakaoRepository: KakaoRepositoryProtocol
+         kakaoRepository: KakaoRepositoryProtocol,
+         userSession: UserSessionProviding
     ) {
         self.routeRepository = routeRepository
         self.kakaoRepository = kakaoRepository
-        self.userId = KeychainHelper.loadUid()
+        self.userSession = userSession
+        self.userId = userSession.userId
     }
     
     // MARK: - 지도 마커 (routeLocation 순서 반영)
@@ -87,18 +115,35 @@ final class RidingViewModel: ObservableObject {
         markerIcons = Self.makeMarkerIcons(for: locationData)
     }
 
-    static func makeMarkerIcons(for locationData: [LocationNameModel]) -> [NMFOverlayImage] {
+    /// 마커 종류·경유지 순번 계산 (순수 함수).
+    /// 경유지 번호는 배열 index가 아니라 WayPoint 등장 순서를 따른다.
+    static func markerKinds(for locationData: [LocationNameModel]) -> [RouteMarkerKind] {
         var waypointNumber = 0
         return locationData.map { item in
             switch item.type {
             case "Start":
-                return MarkerIcons.startMarker
+                return .start
             case "Goal":
-                return MarkerIcons.goalMarker
+                return .goal
             case "WayPoint":
                 waypointNumber += 1
-                return MarkerIcons.numberMarker(waypointNumber)
+                return .waypoint(number: waypointNumber)
             default:
+                return .unknown
+            }
+        }
+    }
+
+    static func makeMarkerIcons(for locationData: [LocationNameModel]) -> [NMFOverlayImage] {
+        markerKinds(for: locationData).map { kind in
+            switch kind {
+            case .start:
+                return MarkerIcons.startMarker
+            case .goal:
+                return MarkerIcons.goalMarker
+            case .waypoint(let number):
+                return MarkerIcons.numberMarker(number)
+            case .unknown:
                 return MarkerIcons.numberMarker(0)
             }
         }
@@ -181,13 +226,16 @@ final class RidingViewModel: ObservableObject {
 extension RidingViewModel {
     
     // 편의점 토글
+    @MainActor
     func toggleConvenienceStore(location: String){
         showConvenienceStore.toggle()
         
         if showConvenienceStore {
             updateConvenienceStoreMarkers(location: location)
         } else {
-            // 편의점 마커  제거
+            // 진행 중인 요청을 먼저 취소해야 뒤늦은 응답이 마커를 되살리지 않는다
+            convenienceStoreMarkerTask?.cancel()
+            convenienceStoreMarkerTask = nil
             csMarkerCoordinates.removeAll()
             csMarkerIcons.removeAll()
             print("편의점 마커 제거됨")
@@ -195,48 +243,63 @@ extension RidingViewModel {
     }
     
     // 편의점 마커 업데이트 (토글 없이)
+    @MainActor
     func updateConvenienceStoreMarkers(location: String) {
         let lat = splitCoordinateLatitude(location: location)
         let lon = splitCoordinateLongitude(location: location)
-        
-        Task{
+
+        convenienceStoreMarkerTask?.cancel()
+        convenienceStoreMarkerTask = Task { @MainActor in
             await postRoutesConvenienceStoreAPI(lon: lon, lat: lat)
-            
-            // API 호출 완료 후 마커 추가 (메인 스레드에서 실행)
-            await MainActor.run {
-                // 기존 마커는 유지하고 편의점 마커만 추가
-                csMarkerCoordinates.removeAll()
-                csMarkerIcons.removeAll()
-                
-                csMarkerCoordinates.append(
-                    contentsOf: csList.compactMap { item in
-                        if let lat = Double(item.lat), let lon = Double(item.lon) {
-                            return NMGLatLng(lat: lat, lng: lon)
-                        } else {
-                            return nil
-                        }
-                    }
-                )
-                
-                csMarkerIcons.append(contentsOf: csList.map { _ in
-                    MarkerIcons.csMarker
-                })
-                
-                // 디버깅용 로그
-                print("편의점 마커 추가됨: \(csMarkerCoordinates.count)개")
-                print("편의점 아이콘 추가됨: \(csMarkerIcons.count)개")
-            }
+            guard !Task.isCancelled else { return }
+            applyConvenienceStoreMarkers()
+            print("편의점 마커 추가됨: \(csMarkerCoordinates.count)개")
         }
     }
 
+    /// 좌표와 아이콘을 한 배열에서 파생시켜 개수가 구조적으로 어긋날 수 없게 한다.
+    /// (좌표는 compactMap, 아이콘은 map으로 따로 만들면 파싱 실패 항목에서 길이가 틀어진다)
+    @MainActor
+    func applyToiletMarkers() {
+        let coordinates = Self.facilityCoordinates(from: toiletList)
+        toiletMarkerCoordinates = coordinates
+        toiletMarkerIcons = coordinates.map { _ in MarkerIcons.toiletMarker }
+    }
+
+    @MainActor
+    func applyConvenienceStoreMarkers() {
+        let coordinates = Self.facilityCoordinates(from: csList)
+        csMarkerCoordinates = coordinates
+        csMarkerIcons = coordinates.map { _ in MarkerIcons.csMarker }
+    }
+
+    static func facilityCoordinates(from list: [FacilityInfoModel]) -> [NMGLatLng] {
+        list.compactMap { item in
+            guard let lat = Double(item.lat), let lon = Double(item.lon) else { return nil }
+            return NMGLatLng(lat: lat, lng: lon)
+        }
+    }
+
+    /// 라이딩 종료·화면 이탈 시 호출. 뒤늦게 끝난 요청이 지운 마커를 되살리는 것을 막는다.
+    @MainActor
+    func cancelFacilityMarkerTasks() {
+        toiletMarkerTask?.cancel()
+        toiletMarkerTask = nil
+        convenienceStoreMarkerTask?.cancel()
+        convenienceStoreMarkerTask = nil
+    }
+
     // 화장실 토글도 동일하게 수정
+    @MainActor
     func toggleToilet(location: String){
         showToilet.toggle()
         
         if showToilet {
             updateToiletMarkers(location: location)
         } else {
-            // 화장실 마커 제거
+            // 진행 중인 요청을 먼저 취소해야 뒤늦은 응답이 마커를 되살리지 않는다
+            toiletMarkerTask?.cancel()
+            toiletMarkerTask = nil
             toiletMarkerCoordinates.removeAll()
             toiletMarkerIcons.removeAll()
             print("화장실 마커 제거됨")
@@ -244,37 +307,17 @@ extension RidingViewModel {
     }
     
     // 화장실 마커 업데이트 (토글 없이)
+    @MainActor
     func updateToiletMarkers(location: String) {
         let lat = splitCoordinateLatitude(location: location)
         let lon = splitCoordinateLongitude(location: location)
-        
-        Task{
+
+        toiletMarkerTask?.cancel()
+        toiletMarkerTask = Task { @MainActor in
             await postRoutesToiletAPI(lon: lon, lat: lat)
-            
-            // API 호출 완료 후 마커 추가 (메인 스레드에서 실행)
-            await MainActor.run {
-                // 기존 마커는 유지하고 화장실 마커만 추가
-                toiletMarkerCoordinates.removeAll()
-                toiletMarkerIcons.removeAll()
-                
-                toiletMarkerCoordinates.append(
-                    contentsOf: toiletList.compactMap { item in
-                        if let lat = Double(item.lat), let lon = Double(item.lon) {
-                            return NMGLatLng(lat: lat, lng: lon)
-                        } else {
-                            return nil
-                        }
-                    }
-                )
-                
-                toiletMarkerIcons.append(contentsOf: toiletList.map { _ in
-                    MarkerIcons.toiletMarker
-                })
-                
-                // 디버깅용 로그
-                print("화장실 마커 추가됨: \(toiletMarkerCoordinates.count)개")
-                print("화장실 아이콘 추가됨: \(toiletMarkerIcons.count)개")
-            }
+            guard !Task.isCancelled else { return }
+            applyToiletMarkers()
+            print("화장실 마커 추가됨: \(toiletMarkerCoordinates.count)개")
         }
     }
 }

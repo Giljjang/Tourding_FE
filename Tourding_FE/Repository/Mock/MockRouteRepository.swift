@@ -6,7 +6,6 @@
 import Foundation
 
 final class MockRouteRepository: RouteRepositoryProtocol {
-    static let shared = MockRouteRepository()
 
     enum RouteScenario {
         case simple
@@ -16,16 +15,16 @@ final class MockRouteRepository: RouteRepositoryProtocol {
     private(set) var scenario: RouteScenario = .withWaypoints
     var simulatedDelayNanoseconds: UInt64 = 300_000_000
 
-    private init() {}
+    init() {}
 
     func reset(scenario: RouteScenario = .withWaypoints) {
         self.scenario = scenario
     }
 
-    func postRoutes(requestBody: RequestRouteModel) async throws {
+    @discardableResult
+    func postRoutes(requestBody: RequestRouteModel) async throws -> RouteGuideResponse {
         try await simulateNetworkDelay()
-        scenario = requestBody.wayPoints.isEmpty ? .simple : .withWaypoints
-        print("🧪 MockRouteRepository.postRoutes scenario=\(scenario)")
+        return try FixtureLoader.load("routes_guide_response.json")
     }
 
     func getRoutesPath(userId: Int, isUsed: Bool) async throws -> [RoutePathModel] {
@@ -38,6 +37,11 @@ final class MockRouteRepository: RouteRepositoryProtocol {
         try await simulateNetworkDelay()
         let filename = locationNameFixtureName()
         return try FixtureLoader.load(filename)
+    }
+
+    func getRouteBundle(userId: Int, isUsed: Bool) async throws -> RouteGuideResponse {
+        try await simulateNetworkDelay()
+        return try FixtureLoader.load("routes_guide_response.json")
     }
 
     func getRoutesGuide(userId: Int, isUsed: Bool) async throws -> [GuideModel] {

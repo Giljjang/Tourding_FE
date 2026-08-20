@@ -27,7 +27,7 @@ struct FixtureLoaderTests {
     }
 
     @Test func mockRouteRepositoryReturnsGuideWithWaypointType() async throws {
-        let repository = MockRouteRepository.shared
+        let repository = MockRouteRepository()
         repository.reset(scenario: .withWaypoints)
         repository.simulatedDelayNanoseconds = 0
 

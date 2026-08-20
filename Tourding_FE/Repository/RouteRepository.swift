@@ -9,24 +9,23 @@ import Foundation
 
 final class RouteRepository: RouteRepositoryProtocol {
     
-    static let shared = RouteRepository()
+    init() {}
     
-    private init() {}
-    
-    func postRoutes(requestBody: RequestRouteModel) async throws {
+    @discardableResult
+    func postRoutes(requestBody: RequestRouteModel) async throws -> RouteGuideResponse {
         print("🔵 RouteRepository.postRoutes 호출")
         print("🔵 요청 데이터: \(requestBody)")
-        
-        do{
-            print("🔵 NetworkService.request 호출 시작")
-            _ = try await NetworkService.request(
+
+        do {
+            let response: RouteGuideResponse = try await NetworkService.request(
                 apiType: .main,
                 endpoint: "/routes",
                 body: requestBody,
                 method: "POST"
-            ) as EmptyResponse
-            print("🔵 NetworkService.request 성공")
-        } catch{
+            )
+            print("🔵 postRoutes 성공 - 경유지 \(response.locations.count)개, 안내 \(response.guides.count)개")
+            return response
+        } catch {
             print("❌ RouteRepository.postRoutes 에러: \(error)")
             throw error
         }
@@ -52,14 +51,18 @@ final class RouteRepository: RouteRepositoryProtocol {
         return routeLocations
     }
     
+    /// **현재 앱에서 호출하지 않는다.** 라이딩 시작이 `POST /routes` 응답의 `guides`를 재사용한다.
+    /// 서버에는 살아 있어 남겨둔다. 상세는 프로토콜 주석 참고.
     func getRoutesGuide(userId: Int , isUsed: Bool) async throws  -> [GuideModel]{
-        let routeGuides: [GuideModel] = try await NetworkService.request(
+        // 서버는 배열이 아니라 RouteGuideRespDto 객체를 반환한다.
+        // 배열로 디코딩하면 typeMismatch로 실패해 가이드가 통째로 비어버린다.
+        let response: RouteGuideResponse = try await NetworkService.request(
             apiType: .main,
             endpoint: "/routes/guide",
             parameters: ["userId": String(userId), "isUsed": String(isUsed)]
         )
-        
-        return routeGuides
+
+        return response.guides
     }
     
     // 경로 총시간, 거리
@@ -71,6 +74,14 @@ final class RouteRepository: RouteRepositoryProtocol {
         )
             
         return routesTotal
+    }
+
+    func getRouteBundle(userId: Int, isUsed: Bool) async throws -> RouteGuideResponse {
+        try await NetworkService.request(
+            apiType: .main,
+            endpoint: "/routes",
+            parameters: ["userId": String(userId), "isUsed": String(isUsed)]
+        )
     }
     
     //추천코스

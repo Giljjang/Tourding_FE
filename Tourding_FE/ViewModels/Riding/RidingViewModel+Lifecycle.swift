@@ -15,7 +15,10 @@ extension RidingViewModel {
 
     @MainActor
     func configureLocationManager(_ locationManager: LocationManager) {
+        // 지도용·위치용 참조가 같은 인스턴스를 가리켜야 한다.
+        // 갈라지면 LocationManager가 두 벌 살아 GPS·나침반 스트림이 두 개 돈다.
         userLocationManager = locationManager
+        self.locationManager = locationManager
         if let mapView {
             locationManager.setMapView(mapView)
         }
@@ -29,6 +32,9 @@ extension RidingViewModel {
         routeSource: RidingRouteSource,
         onStartRiding: @escaping () -> Void
     ) {
+        // 이후 재정렬 POST·경로선 재조회·포그라운드 새로고침이 모두 이 값을 참조한다
+        self.routeSource = routeSource
+
         if let isNotNormal {
             flag = isNotNormal
             print("🔄 비정상 종료 감지 - 라이딩 모드로 복구")
@@ -53,6 +59,7 @@ extension RidingViewModel {
 
         print("🔄 자식 화면에서 복귀 - 편집 모드 유지")
         flag = false
+        self.routeSource = routeSource
 
         Task { [weak self] in
             await self?.refreshEditModeRouteData(routeSource: routeSource)
@@ -66,6 +73,17 @@ extension RidingViewModel {
         print("🎯 onAppear - 라이딩 중, startRidingProcess 로직 실행")
         startRidingNavigationMode(locationManager: locationManager, logPrefix: "onAppear")
         print("📍 onAppear - 콜백 설정은 startRidingAPIProcess에서 처리됨")
+    }
+
+    // MARK: - 경유지 삭제
+
+    /// 삭제 POST와 이어지는 재조회가 **같은 경로**를 가리키도록 한 곳에서 오케스트레이션한다.
+    @MainActor
+    func deleteWaypointAndRefresh(_ item: LocationNameModel) async {
+        let source = isUsedRoute
+        await postRouteDeleteAPI(originalData: routeLocation, selectedData: item)
+        await getRouteLocationAPI(isUsedOverride: source)
+        await getRoutePathAPI(isUsed: source)
     }
 
     // MARK: - Edit mode route load (P1)
@@ -93,13 +111,7 @@ extension RidingViewModel {
         // #endregion
         do {
             try Task.checkCancellation()
-            await getRoutesTotalAPI(isUsed: routeSource.isUsed)
-
-            try Task.checkCancellation()
-            await getRouteLocationAPI(isUsedOverride: routeSource.isUsed)
-
-            try Task.checkCancellation()
-            await getRoutePathAPI(isUsed: routeSource.isUsed)
+            await loadRouteBundleAPI(isUsed: routeSource.isUsed)
 
             try Task.checkCancellation()
             await MainActor.run {
@@ -115,13 +127,7 @@ extension RidingViewModel {
     func refreshEditModeRouteData(routeSource: RidingRouteSource = .draft) async {
         do {
             try Task.checkCancellation()
-            await getRoutesTotalAPI(isUsed: routeSource.isUsed)
-
-            try Task.checkCancellation()
-            await getRouteLocationAPI(isUsedOverride: routeSource.isUsed)
-
-            try Task.checkCancellation()
-            await getRoutePathAPI(isUsed: routeSource.isUsed)
+            await loadRouteBundleAPI(isUsed: routeSource.isUsed)
 
             try Task.checkCancellation()
             await MainActor.run {
@@ -168,7 +174,8 @@ extension RidingViewModel {
         if routeLocation.isEmpty || pathCoordinates.isEmpty {
             print("🔄 경로 데이터가 비어있음 - API 재호출 시작")
             Task { [weak self] in
-                await self?.refreshEditModeRouteData()
+                guard let self else { return }
+                await self.refreshEditModeRouteData(routeSource: self.routeSource)
             }
         } else {
             refreshMapDisplay()
@@ -177,21 +184,23 @@ extension RidingViewModel {
 
     // MARK: - routeLocation change (edit mode)
 
+    /// 경유지를 드래그하는 동안 `routeLocation`은 매 프레임 재할당된다.
+    /// 그때마다 총계를 조회하면 요청이 폭주하므로 디바운스해 마지막 한 번만 나간다.
     @MainActor
     func handleRouteLocationChangedInEditMode() {
         guard !flag else { return }
 
-        print("🔄 routeLocation 변경 감지 - getRoutesTotalAPI 호출")
-        Task { [weak self] in
-            do {
-                try Task.checkCancellation()
-                await self?.getRoutesTotalAPI()
-                print("✅ getRoutesTotalAPI 호출 완료")
-            } catch is CancellationError {
-                print("🚫 getRoutesTotalAPI Task 취소됨")
-            } catch {
-                print("❌ getRoutesTotalAPI 에러: \(error)")
+        print("🔄 routeLocation 변경 감지 - 총계 갱신 예약")
+        routeTotalRefreshTask?.cancel()
+        routeTotalRefreshTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            guard !Task.isCancelled else {
+                print("🚫 총계 갱신 취소됨")
+                return
             }
+
+            await self?.getRoutesTotalAPI(showsLoading: false)
+            print("✅ getRoutesTotalAPI 호출 완료")
         }
     }
 
@@ -205,10 +214,18 @@ extension RidingViewModel {
         onMarkAbnormalExit()
         isStartingRiding = true
 
-        Task { @MainActor in
-            await startRidingAPIProcess(isNotNormal: isNotNormal, locationManager: locationManager)
-            print("✅ 라이딩 시작 프로세스 완료 - 로딩 종료")
-            isStartingRiding = false
+        // Task를 프로퍼티로 붙잡아야 endRiding에서 취소할 수 있다.
+        // 놓치면 라이딩을 끝낸 뒤 뒤늦게 끝난 가이드가 편집 모드 화면을 덮는다.
+        ridingStartTask?.cancel()
+        ridingStartTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer {
+                // 취소로 중간에 빠져나가도 오버레이는 반드시 내려야 한다 (화면 잠김 방지)
+                self.isStartingRiding = false
+                print("✅ 라이딩 시작 프로세스 종료 - 로딩 해제")
+            }
+
+            await self.startRidingAPIProcess(isNotNormal: isNotNormal, locationManager: locationManager)
         }
     }
 
@@ -221,16 +238,16 @@ extension RidingViewModel {
 
         startRidingNavigationMode(locationManager: locationManager, logPrefix: "startRidingProcess")
 
-        Task { [weak self] in
-            do {
-                try Task.checkCancellation()
-                await self?.getRouteGuideAPI(isNotNormal: isNotNormal)
-                print("✅ 라이딩 가이드 API 호출 완료")
-            } catch is CancellationError {
-                print("🚫 라이딩 가이드 API Task 취소됨")
-            } catch {
-                print("❌ 라이딩 가이드 API 에러: \(error)")
-            }
+        // 자식 Task로 띄우면 여기서 즉시 반환해 "시작 완료"로 표시된다.
+        // 가이드가 실제로 실릴 때까지 기다려야 로딩 표시와 화면이 맞는다.
+        do {
+            try Task.checkCancellation()
+            await getRouteGuideAPI(isNotNormal: isNotNormal)
+            print("✅ 라이딩 가이드 API 호출 완료")
+        } catch is CancellationError {
+            print("🚫 라이딩 가이드 API Task 취소됨")
+        } catch {
+            print("❌ 라이딩 가이드 API 에러: \(error)")
         }
     }
 
@@ -238,9 +255,29 @@ extension RidingViewModel {
 
     @MainActor
     func endRiding(isStart: Bool, locationManager: LocationManager) async {
+        // 진행 중인 편의시설 요청을 먼저 끊는다.
+        // 아래 API들을 await하는 동안 뒤늦게 끝나면 지운 마커가 되살아난다.
+        cancelFacilityMarkerTasks()
+
+        // 같은 이유로 라이딩 시작(가이드 로드)도 끊는다.
+        //
+        // 주의: 이 취소가 시작 Task보다 먼저 도달한다고 가정하면 안 된다.
+        // 실측(flag 전이 [false, true, false])상 시작 Task가 먼저 실행돼 flag=true까지 찍은 뒤
+        // 가이드 요청에서 suspend하고, 그 사이 여기가 돈다. 뒤늦은 가이드를 막는 실제 방어선은
+        // getRouteGuideAPI가 응답 도착 후 확인하는 Task.isCancelled다.
+        ridingStartTask?.cancel()
+
         locationManager.stopLocationUpdates()
         locationManager.stopNavigationMode()
-        locationManager.cancelAutoTrackingTimer()
+        // 시작 전 줌으로 되돌린다. **리셋보다 먼저** — 리셋이 기억해 둔 값을 비운다.
+        // 뒤로가기(라이딩 중)와 종료 버튼 모두 이 함수를 거치므로 여기 한 곳이면 된다.
+        if let mapView {
+            locationManager.restoreZoomBeforeRiding(on: mapView)
+        }
+
+        // 다음 라이딩 시작에 줌이 다시 걸리도록. stopNavigationMode에 두면
+        // 지도를 밀 때마다 리셋돼 추적 재개마다 줌이 걸린다.
+        locationManager.resetRidingStartZoom()
 
         if let firstLocation = routeLocation.first,
            let lat = Double(firstLocation.lat),
@@ -292,7 +329,7 @@ extension RidingViewModel {
         print("🌍 onChange - 위치 업데이트 재시작")
 
         if let mapView {
-            locationManager.startNavigationMode(on: mapView)
+            locationManager.startNavigationMode(on: mapView, start: .ridingStart)
             print("🧭 onChange - 네비게이션 모드 재시작")
         } else {
             print("❌ onChange - mapView가 nil이어서 네비게이션 모드 재시작 실패")
@@ -325,13 +362,13 @@ extension RidingViewModel {
             self.locationManager?.setInitialCameraPosition(to: coordinate, on: mapView)
             print("🎯 \(logPrefix) - 카메라를 사용자 위치로 이동: \(coordinate.lat), \(coordinate.lng)")
             print("🧭 \(logPrefix) - 나침반 사용 가능 여부: \(CLLocationManager.headingAvailable())")
-            locationManager.startNavigationMode(on: mapView)
+            locationManager.startNavigationMode(on: mapView, start: .ridingStart)
         } else {
             print("❌ \(logPrefix) - 사용자 위치 또는 mapView를 가져올 수 없어 카메라 이동 실패")
 
             if let mapView {
                 print("🧭 \(logPrefix) - 위치 없이 네비게이션 모드 시작 (위치 업데이트 대기)")
-                locationManager.startNavigationMode(on: mapView)
+                locationManager.startNavigationMode(on: mapView, start: .ridingStart)
             }
         }
     }

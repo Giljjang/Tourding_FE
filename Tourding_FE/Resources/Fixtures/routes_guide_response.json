@@ -1,0 +1,73 @@
+{
+  "routeSummaryId": 59,
+  "isUsed": true,
+  "duration": 9967.4,
+  "distance": 49457.3,
+  "ascent": 654.7,
+  "descent": 691.7,
+  "uphillLevel": "HIGH",
+  "preferenceScore": 0.7841,
+  "appliedOption": {
+    "cyclingProfile": "cycling-regular",
+    "fastRoute": false,
+    "avoidSteps": true,
+    "avoidFords": true,
+    "skillLevel": "BEGINNER"
+  },
+  "guides": [
+    {
+      "sequenceNum": 0,
+      "distance": 0,
+      "duration": 0,
+      "instructions": "출발지",
+      "locationName": "상주박물관",
+      "pointIndex": 0,
+      "type": 11,
+      "lon": "128.2411137961626",
+      "lat": "36.459996612556324"
+    },
+    {
+      "sequenceNum": 1,
+      "distance": 1030,
+      "duration": 206000,
+      "instructions": "Turn left onto 경천로",
+      "locationName": "경천로",
+      "pointIndex": 1,
+      "type": 0,
+      "lon": "128.240009",
+      "lat": "36.46001"
+    },
+    {
+      "sequenceNum": 2,
+      "distance": 240,
+      "duration": 48000,
+      "instructions": "경유지",
+      "locationName": "개천지와 조성지",
+      "pointIndex": 2,
+      "type": 9,
+      "lon": "128.4624487572",
+      "lat": "36.3880253434"
+    },
+    {
+      "sequenceNum": 3,
+      "distance": 0,
+      "duration": 0,
+      "instructions": "목적지",
+      "locationName": "낙단보",
+      "pointIndex": 3,
+      "type": 10,
+      "lon": "128.305629353049",
+      "lat": "36.3605591346931"
+    }
+  ],
+  "paths": [
+    { "sequenceNum": 0, "lon": "128.24054", "lat": "36.460187" },
+    { "sequenceNum": 1, "lon": "128.240009", "lat": "36.46001" }
+  ],
+  "locations": [
+    { "sequenceNum": 1, "name": "상주박물관", "type": "Start", "typeCode": "", "contentId": "", "contentTypeId": "", "lon": "128.2411137961626", "lat": "36.459996612556324" },
+    { "sequenceNum": 2, "name": "개천지와 조성지", "type": "WayPoint", "typeCode": "경유지", "contentId": "127082", "contentTypeId": "12", "lon": "128.4624487572", "lat": "36.3880253434" },
+    { "sequenceNum": 3, "name": "낙단보", "type": "Goal", "typeCode": "", "contentId": "", "contentTypeId": "", "lon": "128.305629353049", "lat": "36.3605591346931" }
+  ],
+  "extraInfo": { "steepness": {}, "suitability": {}, "surface": {}, "waytype": {} }
+}

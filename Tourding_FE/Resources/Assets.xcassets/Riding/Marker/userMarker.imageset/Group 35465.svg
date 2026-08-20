@@ -3,10 +3,10 @@
 <g filter="url(#filter0_d_1691_13614)">
 <circle cx="28.2119" cy="28.2801" r="8.51185" transform="rotate(-150.724 28.2119 28.2801)" fill="white"/>
 <circle cx="28.2129" cy="28.2792" r="5.67457" transform="rotate(-150.724 28.2129 28.2792)" fill="#2C333A"/>
-<path d="M35.529 14.5143C35.796 14.3767 36.1171 14.5565 36.1389 14.8562L36.5595 20.664C36.5836 20.9968 36.2275 21.2234 35.9365 21.0604L30.3417 17.9238C30.0506 17.7606 30.0583 17.3386 30.3548 17.1855L35.529 14.5143Z" fill="#2C333A" stroke="white"/>
+<path d="M35.529 14.5143C35.796 14.3767 36.1171 14.5565 36.1389 14.8562L36.5595 20.664C36.5836 20.9968 36.2275 21.2234 35.9365 21.0604L30.3417 17.9238C30.0506 17.7606 30.0583 17.3386 30.3548 17.1855L35.529 14.5143Z" transform="rotate(-38.5 28.2119 28.2801)" fill="#2C333A" stroke="white"/>
 </g>
 <defs>
-<filter id="filter0_d_1691_13614" x="16.0232" y="13.9668" width="24.713" height="30.1773" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<filter id="filter0_d_1691_13614" x="12" y="6" width="32" height="42" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
 <feFlood flood-opacity="0" result="BackgroundImageFix"/>
 <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
 <feOffset dy="3.67557"/>

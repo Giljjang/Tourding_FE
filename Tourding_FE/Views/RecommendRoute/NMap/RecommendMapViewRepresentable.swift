@@ -24,7 +24,6 @@ struct RecommendMapViewRepresentable: UIViewRepresentable {
     
     // MARK: - Callbacks
     var onLocationUpdate: ((CLLocation) -> Void)?
-    var onMapTap: ((NMGLatLng) -> Void)?
     
     // MARK: - UIViewRepresentable
     func makeUIView(context: Context) -> UIView {
@@ -36,7 +35,6 @@ struct RecommendMapViewRepresentable: UIViewRepresentable {
         mapViewController.markerCoordinates = markerCoordinates
         mapViewController.markerIcons = markerIcons
  
-        mapViewController.onMapTap = onMapTap
         
         // ridingViewModel 전달
         mapViewController.recommendRouteViewModel = recommendRouteViewModel
@@ -78,11 +76,9 @@ struct RecommendMapViewRepresentable: UIViewRepresentable {
         mapViewController.markerIcons = markerIcons
 
         mapViewController.onLocationUpdate = onLocationUpdate
-        mapViewController.onMapTap = onMapTap
         
         // RecommendRouteViewModel에 LocationManager, NMFMapView, MarkerManager, PathManager 설정 (viewDidLoad 완료 후)
         if let recommendRouteViewModel = recommendRouteViewModel {
-            recommendRouteViewModel.locationManager = mapViewController.locationManager
             if let nmfMapView = mapViewController.nmfMapView {
                 recommendRouteViewModel.mapView = nmfMapView
             }

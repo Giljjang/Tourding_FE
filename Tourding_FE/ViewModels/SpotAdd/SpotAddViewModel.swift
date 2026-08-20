@@ -35,15 +35,19 @@ final class SpotAddViewModel: ObservableObject {
     private var nearbySearchSerialTask: Task<Void, Never>?
     private var nearbySearchGeneration = 0
     
+    private let userSession: UserSessionProviding
+
     init(
         tourRepository: TourRepositoryProtocol,
-        routeRepository: RouteRepositoryProtocol) {
+        routeRepository: RouteRepositoryProtocol,
+        userSession: UserSessionProviding) {
             self.tourRepository = tourRepository
             self.routeRepository = routeRepository
-            
+            self.userSession = userSession
+
             // UserDefaults에서 저장된 필터 상태 복원
             self.clickFliter = UserDefaults.standard.string(forKey: "SpotAddClickFilter") ?? "전체"
-            self.userId = KeychainHelper.loadUid()
+            self.userId = userSession.userId
     }
     
     
@@ -289,6 +293,27 @@ final class SpotAddViewModel: ObservableObject {
         }
     }
     
+    /// 스팟 추가 진입점.
+    ///
+    /// 화면은 스팟 리스트를 먼저 띄우고 routeLocation을 나중에 받는다.
+    /// 리스트가 뜨는 순간 사용자는 탭할 수 있으므로, 추가 시점에 경로가 비어 있을 수 있다.
+    /// 그대로 postRouteAPI에 넘기면 guard에 걸려 POST가 나가지 않는데도 그냥 pop돼
+    /// "추가했는데 리스트에도 지도에도 없는" 상태가 된다.
+    @MainActor
+    func addSpotToRoute(_ spot: SpotData) async {
+        if routeLocation.isEmpty {
+            await getRouteLocationAPI(showsLoading: false)
+        }
+
+        guard !routeLocation.isEmpty else {
+            errorMessage = "경로 정보를 불러오지 못해 스팟을 추가하지 못했습니다."
+            print("❌ 스팟 추가 중단 - 경로 데이터 없음")
+            return
+        }
+
+        await postRouteAPI(originalData: routeLocation, updatedData: spot)
+    }
+
     @MainActor
     func postRouteAPI(originalData: [LocationNameModel], updatedData: SpotData) async {
         guard let userId = userId else {
@@ -305,6 +330,8 @@ final class SpotAddViewModel: ObservableObject {
         }
         
         isLoading = true
+        // 해제를 do 블록 안에 두면 실패 시 로딩 오버레이가 영구히 남는다
+        defer { isLoading = false }
 
         // wayPoints (0, last 제외 + updatedData 마지막에 추가)
         let middlePoints = originalData.dropFirst().dropLast()
@@ -321,14 +348,14 @@ final class SpotAddViewModel: ObservableObject {
         }
         let locateName = locateNames.joined(separator: ",")
 
-        // typeCode (0번, 마지막 제외 + updatedData.typeCode를 마지막 앞에 삽입)
-        var typeCodes = originalData.dropFirst().dropLast().map { $0.typeCode }
-        if typeCodes.count >= 1 {
-            typeCodes.insert(updatedData.typeCode, at: typeCodes.count - 1)
-        } else {
-            typeCodes.append(updatedData.typeCode)
-        }
-        let typeCode = typeCodes.joined(separator: ",")
+        // typeCode (0, last 제외 + updatedData 마지막에 추가)
+        //
+        // wayPoints·contentId와 같은 "끝에 붙이기" 규칙이어야 한다.
+        // locateName은 도착지가 배열에 남아 있어 count-1이 "도착지 앞"이지만,
+        // 여기는 dropLast()로 도착지를 이미 뺐으므로 count-1이 "마지막 경유지 앞"이 되어
+        // 새 스팟과 마지막 경유지의 카테고리가 서로 뒤바뀐다.
+        let typeCodes = originalData.dropFirst().dropLast().map { $0.typeCode }
+        let typeCode = (typeCodes + [updatedData.typeCode]).joined(separator: ",")
 
         // contentId (0, last 제외 + updatedData 마지막에 추가)
         let contentIds = originalData.dropFirst().dropLast()
@@ -361,9 +388,7 @@ final class SpotAddViewModel: ObservableObject {
         print("requestBody.contentId: \(requestBody.contentId)")
         
         do {
-            let response: () = try await routeRepository.postRoutes(requestBody: requestBody)
-
-            isLoading = false
+            _ = try await routeRepository.postRoutes(requestBody: requestBody)
         } catch {
             print("POST ERROR: /routes \(error)")
         }

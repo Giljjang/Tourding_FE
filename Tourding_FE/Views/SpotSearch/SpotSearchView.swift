@@ -95,7 +95,8 @@ struct SpotSearchView: View {
                     regionTitle = [r?.region1depthName, r?.region2depthName, r?.region3depthName]
                         .compactMap { $0 }.joined(separator: " ")
                 } catch {
-                    // 필요 시 에러 토스트/라벨
+                    // 지역명은 부가 정보라 화면을 막지 않는다. 다만 조용히 삼키지는 않는다.
+                    print("❌ 역지오코딩 실패 - 지역명 미표시: \(error)")
                 }
                 // TODO: 여기서 우리 서버 카드 리스트 호출 붙이면 됨
                 requestSpots(for: coord)

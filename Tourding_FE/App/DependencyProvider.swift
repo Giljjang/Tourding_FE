@@ -8,31 +8,38 @@
 import Foundation
 
 struct DependencyProvider {
+    #if DEBUG
+    // Mock은 scenario 상태를 뷰모델 간에 공유해야 하므로 단일 인스턴스를 유지한다.
+    private static let sharedMockRoute = MockRouteRepository()
+    private static let sharedMockKakao = MockKakaoRepository()
+    #endif
+
     private static func makeRouteRepository() -> RouteRepositoryProtocol {
         #if DEBUG
         if MockAPIConfiguration.useMockAPI {
             print("🧪 Using MockRouteRepository")
-            return MockRouteRepository.shared
+            return sharedMockRoute
         }
         #endif
-        return RouteRepository.shared
+        return RouteRepository()
     }
 
     private static func makeKakaoRepository() -> KakaoRepositoryProtocol {
         #if DEBUG
         if MockAPIConfiguration.useMockAPI {
             print("🧪 Using MockKakaoRepository")
-            return MockKakaoRepository.shared
+            return sharedMockKakao
         }
         #endif
-        return KakaoRepository.shared
+        return KakaoRepository()
     }
 
     @MainActor static func makeTabViewModels() -> TabViewModelsContainer {
         let routeRepository = makeRouteRepository()
-        let tourRepository = TourRepository.shared
+        let tourRepository = TourRepository()
 
-        let homeViewModel = HomeViewModel(routeRepository: routeRepository)
+        let homeViewModel = HomeViewModel(routeRepository: routeRepository,
+                                          userSession: makeUserSession())
         let myPageViewModel = MyPageViewModel()
         let spotSearchViewModel = SpotSearchViewModel(tourRepository: tourRepository)
         let dsViewModel = DestinationSearchViewModel()
@@ -47,10 +54,15 @@ struct DependencyProvider {
         )
     }
 
+    private static func makeUserSession() -> UserSessionProviding {
+        return KeychainUserSession()
+    }
+
     @MainActor static func makeRidingViewModel() -> RidingViewModel {
         let ridingViewModel = RidingViewModel(
             routeRepository: makeRouteRepository(),
-            kakaoRepository: makeKakaoRepository()
+            kakaoRepository: makeKakaoRepository(),
+            userSession: makeUserSession()
         )
         return ridingViewModel
     }
@@ -60,12 +72,13 @@ struct DependencyProvider {
     }
 
     @MainActor static func makeSpotAddViewModel() -> SpotAddViewModel {
-        let tourRepository = TourRepository.shared
+        let tourRepository = TourRepository()
         let routeRepository = makeRouteRepository()
 
         let spotAddViewModel = SpotAddViewModel(
             tourRepository: tourRepository,
-            routeRepository: routeRepository)
+            routeRepository: routeRepository,
+            userSession: makeUserSession())
         return spotAddViewModel
     }
 
@@ -75,25 +88,27 @@ struct DependencyProvider {
     }
 
     @MainActor static func makeFilterBarViewModel() -> FilterBarViewModel {
-        let FilterBarViewModel = FilterBarViewModel(tourRepository: TourRepository.shared)
+        let FilterBarViewModel = FilterBarViewModel(tourRepository: TourRepository())
         return FilterBarViewModel
     }
 
     @MainActor static func makeDetailViewModel() -> DetailSpotViewModel {
-        let tourRepository = TourRepository.shared
+        let tourRepository = TourRepository()
         let routeRepository = makeRouteRepository()
 
         return DetailSpotViewModel(
             tourRepository: tourRepository,
-            routeRepository: routeRepository)
+            routeRepository: routeRepository,
+            userSession: makeUserSession())
     }
 
     static func makeRecommendViewModel() -> RecommendRouteViewModel {
-        let tourRepository = TourRepository.shared
+        let tourRepository = TourRepository()
         let routeRepository = makeRouteRepository()
 
         return RecommendRouteViewModel(
             tourRepository: tourRepository,
-            routeRepository: routeRepository)
+            routeRepository: routeRepository,
+            userSession: KeychainUserSession())
     }
 }

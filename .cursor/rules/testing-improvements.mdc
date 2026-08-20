@@ -6,6 +6,8 @@ alwaysApply: false
 
 # Testing
 
+> 개발 방식(TDD 사이클·실행 명령·Red Flags)은 `tdd-workflow.mdc`가 기준이다. 이 파일은 테스트 자산 목록.
+
 ## 프레임워크
 
 - Swift Testing: `@Test`, `#expect`, `@testable import Tourding_FE`
@@ -13,8 +15,18 @@ alwaysApply: false
 
 ## 구현됨
 
+테스트 파일 39개 / `@Test` 215건, 스킵 0. 주요 회귀 방지 테스트만 적는다 (전체 목록 아님).
+
 - `FixtureLoaderTests` — fixture 디코딩, MockRouteRepository 가이드(type 9)
 - `Resources/Fixtures/` — user, routes, guide(simple/waypoints), path(258점), toilet, cs
+- `CameraFollowTests` — 카메라 추적 판정(`shouldFollowUser`), 터치 해제, 3m 자동 재개
+- `HeadingResolverTests` — 방위 판정(진북 우선), 아이콘 오프셋, 정규화
+- `SingleLocationManagerTests` — `LocationManager` 인스턴스가 화면당 하나인지
+- `MapBindingLifetimeTests` / `RecommendMapBindingLifetimeTests` — 지도 참조 소유권
+- `MarkerPassingTests` — 30m 통과 판정(맨 앞 한 칸만 소비)
+- `RidingStartRecoveryTests` — 라이딩 시작 백업/복원 순서
+- `RouteAddRequestTests` — 두 진입점의 POST 본문 동일성
+- `LoadingStateOnFailureTests` — 실패 시 `isLoading` 해제
 
 ## Mock 실행
 
@@ -23,9 +35,11 @@ Xcode Launch Argument: `-UseMockAPI`
 
 ## 추가 테스트 예정
 
-1. `PathSimplifier` — 단순화 알고리즘
+1. ~~`PathSimplifier` — 단순화 알고리즘~~ (완료: `PathSimplifierTests` 11건)
 2. `RidingViewModel+Utils` — Haversine, 좌표 파싱
-3. `RidingViewModel.makeMarkerIcons(for:)` — Start/WayPoint/Goal 아이콘 순번 (pure static)
+3. `RidingViewModel.makeMarkerIcons(for:)` — Start/WayPoint/Goal 아이콘 순번
+   ⚠️ 현재 `NMFOverlayImage` 반환이라 `numberMarker(1)`과 `numberMarker(2)`를 값으로 구분할 수 없다.
+   번호 계산을 `[Int]`/enum 반환 순수 함수로 분리해야 검증 가능
 4. `RidingViewModel+LocationTracking` — 마커 통과
 5. `RidingViewModel+Lifecycle` — 편집 모드 경로 로드, 라이딩 시작/종료 (Mock API)
 6. RidingViewModel Mock 시나리오 (simple ↔ waypoints)

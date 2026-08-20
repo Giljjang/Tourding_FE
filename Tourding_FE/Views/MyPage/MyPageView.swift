@@ -14,6 +14,7 @@ struct MyPageView: View {
     @EnvironmentObject var navigationManager: NavigationManager
     @ObservedObject var recentSearchViewModel : RecentSearchViewModel
     @EnvironmentObject var routeSharedManager: RouteSharedManager
+    @EnvironmentObject var container: AppContainer
 
     
     init(viewModel: MyPageViewModel, recentSearchViewModel: RecentSearchViewModel) {
@@ -53,18 +54,12 @@ struct MyPageView: View {
                             print("취소됨")
                         },
                         onActive: {
-                            if let provider = KeychainHelper.load(key: "loginProvider") {
-                                
-                                if provider == "kakao" {
-                                    myPageViewModel.logout(globalLoginViewModel: loginViewModel)
-                                } else {
-                                    
-                                    myPageViewModel.AppleLogout(globalLoginViewModel: loginViewModel)
-                                }
-                                navigationManager.currentTab = .HomeView
-                                routeSharedManager.clearRoute()
-                                print("로그아웃됨")
-                            }
+                            // 세션 정리는 LoginViewModel(Keychain) + AppContainer(화면 상태) 두 곳으로 고정
+                            loginViewModel.logout()
+                            container.clearSessionState()
+                            navigationManager.currentTab = .HomeView
+                            routeSharedManager.clearRoute()
+                            print("로그아웃됨")
                         }
                     )
                 }
@@ -89,11 +84,10 @@ struct MyPageView: View {
                             print("취소됨")
                         },
                         onActive: {
-//                            myPageViewModel.withdraw(globalLoginViewModel: loginViewModel)
-                            recentSearchViewModel.clear()
+                            loginViewModel.revokeAccount()
+                            container.clearSessionState()
                             navigationManager.currentTab = .HomeView
                             routeSharedManager.clearRoute()
-                            loginViewModel.revokeAccount()
                             print("회원탈퇴됨")
                         }
                     )
