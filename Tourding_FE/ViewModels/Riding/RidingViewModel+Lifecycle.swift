@@ -32,8 +32,16 @@ extension RidingViewModel {
         routeSource: RidingRouteSource,
         onStartRiding: @escaping () -> Void
     ) {
+        // **비정상 종료 복구는 저장된 라이딩 경로(isUsed=true)를 이어서 간다.**
+        //
+        // 호출부는 `routeSource`를 기본값(.draft)으로 넘기고 `isNotNormal`로만 알린다.
+        // 그대로 두면 `endRiding`이 `flag`를 false로 되돌리는 순간
+        // `isUsedRoute`(`flag || routeSource.isUsed`)가 false로 떨어져
+        // **편집 대상이 draft로 바뀐다** — 경로도, 그 경로의 스타일도 딴 것이 뜬다.
+        let effectiveSource: RidingRouteSource = isNotNormal == true ? .recentUsed : routeSource
+
         // 이후 재정렬 POST·경로선 재조회·포그라운드 새로고침이 모두 이 값을 참조한다
-        self.routeSource = routeSource
+        self.routeSource = effectiveSource
 
         if let isNotNormal {
             flag = isNotNormal
@@ -57,7 +65,7 @@ extension RidingViewModel {
         Task { [weak self] in
             await self?.loadEditModeRouteData(
                 cameraOnlyWhenNotRiding: true,
-                routeSource: routeSource
+                routeSource: effectiveSource
             )
         }
     }

@@ -365,8 +365,13 @@ GET은 앱 실행당 한 번이다.
 
 판정은 `RouteEditSession.isUsed` 하나다 — "이어서 가는 경로인가".
 `isUsedRoute`(`flag \|\| routeSource.isUsed`)와 같은 기준이라 새 플래그가 필요 없다.
-**비정상 종료는 `routeSource`가 `.draft`로 들어오지만 `flag`로 라이딩 중이 된다.**
-그래서 `beginEditing`은 `flag`가 정해진 **뒤에** 불러야 한다 —
+
+**비정상 종료 복구는 `routeSource`를 `.recentUsed`로 보정한다.**
+호출부는 기본값(`.draft`)을 넘기고 `isNotNormal`로만 알리는데, 그대로 두면
+`endRiding`이 `flag`를 false로 되돌리는 순간 `isUsedRoute`가 false로 떨어져
+**편집 대상이 draft로 바뀐다** — 라이딩을 마치고 편집으로 돌아오면
+경로도, 그 경로의 스타일도 딴 것이 뜬다.
+`beginEditing`도 `flag`가 정해진 **뒤에** 불러야 한다 —
 먼저 부르면 복구 진입에서 스팟 추가가 draft를 본다.
 
 draft는 아직 "이어서 가는 경로"가 아니다. 직전에 다른 경로를 보며 남은
@@ -627,7 +632,7 @@ Tourding_FETests/
     진단 로그를 먼저 넣었으면 한 번에 끝났을 일이다
   - 빈 catch 2건, 죽은 코드 5건(+`onMapTap` 배선 전부) 정리
 
-- [x] **라이딩 스타일을 경로 요청에 반영 (TDD)** — 테스트 326개, 스킵 0
+- [x] **라이딩 스타일을 경로 요청에 반영 (TDD)** — 테스트 328개, 스킵 0
   - **전제가 틀렸던 것을 바로잡음** — 서버가 `routeOption` 없이도 저장된 프로필을 쓸 거라 보고
     라이딩 화면 3곳에만 실었다. 실제로는 **디폴트로 계산**한다.
     스팟추가·상세·홈(routes)·홈(by-name) 네 곳에서 사용자 설정이 무시되고 있었다

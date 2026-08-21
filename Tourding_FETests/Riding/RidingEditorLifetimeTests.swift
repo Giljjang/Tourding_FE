@@ -64,4 +64,46 @@ struct RidingEditorLifetimeTests {
         #expect(manager([.HomeView]).holdsRidingEditor == false)
         #expect(manager([.MyPageView, .RidingStyleSettingsView()]).holdsRidingEditor == false)
     }
+
+    // MARK: - 비정상 종료 복구
+
+    /// **복구는 저장된 라이딩 경로를 이어서 간다 — 라이딩을 끝내도 그대로다.**
+    ///
+    /// 복구 진입은 `routeSource`가 `.draft`로 들어오고 `flag`로만 라이딩 중이 된다.
+    /// 그대로 두면 `endRiding`이 `flag`를 false로 되돌리는 순간
+    /// `isUsedRoute`(`flag || routeSource.isUsed`)가 false로 떨어져
+    /// **편집 대상이 draft로 바뀐다** — 경로도, 그 경로의 스타일도 딴 것이 뜬다.
+    @Test func abnormalRecoveryKeepsUsedRouteAfterEndingRide() async {
+        let viewModel = makeTestRidingViewModel()
+
+        viewModel.handleInitialEntry(
+            locationManager: LocationManager(),
+            isNotNormal: true,
+            isStart: true,
+            routeSource: .draft,       // 호출부가 기본값으로 넘긴다
+            onStartRiding: {}
+        )
+        #expect(viewModel.isUsedRoute == true, "전제: 복구 직후는 라이딩 중")
+
+        await viewModel.endRiding(isStart: true, locationManager: LocationManager())
+
+        #expect(viewModel.isUsedRoute == true, "라이딩을 끝내도 편집 대상은 그 경로다")
+        #expect(viewModel.routeSource == .recentUsed)
+    }
+
+    /// 일반 진입은 그대로다 — 홈에서 만든 새 코스는 draft가 맞다
+    @Test func normalEntryKeepsDraftSource() {
+        let viewModel = makeTestRidingViewModel()
+
+        viewModel.handleInitialEntry(
+            locationManager: LocationManager(),
+            isNotNormal: nil,
+            isStart: false,
+            routeSource: .draft,
+            onStartRiding: {}
+        )
+
+        #expect(viewModel.routeSource == .draft)
+        #expect(viewModel.isUsedRoute == false)
+    }
 }
