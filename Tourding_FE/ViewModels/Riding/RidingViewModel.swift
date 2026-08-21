@@ -134,7 +134,7 @@ final class RidingViewModel: ObservableObject {
     func loadRidingProfile() async {
         guard let userId else { return }
 
-        routeOption = await profileStore.currentOption(userId: userId)
+        routeOption = await profileStore.effectiveOption(userId: userId, editSession: editSession)
     }
 
     /// 화면 진입·복귀에서 스타일을 다시 읽는다.

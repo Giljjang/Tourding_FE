@@ -350,7 +350,7 @@ final class SpotAddViewModel: ObservableObject {
             from: updatedRoute,
             userId: userId,
             isUsed: editSession.isUsed,
-            routeOption: await profileStore.currentOption(userId: userId)
+            routeOption: await profileStore.effectiveOption(userId: userId, editSession: editSession)
         ) else {
             print("❌ 경로 본문을 만들 수 없습니다")
             errorMessage = "경로 정보가 부족합니다."

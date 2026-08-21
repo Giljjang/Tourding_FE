@@ -46,6 +46,9 @@ protocol RidingProfileProviding: AnyObject {
     /// 걸려 있는 동안에는 `currentOption`이 저장된 프로필 대신 이 값을 준다.
     /// nil을 넣으면 해제되고 저장된 프로필로 돌아간다.
     func setSessionOverride(_ option: RouteOptionModel?)
+
+    /// 지금 걸려 있는 일시 옵션. 우선순위 판정(`RideStyleResolver`)에 쓴다.
+    var sessionOverride: RouteOptionModel? { get }
 }
 
 @MainActor
@@ -65,7 +68,7 @@ final class RidingProfileStore: RidingProfileProviding {
 
     /// 이번 세션에만 적용할 옵션. 서버에 저장하지 않으므로 캐시와 분리해 둔다 —
     /// 섞으면 일시 옵션이 저장된 프로필인 양 `update`로 새어 나간다.
-    private var sessionOverride: RouteOptionModel?
+    private(set) var sessionOverride: RouteOptionModel?
 
     /// 진행 중인 조회. 여럿이 동시에 물어도 요청은 하나다.
     private var inFlight: Task<RouteOptionModel?, Never>?
@@ -153,5 +156,26 @@ final class RidingProfileStore: RidingProfileProviding {
     private func fallback(for userId: Int) -> RouteOptionModel? {
         guard cachedUserId == userId else { return nil }
         return cached
+    }
+}
+
+extension RidingProfileProviding {
+    /// 이번 요청에 실을 스타일. 우선순위 판정은 `RideStyleResolver` 한 곳이다.
+    ///
+    /// 경로를 만드는 모든 호출부가 이걸 쓴다 — 저장소만 보면
+    /// "이 경로에 적용된 스타일"(`appliedOption`)을 놓쳐, 스타일 화면이 보여주는 값과
+    /// 요청에 실리는 값이 갈린다. 실측 로그에서 경로는 `cycling-road`인데
+    /// 앱이 든 값은 `cycling-regular`였다.
+    @MainActor
+    func effectiveOption(
+        userId: Int,
+        editSession: RouteEditSessionProviding
+    ) async -> RouteOptionModel? {
+        RideStyleResolver.effectiveOption(
+            sessionOverride: sessionOverride,
+            appliedToRoute: editSession.appliedOption,
+            isContinuingRoute: editSession.isUsed,
+            savedProfile: await currentOption(userId: userId)
+        )
     }
 }

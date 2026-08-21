@@ -198,7 +198,7 @@ final class DetailSpotViewModel: ObservableObject {
             from: updatedRoute,
             userId: userId,
             isUsed: editSession.isUsed,
-            routeOption: await profileStore.currentOption(userId: userId)
+            routeOption: await profileStore.effectiveOption(userId: userId, editSession: editSession)
         ) else {
             print("❌ 경로 본문을 만들 수 없습니다")
             return

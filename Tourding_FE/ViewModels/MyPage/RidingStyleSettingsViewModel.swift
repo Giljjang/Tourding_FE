@@ -69,19 +69,23 @@ final class RidingStyleSettingsViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        // **이어서 가는 경로일 때만** 그 경로에 적용된 스타일을 보여준다.
+        // 지금 적용될 스타일을 그대로 보여준다. 판정은 `RideStyleResolver` 한 곳이다.
         //
-        //   최근 경로 이어서 가기 · 비정상 종료 복구 → 경로의 `appliedOption`
-        //   홈 코스 만들기 · 추천 코스(draft)        → 마이페이지 프로필
+        //   ① 이 편집 세션에서 고른 값 — **편집 창이 살아 있는 동안 유지된다.**
+        //      스팟을 추가하러 갔다 오거나 이 화면을 다시 열어도 그대로다.
+        //      매번 초기화되면 고를 때마다 다시 골라야 한다.
+        //   ② 이어서 가는 경로(최근 경로·비정상 복구)에 적용된 `appliedOption`
+        //   ③ 둘 다 없으면 아래 GET으로 마이페이지 프로필 (홈 코스 만들기·추천 코스)
         //
-        // draft는 아직 "이어서 가는 경로"가 아니다. 직전에 다른 경로를 보며 남은
-        // `appliedOption`이 있어도 그건 이 경로의 값이 아니다.
-        //
-        // 걸어둔 일시 옵션 자체를 다시 보여주지는 않는다 —
-        // 그러면 "일시"가 아니라 누적 설정이 된다. 재계산까지 끝났다면
-        // 그 값이 곧 경로의 `appliedOption`이라 여기서 자연스럽게 반영된다.
-        if isTemporary, editSession.isUsed, let applied = editSession.appliedOption {
-            apply(applied)
+        // 편집 창을 벗어나면 `finishEditSession()`이 ①을 걷으므로 다음에 열면 ②나 ③이다.
+        if isTemporary,
+           let current = RideStyleResolver.effectiveOption(
+               sessionOverride: profileStore.sessionOverride,
+               appliedToRoute: editSession.appliedOption,
+               isContinuingRoute: editSession.isUsed,
+               savedProfile: nil          // 프로필은 아래 GET으로 읽는다
+           ) {
+            apply(current)
             return
         }
 

@@ -27,10 +27,14 @@ final class SpyProfileStore: RidingProfileProviding {
     }
 
     private(set) var sessionOverrides: [RouteOptionModel?] = []
+    private(set) var sessionOverride: RouteOptionModel?
 
     func currentOption(userId: Int) async -> RouteOptionModel? { stubbedOption }
     func update(_ option: RouteOptionModel, userId: Int) { updatedOptions.append(option) }
-    func setSessionOverride(_ option: RouteOptionModel?) { sessionOverrides.append(option) }
+    func setSessionOverride(_ option: RouteOptionModel?) {
+        sessionOverrides.append(option)
+        sessionOverride = option
+    }
     func invalidate() {}
     func clear() { clearCallCount += 1 }
 }

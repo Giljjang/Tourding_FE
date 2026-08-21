@@ -141,14 +141,13 @@ struct TemporaryRideStyleTests {
         #expect(store.sessionOverrides.isEmpty, "프로필 저장은 일시 옵션을 만들지 않는다")
     }
 
-    /// **화면을 다시 열면 서버에 저장된 값에서 다시 시작한다.**
+    /// **편집 창에 머무는 동안에는 방금 고른 값이 유지된다.**
     ///
-    /// 일시 옵션은 그 화면을 연 동안만 유효하다. 이전에 걸어둔 값을 다시 보여주면
-    /// "일시"가 아니라 누적 설정이 되어, 마이페이지에 저장된 진짜 프로필이 무엇인지
-    /// 화면에서 확인할 방법이 사라진다.
-    @Test func temporaryModeAlwaysShowsSavedProfile() async {
+    /// 스팟을 추가하러 갔다 오거나 스타일 화면을 다시 열어도, 이 편집 세션에서
+    /// 정한 스타일은 그대로다. 매번 초기화되면 고를 때마다 다시 골라야 한다.
+    @Test func styleScreenKeepsChoiceWhileEditorIsAlive() async {
         let (store, userRepository) = storeHolding(saved)
-        store.setSessionOverride(temporary)   // 이전에 걸어둔 일시 옵션
+        store.setSessionOverride(temporary)          // 이 편집 세션에서 고른 값
         let viewModel = RidingStyleSettingsViewModel(
             userRepository: userRepository,
             userSession: FakeUserSession(userId: 49),
@@ -158,28 +157,28 @@ struct TemporaryRideStyleTests {
 
         await viewModel.loadRidingProfile()
 
-        #expect(viewModel.selectedBikeType == BikeType(apiValue: saved.cyclingProfile),
-                "이전 일시 설정이 아니라 서버에 저장된 값을 보여준다")
-        #expect(viewModel.selectedSkillLevel == RidingSkillLevel(apiValue: saved.skillLevel))
-        #expect(userRepository.getRidingProfileCallCount == 1, "서버를 직접 읽는다")
+        #expect(viewModel.selectedBikeType == .mountain, "방금 고른 값이 남아 있다")
+        #expect(userRepository.getRidingProfileCallCount == 0)
     }
 
-    /// 다시 연 화면에서 그대로 완료를 누르면 이전 일시 옵션이 걷힌다 —
-    /// 서버 값으로 되돌아가는 셈이다
-    @Test func reopeningAndConfirmingRestoresSavedProfile() async {
+    /// **편집 창을 벗어나면 초기화된다.**
+    /// `finishEditSession()`이 일시 옵션을 걷으므로 다음에 열면 서버 값이다.
+    @Test func styleScreenResetsAfterLeavingEditor() async {
         let (store, userRepository) = storeHolding(saved)
+        let riding = makeTestRidingViewModel(profileStore: store, userId: 49)
         store.setSessionOverride(temporary)
+
+        riding.finishEditSession()                    // 뒤로가기 · 라이딩 종료
+
         let viewModel = RidingStyleSettingsViewModel(
             userRepository: userRepository,
             userSession: FakeUserSession(userId: 49),
             profileStore: store,
             isTemporary: true
         )
-
         await viewModel.loadRidingProfile()
-        _ = await viewModel.saveRidingProfile()
 
-        #expect(await store.currentOption(userId: 49) == saved)
+        #expect(viewModel.selectedBikeType == BikeType(apiValue: saved.cyclingProfile))
     }
 
     // MARK: - 일시 옵션이 실제 경로에 반영되는가

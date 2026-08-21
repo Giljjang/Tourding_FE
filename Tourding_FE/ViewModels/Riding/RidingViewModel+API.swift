@@ -105,7 +105,7 @@ extension RidingViewModel {
             from: routeLocation,
             userId: userId,
             isUsed: isUsedRoute,
-            routeOption: await profileStore.currentOption(userId: userId)
+            routeOption: await profileStore.effectiveOption(userId: userId, editSession: editSession)
         ) else { return false }
 
         isLoading = true
@@ -307,7 +307,7 @@ extension RidingViewModel {
             // 편집 중인 경로의 출처를 따른다. flag는 라이딩 여부일 뿐이라
             // 최근 사용 경로(.recentUsed)를 편집할 때 draft를 덮어쓴다.
             isUsed: routeSource.isUsed,
-            routeOption: await profileStore.currentOption(userId: userId)
+            routeOption: await profileStore.effectiveOption(userId: userId, editSession: editSession)
         ) else {
             print("❌ 경로 본문을 만들 수 없습니다")
             return
@@ -343,7 +343,7 @@ extension RidingViewModel {
             // 편집 중인 경로의 출처를 따른다. flag는 라이딩 여부일 뿐이라
             // 최근 사용 경로(.recentUsed)를 편집할 때 draft를 덮어쓴다.
             isUsed: routeSource.isUsed,
-            routeOption: await profileStore.currentOption(userId: userId)
+            routeOption: await profileStore.effectiveOption(userId: userId, editSession: editSession)
         ) else {
             print("❌ 경로 본문을 만들 수 없습니다")
             return
@@ -393,7 +393,7 @@ extension RidingViewModel {
             from: locationData,
             userId: userId,
             isUsed: true,
-            routeOption: await profileStore.currentOption(userId: userId)
+            routeOption: await profileStore.effectiveOption(userId: userId, editSession: editSession)
         ) else {
             print("❌ 경로 본문을 만들 수 없습니다")
             return nil

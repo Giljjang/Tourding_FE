@@ -325,6 +325,23 @@ GET은 앱 실행당 한 번이다.
 만드는 경로(라이딩 시작·DnD·삭제·스팟추가)가 모두 같은 스타일을 쓴다.
 `clear()`(로그아웃)에서 함께 지워진다.
 
+**"이번 경로에 쓸 스타일" 판정은 `RideStyleResolver` 한 곳이다.**
+
+| 순위 | 값 | 언제 |
+|------|-----|------|
+| ① | 이 편집 세션에서 고른 일시 옵션 | **편집 창이 살아 있는 동안 유지** |
+| ② | 이어서 가는 경로의 `appliedOption` | 최근 경로·비정상 복구 |
+| ③ | 마이페이지 프로필 | 홈 코스 만들기·추천 코스 |
+
+경로를 만드는 모든 호출부가 `profileStore.effectiveOption(userId:editSession:)`를 쓴다.
+저장소만 보면 ②를 놓쳐, 스타일 화면이 보여주는 값과 요청에 실리는 값이 갈린다 —
+실측 로그에서 경로는 `cycling-road`인데 앱이 든 값은 `cycling-regular`였고,
+그 상태로는 아무것도 바꾸지 않아도 "변경됨"으로 판정된다.
+
+①은 스팟을 추가하러 갔다 오거나 스타일 화면을 다시 열어도 남는다.
+매번 초기화되면 고를 때마다 다시 골라야 한다.
+편집 창을 벗어나면 `finishEditSession()`이 ①을 걷으므로 다음에 열면 ②나 ③이다.
+
 **스타일 화면의 초기값은 진입 경로가 정한다.**
 
 | 진입 | 초기 스타일 |
@@ -470,8 +487,23 @@ xcodebuild test -scheme Tourding_FE \
 - `-derivedDataPath` 없으면 Xcode 실행 중에 `build.db: database is locked`
 - 사이클 비용: 콜드 3분 29초 / 웜 2분 01초 — 느리다는 것이 테스트를 몰아 쓰는 근거가 되지는 않는다
 
-**새 테스트 파일**은 `Tourding_FETests/`에 만들기만 하면 타겟에 자동 편입된다
-(`objectVersion = 77` + `PBXFileSystemSynchronizedRootGroup`). **pbxproj를 편집하지 마라.**
+**새 테스트 파일**은 `Tourding_FETests/` 아래 아무 폴더에나 만들기만 하면 타겟에
+자동 편입된다 (`objectVersion = 77` + `PBXFileSystemSynchronizedRootGroup`).
+하위 폴더도 자동 인식되므로 **pbxproj를 편집하지 마라.**
+
+테스트는 프로덕션 `ViewModels/`와 같은 화면 단위로 묶는다:
+
+```
+Tourding_FETests/
+├── Riding/          라이딩 시작·종료, 경유지 재정렬, 마커 통과
+│   └── Map/         카메라·방위·경로선·LocationManager
+├── RideStyle/       라이딩 스타일 판정·저장소·편집 세션
+├── SpotAdd/  Detail/  Home/  RecommendRoute/  SpotSearch/
+├── Network/         에러 분류·재시도·요청 조립·응답 디코딩
+├── Session/         Keychain·userId 주입
+├── App/             DI 컨테이너
+└── Support/         TestSupport, FixtureLoader
+```
 
 **테스트하지 않는 것**: SwiftUI `body`, `URLSession` 실제 통신, NMFMapView 렌더링, 실제 GPS 시퀀스.
 그 외는 전부 테스트한다. "LLM은 비결정적이라 못 한다"는 **응답 본문에만** 해당하며,
@@ -583,7 +615,7 @@ xcodebuild test -scheme Tourding_FE \
     진단 로그를 먼저 넣었으면 한 번에 끝났을 일이다
   - 빈 catch 2건, 죽은 코드 5건(+`onMapTap` 배선 전부) 정리
 
-- [x] **라이딩 스타일을 경로 요청에 반영 (TDD)** — 테스트 313개, 스킵 0
+- [x] **라이딩 스타일을 경로 요청에 반영 (TDD)** — 테스트 320개, 스킵 0
   - **전제가 틀렸던 것을 바로잡음** — 서버가 `routeOption` 없이도 저장된 프로필을 쓸 거라 보고
     라이딩 화면 3곳에만 실었다. 실제로는 **디폴트로 계산**한다.
     스팟추가·상세·홈(routes)·홈(by-name) 네 곳에서 사용자 설정이 무시되고 있었다
@@ -593,6 +625,8 @@ xcodebuild test -scheme Tourding_FE \
     그 값이 다음 로그인 계정에게 넘어갔다. 세션 정리 3곳에 `clear()`도 배선
   - 라이딩 스타일·온보딩 VM의 `KeychainHelper` 직접 호출을 `UserSessionProviding`으로 교체
     — 프로젝트 규칙 위반이었고, 실제로 병렬 테스트에서 전역 Keychain 간섭으로 깨졌다
+  - **스타일 판정이 두 갈래로 갈려 있던 문제** — 화면은 경로 값을, 변경 감지는
+    프로필을 봤다. `RideStyleResolver`로 우선순위를 한 곳에 모았다
   - **진입 경로별 초기 스타일 규정** — 홈·추천은 프로필, 최근 경로·비정상 복구는
     경로의 `appliedOption`. 비정상 복구가 `routeSource: .draft`로 들어와
     세션에 false가 기록되던 버그도 함께 잡았다(`flag` 확정 뒤로 순서 이동)
