@@ -20,10 +20,15 @@ final class HomeViewModel: ObservableObject {
     private let routeRepository: RouteRepositoryProtocol
     private let userSession: UserSessionProviding
 
+    /// 라이딩 스타일 공급원. 경로 요청에 실을 값을 여기서 얻는다.
+    let profileStore: RidingProfileProviding
+
     init(routeRepository: RouteRepositoryProtocol,
-         userSession: UserSessionProviding) {
+         userSession: UserSessionProviding,
+         profileStore: RidingProfileProviding) {
         self.routeRepository = routeRepository
         self.userSession = userSession
+        self.profileStore = profileStore
     }
     
     // MARK: - Home 화면 전용 비즈니스 로직
@@ -50,7 +55,8 @@ final class HomeViewModel: ObservableObject {
             typeCode: "",
             contentId: "",
             contentTypeId: "",
-            isUsed: false
+            isUsed: false,
+            routeOption: await profileStore.currentOption(userId: uid)
         )
         // #region agent log
         DebugSessionLogger.log(
@@ -138,7 +144,10 @@ final class HomeViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        let requestBody = ReqRoutesByNameModel(userId: uid, start: start, goal: goal, isUsed: false)
+        let requestBody = ReqRoutesByNameModel(
+            userId: uid, start: start, goal: goal, isUsed: false,
+            routeOption: await profileStore.currentOption(userId: uid)
+        )
         do {
             try await routeRepository.postRoutesByName(requestBody: requestBody)
             return true

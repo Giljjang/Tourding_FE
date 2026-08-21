@@ -221,8 +221,8 @@ extension RidingViewModel {
             return
         }
 
-        guard let start = originalData.first,
-              let end = originalData.last else {
+        // 출발·도착이 있어야 경로다
+        guard originalData.count >= 2 else {
             print("❌ 경로 데이터가 부족합니다")
             return
         }
@@ -239,47 +239,20 @@ extension RidingViewModel {
         // 서버가 그 경로를 저장한 뒤 GET /routes/location-name이 500을 반환했다.
         // sequenceNum이 이 경로에서 항목을 식별하는 유일한 키다.
         let survivors = originalData.filter { $0.sequenceNum != selectedData.sequenceNum }
-        let remainingWayPoints = survivors.dropFirst().dropLast()
 
-        // wayPoints (0, last 제외)
-        let wayPoints = remainingWayPoints
-            .map { "\($0.lon),\($0.lat)" }
-            .joined(separator: "|")
-
-        // locateName (출발·도착 포함 전체)
-        let locateName = survivors
-            .map { $0.name }
-            .joined(separator: ",")
-
-        // typeCode (0, last 제외)
-        let typeCode = remainingWayPoints
-            .map { $0.typeCode }
-            .joined(separator: ",")
-
-        // contentIds (0, last 제외)
-        let contentids = remainingWayPoints
-            .map { $0.contentId }
-            .joined(separator: ",")
-
-        // contentTypeId (0, last 제외)
-        let contentTypeids = remainingWayPoints
-            .map { $0.contentTypeId }
-            .joined(separator: ",")
-
-        let requestBody = RequestRouteModel(
+        guard let requestBody = RouteRequestBuilder.make(
+            from: survivors,
             userId: userId,
-            start: "\(start.lon),\(start.lat)",
-            goal: "\(end.lon),\(end.lat)",
-            wayPoints: wayPoints,
-            locateName: locateName,
-            typeCode: typeCode,
-            contentId: contentids,
-            contentTypeId: contentTypeids,
-            isUsed: routeSource.isUsed
-        )
-        
-        print("requestBody.contentId: \(requestBody.contentId)")
-        
+            // 편집 중인 경로의 출처를 따른다. flag는 라이딩 여부일 뿐이라
+            // 최근 사용 경로(.recentUsed)를 편집할 때 draft를 덮어쓴다.
+            isUsed: routeSource.isUsed,
+            routeOption: await profileStore.currentOption(userId: userId)
+        ) else {
+            print("❌ 경로 본문을 만들 수 없습니다")
+            return
+        }
+
+
         do {
             try await routeRepository.postRoutes(requestBody: requestBody)
         } catch {
@@ -294,8 +267,8 @@ extension RidingViewModel {
             return
         }
 
-        guard let start = locationData.first,
-              let end = locationData.last else {
+        // 출발·도착이 있어야 경로다
+        guard locationData.count >= 2 else {
             print("❌ 경로 데이터가 부족합니다")
             return
         }
@@ -303,42 +276,17 @@ extension RidingViewModel {
         isLoading = true
         defer { isLoading = false }
 
-        // wayPoints (0, last 제외)
-        let middlePoints = locationData.dropFirst().dropLast()
-        let wayPointsArray = middlePoints.map { "\($0.lon),\($0.lat)" }
-        let wayPoints = wayPointsArray.joined(separator: "|")
-        
-        // locateName (모두 포함)
-        let locateNames = locationData.map { $0.name }
-        let locateName = locateNames.joined(separator: ",")
-        
-        // typeCode (0번, 마지막 제외)
-        let typeCodes = locationData.dropFirst().dropLast().map { $0.typeCode }
-        let typeCode = typeCodes.joined(separator: ",")
-        
-        // contentIds (0, last 제외)
-        let middleIds = locationData.dropFirst().dropLast()
-        let contentIdsArray = middleIds.map { "\($0.contentId)" }
-        let contentsIds = contentIdsArray.joined(separator: ",")
-        
-        // contentTypeId (0, last 제외)
-        let middleTypeIds = locationData.dropFirst().dropLast()
-        let contentTypeIdsArray = middleTypeIds.map { "\($0.contentTypeId)" }
-        let contentsTypeIds = contentTypeIdsArray.joined(separator: ",")
-        
-        let requestBody = RequestRouteModel(
+        guard let requestBody = RouteRequestBuilder.make(
+            from: locationData,
             userId: userId,
-            start: "\(start.lon),\(start.lat)",
-            goal: "\(end.lon),\(end.lat)",
-            wayPoints: wayPoints,
-            locateName: locateName,
-            typeCode: typeCode,
-            contentId: contentsIds,
-            contentTypeId: contentsTypeIds,
             // 편집 중인 경로의 출처를 따른다. flag는 라이딩 여부일 뿐이라
             // 최근 사용 경로(.recentUsed)를 편집할 때 draft를 덮어쓴다.
-            isUsed: routeSource.isUsed
-        )
+            isUsed: routeSource.isUsed,
+            routeOption: await profileStore.currentOption(userId: userId)
+        ) else {
+            print("❌ 경로 본문을 만들 수 없습니다")
+            return
+        }
 
         logDragDropPostBody(locationData: locationData, requestBody: requestBody)
 
@@ -371,8 +319,8 @@ extension RidingViewModel {
             return nil
         }
 
-        guard let start = locationData.first,
-              let end = locationData.last else {
+        // 출발·도착이 있어야 경로다
+        guard locationData.count >= 2 else {
             print("❌ 경로 데이터가 부족합니다")
             return nil
         }
@@ -380,43 +328,17 @@ extension RidingViewModel {
         isLoading = true
         defer { isLoading = false }
 
-        // wayPoints (0, last 제외)
-        let middlePoints = locationData.dropFirst().dropLast()
-        let wayPointsArray = middlePoints.map { "\($0.lon),\($0.lat)" }
-        let wayPoints = wayPointsArray.joined(separator: "|")
-        
-        // locateName (모두 포함)
-        let locateNames = locationData.map { $0.name }
-        let locateName = locateNames.joined(separator: ",")
-        
-        // typeCode (0번, 마지막 제외)
-        let typeCodes = locationData.dropFirst().dropLast().map { $0.typeCode }
-        let typeCode = typeCodes.joined(separator: ",")
-        
-        // contentIds (0, last 제외)
-        let middleIds = locationData.dropFirst().dropLast()
-        let contentIdsArray = middleIds.map { "\($0.contentId)" }
-        let contentsIds = contentIdsArray.joined(separator: ",")
-        
-        // contentTypeId (0, last 제외)
-        let middleTypeIds = locationData.dropFirst().dropLast()
-        let contentTypeIdsArray = middleTypeIds.map { "\($0.contentTypeId)" }
-        let contentsTypeIds = contentTypeIdsArray.joined(separator: ",")
-        
-        let requestBody = RequestRouteModel(
+        guard let requestBody = RouteRequestBuilder.make(
+            from: locationData,
             userId: userId,
-            start: "\(start.lon),\(start.lat)",
-            goal: "\(end.lon),\(end.lat)",
-            wayPoints: wayPoints,
-            locateName: locateName,
-            typeCode: typeCode,
-            contentId: contentsIds,
-            contentTypeId: contentsTypeIds,
-            isUsed: true
-        )
-        
-        print("requestBody.contentId: \(requestBody.contentId)")
-        
+            isUsed: true,
+            routeOption: await profileStore.currentOption(userId: userId)
+        ) else {
+            print("❌ 경로 본문을 만들 수 없습니다")
+            return nil
+        }
+
+
         do {
             let response = try await routeRepository.postRoutes(requestBody: requestBody)
             print("✅ 라이딩 시작 POST 완료 - routeSummaryId \(response.routeSummaryId)")

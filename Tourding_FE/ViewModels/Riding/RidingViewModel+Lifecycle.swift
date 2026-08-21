@@ -45,6 +45,8 @@ extension RidingViewModel {
 
         setupRidingNavigationOnAppear(locationManager: locationManager)
 
+        scheduleRidingProfileLoad()
+
         Task { [weak self] in
             await self?.loadEditModeRouteData(
                 cameraOnlyWhenNotRiding: true,
@@ -60,6 +62,10 @@ extension RidingViewModel {
         print("🔄 자식 화면에서 복귀 - 편집 모드 유지")
         flag = false
         self.routeSource = routeSource
+
+        // 자식 화면 중 하나가 라이딩 스타일 설정이다.
+        // 바꾸고 돌아왔다면 그 스타일로 경로를 다시 계산해야 한다.
+        scheduleRidingProfileLoad()
 
         Task { [weak self] in
             await self?.refreshEditModeRouteData(routeSource: routeSource)

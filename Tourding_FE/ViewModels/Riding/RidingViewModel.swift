@@ -78,6 +78,18 @@ final class RidingViewModel: ObservableObject {
     
     let routeRepository: RouteRepositoryProtocol
     let kakaoRepository: KakaoRepositoryProtocol
+    let profileStore: RidingProfileProviding
+
+    /// 화면이 마지막으로 확인한 라이딩 스타일.
+    ///
+    /// **요청에 싣는 값은 여기가 아니라 POST 직전에 `profileStore`에서 읽는다.**
+    /// 이 스냅샷만 쓰면 진입 때 조회가 실패했을 때 세션 내내 nil로 남아,
+    /// 네트워크가 복구돼도 그 화면의 경로만 서버 디폴트로 계산된다.
+    /// (홈·스팟추가·상세는 원래 POST 직전에 읽어 앞선 실패를 만회하고 있었다.)
+    @Published var routeOption: RouteOptionModel? = nil
+
+    /// 진행 중인 스타일 조회. 테스트가 완료를 기다릴 수 있도록 소유한다
+    var pendingProfileLoad: Task<Void, Never>?
 
     /// 경유지 드래그 디바운스 POST Task
     var reorderPersistTask: Task<Void, Never>?
@@ -96,12 +108,40 @@ final class RidingViewModel: ObservableObject {
 
     init(routeRepository: RouteRepositoryProtocol,
          kakaoRepository: KakaoRepositoryProtocol,
+         profileStore: RidingProfileProviding,
          userSession: UserSessionProviding
     ) {
         self.routeRepository = routeRepository
         self.kakaoRepository = kakaoRepository
+        self.profileStore = profileStore
         self.userSession = userSession
         self.userId = userSession.userId
+    }
+
+    // MARK: - 라이딩 스타일
+
+    /// 저장된 라이딩 스타일을 읽어 `routeOption`에 담는다.
+    ///
+    /// 실패 처리는 `RidingProfileStore`가 맡는다 — 마지막 성공값으로 폴백한다.
+    /// 스타일 조회 실패로 라이딩을 막지는 않지만, nil이면 서버가 **디폴트로** 계산하므로
+    /// 폴백이 없으면 사용자 설정이 조용히 무시된다.
+    @MainActor
+    func loadRidingProfile() async {
+        guard let userId else { return }
+
+        routeOption = await profileStore.currentOption(userId: userId)
+    }
+
+    /// 화면 진입·복귀에서 스타일을 다시 읽는다.
+    ///
+    /// 라이딩 스타일 화면에서 값을 바꾸고 돌아오는 경로가 있으므로
+    /// **진입 때 한 번만 읽으면 안 된다.**
+    @MainActor
+    func scheduleRidingProfileLoad() {
+        pendingProfileLoad?.cancel()
+        pendingProfileLoad = Task { [weak self] in
+            await self?.loadRidingProfile()
+        }
     }
     
     // MARK: - 지도 마커 (routeLocation 순서 반영)

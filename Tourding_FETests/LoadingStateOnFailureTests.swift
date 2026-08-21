@@ -22,7 +22,8 @@ struct LoadingStateOnFailureTests {
         SpotAddViewModel(
             tourRepository: FakeTourRepository(),
             routeRepository: repository,
-            userSession: FakeUserSession(userId: 49)
+            userSession: FakeUserSession(userId: 49),
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository())
         )
     }
 

@@ -21,6 +21,7 @@ struct UserSessionInjectionTests {
         let viewModel = RidingViewModel(
             routeRepository: repository,
             kakaoRepository: FakeKakaoRepository(),
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository()),
             userSession: FakeUserSession(userId: 777_001)
         )
 
@@ -34,6 +35,7 @@ struct UserSessionInjectionTests {
         let viewModel = RidingViewModel(
             routeRepository: repository,
             kakaoRepository: FakeKakaoRepository(),
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository()),
             userSession: FakeUserSession(userId: nil)
         )
 
@@ -47,7 +49,8 @@ struct UserSessionInjectionTests {
         let viewModel = DetailSpotViewModel(
             tourRepository: FakeTourRepository(),
             routeRepository: repository,
-            userSession: FakeUserSession(userId: 777_003)
+            userSession: FakeUserSession(userId: 777_003),
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository())
         )
 
         await viewModel.postRouteAPI(originalData: TestRoute.startGoal, updatedData: TestSpot.sample)
@@ -60,7 +63,8 @@ struct UserSessionInjectionTests {
         let viewModel = DetailSpotViewModel(
             tourRepository: FakeTourRepository(),
             routeRepository: repository,
-            userSession: FakeUserSession(userId: nil)
+            userSession: FakeUserSession(userId: nil),
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository())
         )
 
         await viewModel.postRouteAPI(originalData: TestRoute.startGoal, updatedData: TestSpot.sample)
@@ -72,7 +76,8 @@ struct UserSessionInjectionTests {
         let viewModel = SpotAddViewModel(
             tourRepository: FakeTourRepository(),
             routeRepository: FakeRouteRepository(),
-            userSession: FakeUserSession(userId: 777_002)
+            userSession: FakeUserSession(userId: 777_002),
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository())
         )
 
         #expect(viewModel.userId == 777_002)
@@ -82,7 +87,8 @@ struct UserSessionInjectionTests {
         let viewModel = SpotAddViewModel(
             tourRepository: FakeTourRepository(),
             routeRepository: FakeRouteRepository(),
-            userSession: FakeUserSession(userId: nil)
+            userSession: FakeUserSession(userId: nil),
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository())
         )
 
         #expect(viewModel.userId == nil)

@@ -91,95 +91,60 @@ final class RecommendRouteViewModel: ObservableObject {
     }
     
     //MARK: - API 호출
+
+    /// 요약·장소·경로선을 **한 번에** 받는다 (GET /routes).
+    ///
+    /// 예전엔 `getRoutesTotalAPI` → `getRouteLocationAPI` → `getRoutePathAPI`를 순서대로 불러
+    /// 서버가 같은 경로를 세 번 계산했다. 셋 다 같은 응답에 담겨 온다.
+    ///
+    /// 추천 화면은 아직 라이딩 전이므로 draft(`isUsed: false`)를 읽는다.
+    /// 실패하면 아무것도 반영하지 않는다 — 옛 코스가 추천 코스 자리에 뜨면 안 된다.
     @MainActor
-    func getRoutesTotalAPI() async {
+    func loadRouteBundleAPI() async {
         guard let userId = userSession.userId else {
             print("❌ userId가 nil입니다")
             return
         }
-        
+
         isLoading = true
-        
-        do {
-            let response = try await routeRepository.getRoutes(userId: userId, isUsed: false)
-            routeTotal = response
-            
-        } catch {
-            print("ERRO: GET - \(error)")
+        defer { isLoading = false }
+
+        let bundle = await RetryPolicy.run(label: "추천 코스 경로 번들") {
+            try await self.routeRepository.getRouteBundle(userId: userId, isUsed: false)
         }
-        
-        isLoading = false
-        
-    }
-    
-    @MainActor
-    func getRouteLocationAPI() async {
-        guard let userId = userSession.userId else {
-            print("❌ userId가 nil입니다")
+
+        guard let bundle else {
+            print("❌ 추천 코스 경로를 불러오지 못했습니다")
             return
         }
-        
-        isLoading = true
-        
-        let response = await RetryPolicy.run(label: "경로 위치 API") {
-            try await self.routeRepository.getRoutesLocationName(userId: userId, isUsed: false)
+
+        routeTotal = RoutesModel(
+            isUsed: bundle.isUsed,
+            duration: bundle.duration,
+            distance: bundle.distance,
+            routeSummaryId: bundle.routeSummaryId
+        )
+
+        routeLocation = bundle.locations
+        markerCoordinates = bundle.locations.compactMap { item in
+            guard let lat = Double(item.lat), let lon = Double(item.lon) else { return nil }
+            return NMGLatLng(lat: lat, lng: lon)
         }
-
-        if let response {
-            routeLocation = response
-
-            markerCoordinates = routeLocation.compactMap { item in
-                if let lat = Double(item.lat), let lon = Double(item.lon) {
-                    return NMGLatLng(lat: lat, lng: lon)
-                } else {
-                    return nil
-                }
-            }
-
-            markerIcons = routeLocation.enumerated().map { (index, item) in
-                switch item.type {
-                case "Start":
-                    return MarkerIcons.startMarker
-                case "Goal":
-                    return MarkerIcons.goalMarker
-                case "WayPoint":
-                    return MarkerIcons.numberMarker(index) // index 사용
-                default:
-                    return MarkerIcons.numberMarker(0)
-                }
+        markerIcons = bundle.locations.enumerated().map { index, item in
+            switch item.type {
+            case "Start": return MarkerIcons.startMarker
+            case "Goal":  return MarkerIcons.goalMarker
+            default:      return MarkerIcons.numberMarker(index)
             }
         }
 
-        isLoading = false
+        routeMapPaths = bundle.paths
+        pathCoordinates = bundle.paths.compactMap { item in
+            guard let lat = Double(item.lat), let lon = Double(item.lon) else { return nil }
+            return NMGLatLng(lat: lat, lng: lon)
+        }
+
+        print("✅ 추천 코스 번들 반영 - 스팟 \(routeLocation.count)개, 경로선 \(pathCoordinates.count)개")
     }
-    
-    //초기 출발지, 도착지만 입력시 POST
-    @MainActor
-    func getRoutePathAPI() async {
-        guard let userId = userSession.userId else {
-            print("❌ userId가 nil입니다")
-            return
-        }
-        
-        isLoading = true
-        
-        let response = await RetryPolicy.run(label: "경로 경로선 API") {
-            try await self.routeRepository.getRoutesPath(userId: userId, isUsed: false)
-        }
 
-        if let response {
-            routeMapPaths = response
-
-            pathCoordinates = routeMapPaths.compactMap { item in
-                if let lat = Double(item.lat),
-                   let lon = Double(item.lon) {
-                    return NMGLatLng(lat: lat, lng: lon)
-                } else {
-                    return nil // 변환 실패 시 무시
-                }
-            }
-        }
-
-        isLoading = false
-    }
 }

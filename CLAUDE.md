@@ -33,7 +33,7 @@ Tourding_FE/
 ├── ViewModels/Riding/      +API, +RouteReorder, +Lifecycle, +LocationTracking, +Utils, NMap/
 ├── Views/Riding/           RidingView, NMap/, BottomSheet/, RouteLocationDropDelegate
 ├── Extension/              Color+Hex, Font+CustomFont
-├── Utils/                  FixtureLoader, MockAPIConfiguration, SafeAreaUtils
+├── Utils/                  RouteRequestBuilder, RidingProfileStore, FixtureLoader, MockAPIConfiguration, SafeAreaUtils
 └── Resources/Fixtures/     서버 캡처 JSON
 ```
 
@@ -280,6 +280,57 @@ NMap의 heading은 **진북 기준**이라 `magneticHeading`을 그대로 넣으
 **`POST /routes` 응답을 버리지 마라.** 서버가 요약·`guides`·`paths`·`locations`를
 전부 돌려준다. 라이딩 시작은 이 응답을 재사용하고 `GET /routes/guide`를 부르지 않는다.
 
+**`POST /routes` 본문은 `RouteRequestBuilder` 하나로 만든다.**
+규칙은 하나다 — start/goal은 첫·마지막(**경도,위도**), 경유지 목록 넷은 중간만,
+`locateName`만 전체. 스팟 추가도 별도 규칙이 아니다:
+`insertingSpotBeforeGoal` 로 끼운 뒤 그대로 `make(from:)`에 넘긴다.
+다섯 곳에 복붙돼 있던 시절 여기서 버그가 세 건 나왔다 —
+`typeCode`만 `insert(at: count-1)`이라 카테고리가 뒤바뀌었고(두 화면 모두),
+Detail은 `contentTypeId` 자리에 `contentId`를 넣었다.
+`RouteAddRequestTests.bothEntryPointsProduceIdenticalRequestBody`는 필드를 나열하지 않고
+**본문 전체(`Equatable`)를 비교**한다 — 새 필드가 늘어도 자동으로 잠긴다.
+
+**`routeOption`을 빠뜨리면 서버가 디폴트로 계산한다.**
+저장된 프로필을 꺼내 쓰지 **않는다**. 그래서 경로를 만드는 호출부는 **전부** 스타일을 실어야 한다 —
+안 실으면 그 화면에서 만든 경로만 사용자 설정이 조용히 무시된다.
+실제로 스팟추가·상세·홈(routes)·홈(by-name) 네 곳이 그 상태였다.
+
+지금 싣는 곳은 일곱이다:
+라이딩 시작·경유지 DnD·경유지 삭제 / 스팟 추가 / 상세 / 홈 `POST /routes` / 홈 `POST /routes/by-name`.
+**새 호출부를 만들면 여기에도 실을 것.**
+
+**값은 `RidingProfileStore` 하나에서 온다.** 일곱 곳이 각자 GET하면 화면을 옮길 때마다
+같은 값을 다시 받는다. 저장소가 캐시하고, 스타일을 저장(PUT)할 때 `update(_:userId:)`로 갱신한다.
+GET은 앱 실행당 한 번이다.
+
+- **조회 실패는 마지막 성공값으로 넘긴다.** nil로 떨어뜨리면 디폴트 경로가 나온다 —
+  실패했다는 사실보다 그게 더 나쁘다. 한 번도 못 읽었을 때만 nil이고, 그때만 키가 빠진다
+- **값은 POST 직전에 읽는다. 화면 진입 때의 스냅샷을 쓰지 마라.**
+  스냅샷이면 진입 조회가 실패했을 때 세션 내내 nil로 남아, 네트워크가 복구돼도
+  그 화면의 경로만 서버 디폴트로 계산된다 (라이딩 3곳이 그랬다)
+- **`update`는 진행 중인 조회(`inFlight`)를 먼저 버린다.** 안 버리면 그 GET이 뒤늦게 끝나며
+  방금 저장한 값을 **서버의 옛 값으로 되돌리고** `isFresh`까지 세워 재조회마저 막는다
+- **라이딩 스타일 설정 화면은 스토어를 우회해 서버를 직접 읽는다** (편집기라 낡은 값 위에
+  저장하면 안 된다). 대신 읽은 값을 `update(_:userId:)`로 스토어에 되먹인다 —
+  안 그러면 화면에 보이는 스타일과 요청에 실리는 스타일이 갈린다
+- **`update`는 `userId`를 함께 받는다.** 온보딩은 저장만 하고 조회는 하지 않아서,
+  귀속하지 않으면 그 값이 다음 로그인 계정에게 그대로 넘어간다
+- **세션을 지울 때 `clear()`도 부른다** — 메모리 캐시라 Keychain만 지워서는 남는다.
+  `LoginViewModel`의 `clearSession()` 세 곳과 짝이다
+
+`null`을 보내면 "옵션 없음"으로 해석될 수 있다 — 합성 인코더가 알아서 생략하므로
+`CodingKeys`를 직접 쓰지 말 것.
+타입은 `RouteOptionModel` 하나다 — 필드가 똑같은 `RouteOptionDto`가 따로 있어서
+프로필 → 요청으로 값을 넘길 때마다 변환이 필요하던 것을 없앴다.
+
+**스타일은 진입 때 한 번만 읽으면 안 된다.** 코스 편집의 자식 화면 중 하나가
+라이딩 스타일 설정이다 — 바꾸고 돌아오면 그 스타일로 다시 계산해야 한다.
+`handleInitialEntry`와 `handleReturnFromChild` 양쪽에서 `scheduleRidingProfileLoad()`를 부른다.
+저장 성공 시 캐시가 이미 갱신되므로 이 재조회는 네트워크를 타지 않는다.
+라이딩 중(`flag`)에는 읽지 않는다.
+
+회귀 방지 테스트: `RidingProfileStoreTests`, `RouteOptionWiringTests`, `RouteOptionContractTests`
+
 **번들 반영은 `applyRouteBundle` / `applyGuideMarkers` 두 함수로만 한다.**
 `POST /routes`·`GET /routes`·AI 경로 재설정이 모두 같은 `RouteGuideResponse`를 돌려주므로
 반영 경로를 하나로 유지한다. 새로 만들지 말 것.
@@ -476,6 +527,40 @@ xcodebuild test -scheme Tourding_FE \
     진단 로그를 먼저 넣었으면 한 번에 끝났을 일이다
   - 빈 catch 2건, 죽은 코드 5건(+`onMapTap` 배선 전부) 정리
 
+- [x] **라이딩 스타일을 경로 요청에 반영 (TDD)** — 테스트 289개, 스킵 0
+  - **전제가 틀렸던 것을 바로잡음** — 서버가 `routeOption` 없이도 저장된 프로필을 쓸 거라 보고
+    라이딩 화면 3곳에만 실었다. 실제로는 **디폴트로 계산**한다.
+    스팟추가·상세·홈(routes)·홈(by-name) 네 곳에서 사용자 설정이 무시되고 있었다
+  - **`RidingProfileStore` 신설** — 일곱 호출부가 같은 값을 보고 GET은 앱 실행당 1회.
+    조회 실패는 마지막 성공값으로 폴백한다(nil이면 디폴트 경로가 나오므로)
+  - `update(_:userId:)` 귀속 — 온보딩은 저장만 하고 조회하지 않아, 귀속이 없으면
+    그 값이 다음 로그인 계정에게 넘어갔다. 세션 정리 3곳에 `clear()`도 배선
+  - 라이딩 스타일·온보딩 VM의 `KeychainHelper` 직접 호출을 `UserSessionProviding`으로 교체
+    — 프로젝트 규칙 위반이었고, 실제로 병렬 테스트에서 전역 Keychain 간섭으로 깨졌다
+  - **다중 에이전트 감사로 확정한 결함 3건 추가 수정** (제기 17 · 확정 4 · 반박 13)
+    — 저장이 진행 중인 조회에 지던 문제, 설정 화면이 읽은 값을 스토어에 되먹이지 않던 문제,
+    라이딩 3곳이 진입 스냅샷을 써서 진입 조회 실패가 세션 내내 남던 문제.
+    이 과정에서 **fake 기본값과 기대값이 같아 아무것도 잠그지 못하던 테스트 3건**도 드러났다
+
+- [x] **라이딩 중 상단 버튼이 iPhone SE에서 겹치던 문제** — 화장실·편의점·AI 코스수정
+  - `Font.custom(_:size:)`은 iOS 14부터 Dynamic Type에 자동 스케일된다.
+    SE(375pt)는 여유가 **3.65pt**뿐이라 텍스트 크기를 한 단계만 키워도 약 16pt가 늘어 겹쳤다.
+    iPhone 13은 390pt라 18.65pt가 남아 버텼다 — 그래서 SE에서만 드러났다
+  - 세 버튼에만 `dynamicTypeSize(...large)` 상한. 버튼·글자 크기는 그대로 두고 **키우지만 않는다**
+  - 폭은 짐작하지 말 것 — 실측(Pretendard-Medium 14pt)으로 버튼폭 88.30 / 88.30 / 110.70을 얻었다.
+    처음 눈대중은 텍스트 폭을 6pt씩 크게 잡아 "이미 1.5pt 간격"이라는 틀린 결론을 냈다
+  - `RouteOptionModel` 단일화 — 필드가 똑같은 `RouteOptionDto`가 따로 있어
+    프로필에서 읽은 값을 요청에 실을 때마다 변환이 필요했다
+  - 요청(`POST /routes`·`/routes/by-name`)에 `routeOption`, 응답에 `ascent`·`descent`·
+    `uphillLevel`·`preferenceScore`·`appliedOption` — **전부 옵셔널**
+  - **`RouteRequestBuilder` 추출** — 다섯 곳의 복붙 조립부 제거.
+    스팟 추가가 "도착지 앞 삽입 + 같은 조립"과 동일하다는 것이 통합의 근거였다
+  - `RouteAddRequestTests` 동치 비교를 필드 5개 나열 → **본문 전체**로 확대.
+    `start`·`goal`·`userId`·`isUsed`가 어긋나도 통과하던 구멍이었다
+  - 스타일 조회를 진입·복귀 양쪽에 배선 — 스타일 화면에서 바꾸고 돌아오는 경로가 있다
+  - **추천 코스 화면 3회 → 1회** (`getRoutesTotal`+`getRouteLocation`+`getRoutePath`
+    → `getRouteBundle`). 셋 다 같은 응답에 담겨 오는데 서버가 세 번 계산하고 있었다
+
 ### 다음
 - [ ] **AI 기능 착수** — 서버 준비 완료(`/ai/routes/adjustments/text`·`/voice`,
       `/routes/recommendations`, `/user/{id}/riding-profile`), `routeSummaryId` 보관 완료
@@ -509,9 +594,6 @@ xcodebuild test -scheme Tourding_FE \
   남는 실패(네트워크 끊김 등)를 보고 표시 방식을 정하기로 했다
 
 ### 기술 부채
-- **`POST /routes` 본문 조립이 `SpotAddViewModel`·`DetailSpotViewModel`에 복붙돼 있음**
-  — 두 화면이 같은 본문을 만드는지는 `RouteAddRequestTests.bothEntryPointsProduceIdenticalRequestBody`가 잠근다.
-  공용 빌더(`RouteRequestBuilder`) 추출은 미완
 - `POST /routes` 응답을 버리는 호출부 — 6곳 중 소비는 라이딩 시작 하나뿐
   (`EmptyResponse`는 선언만 남은 데드 타입)
 - `UserRepository`의 요청 조립만 `NetworkService` 밖에 남음

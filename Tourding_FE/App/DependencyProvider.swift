@@ -39,7 +39,8 @@ struct DependencyProvider {
         let tourRepository = TourRepository()
 
         let homeViewModel = HomeViewModel(routeRepository: routeRepository,
-                                          userSession: makeUserSession())
+                                          userSession: makeUserSession(),
+                                          profileStore: makeRidingProfileStore())
         let myPageViewModel = MyPageViewModel()
         let spotSearchViewModel = SpotSearchViewModel(tourRepository: tourRepository)
         let dsViewModel = DestinationSearchViewModel()
@@ -54,6 +55,17 @@ struct DependencyProvider {
         )
     }
 
+    /// 라이딩 스타일 단일 공급원. 앱 수명 하나만 둔다 —
+    /// 경로를 만드는 일곱 호출부가 같은 값을 보고, GET은 앱 실행당 한 번이다.
+    @MainActor private static var sharedProfileStore: RidingProfileStore?
+
+    @MainActor static func makeRidingProfileStore() -> RidingProfileProviding {
+        if let sharedProfileStore { return sharedProfileStore }
+        let store = RidingProfileStore(userRepository: UserRepository())
+        sharedProfileStore = store
+        return store
+    }
+
     private static func makeUserSession() -> UserSessionProviding {
         return KeychainUserSession()
     }
@@ -62,6 +74,7 @@ struct DependencyProvider {
         let ridingViewModel = RidingViewModel(
             routeRepository: makeRouteRepository(),
             kakaoRepository: makeKakaoRepository(),
+            profileStore: makeRidingProfileStore(),
             userSession: makeUserSession()
         )
         return ridingViewModel
@@ -78,7 +91,8 @@ struct DependencyProvider {
         let spotAddViewModel = SpotAddViewModel(
             tourRepository: tourRepository,
             routeRepository: routeRepository,
-            userSession: makeUserSession())
+            userSession: makeUserSession(),
+            profileStore: makeRidingProfileStore())
         return spotAddViewModel
     }
 
@@ -99,7 +113,8 @@ struct DependencyProvider {
         return DetailSpotViewModel(
             tourRepository: tourRepository,
             routeRepository: routeRepository,
-            userSession: makeUserSession())
+            userSession: makeUserSession(),
+            profileStore: makeRidingProfileStore())
     }
 
     static func makeRecommendViewModel() -> RecommendRouteViewModel {

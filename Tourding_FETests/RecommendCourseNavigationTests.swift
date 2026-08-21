@@ -28,7 +28,8 @@ struct RecommendCourseNavigationTests {
     ) -> HomeViewModel {
         HomeViewModel(
             routeRepository: repository,
-            userSession: FakeUserSession(userId: userId)
+            userSession: FakeUserSession(userId: userId),
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository())
         )
     }
 
