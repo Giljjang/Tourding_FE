@@ -27,6 +27,8 @@ struct RidingStyleSettingsView: View {
                     }
 
                     Divider()
+                        .frame(height: 1)
+                        .overlay(Color.gray1)
 
                     section(title: "라이딩 숙련도") {
                         RidingStylePillRow(
@@ -37,6 +39,7 @@ struct RidingStyleSettingsView: View {
                     }
 
                     Divider()
+                        .overlay(Color.gray1)
 
                     RidingStyleToggleRow(
                         title: "빠른 코스",
@@ -45,6 +48,8 @@ struct RidingStyleSettingsView: View {
                     )
 
                     Divider()
+                        .frame(height: 1)
+                        .overlay(Color.gray1)
 
                     RidingStyleToggleRow(
                         title: "계단 회피",
@@ -53,6 +58,8 @@ struct RidingStyleSettingsView: View {
                     )
 
                     Divider()
+                        .frame(height: 1)
+                        .overlay(Color.gray1)
 
                     RidingStyleToggleRow(
                         title: "물길 회피",

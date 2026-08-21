@@ -38,10 +38,12 @@ struct MyPageView: View {
                 .padding(.bottom, 6)
                 
                 Divider()
+                    .frame(height: 1)
+                    .overlay(Color.gray1)
                     .padding(.leading, 16)
                     .padding(.trailing, 16)
                     .padding(.bottom, 6)
-                    .foregroundColor(Color.gray1)
+
 
                 CustomButtonView.withNavigation(
                     title: "이용약관",
@@ -51,10 +53,11 @@ struct MyPageView: View {
                 .padding(.bottom, 6)
                 
                 Divider()
+                    .frame(height: 1)
+                    .overlay(Color.gray1)
                     .padding(.leading, 16)
                     .padding(.trailing, 16)
                     .padding(.bottom, 6)
-                    .foregroundColor(Color.gray1)
                 
                 CustomButtonView(title: "로그아웃") {
                     print("로그아웃 클릭됨")
@@ -80,8 +83,7 @@ struct MyPageView: View {
                 
                 Divider()
                     .frame(height: 1)
-//                    .foregroundColor(Color.gray1)
-                    .background(Color.gray1)
+                    .overlay(Color.gray1)
                     .padding(.leading, 16)
                     .padding(.trailing, 16)
                     .padding(.bottom, 6)
