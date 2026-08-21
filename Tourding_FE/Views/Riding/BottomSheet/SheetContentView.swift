@@ -200,7 +200,8 @@ struct SheetContentView: View {
             // 라이딩 스타일
             Button(action:{
                 // 라이딩 스타일 클릭시 라이딩 설정 페이지로 이동
-                navigationManager.push(.RidingStyleSettingsView)
+                // 코스 편집에서 여는 스타일은 저장하지 않는다 — 이번 경로에만 적용
+                navigationManager.push(.RidingStyleSettingsView(isTemporary: true))
             }){
                 HStack(spacing: 0) {
                     Image("icon_bike")

@@ -32,7 +32,7 @@ struct MyPageView: View {
 
                 CustomButtonView.withNavigation(
                     title: "라이딩 스타일 설정",
-                    destination: .RidingStyleSettingsView,
+                    destination: .RidingStyleSettingsView(),   // 마이페이지: 서버에 저장한다
                     navigationManager: navigationManager
                 )
                 .padding(.bottom, 6)

@@ -43,7 +43,11 @@ final class FakeUserRepository: UserRepositoryProtocol {
     /// nil이 아니면 `updateRidingProfile`이 이 에러를 던진다
     var updateRidingProfileError: Error?
 
+    /// PUT 호출 횟수 — 일시 옵션은 서버에 저장하지 않아야 한다
+    private(set) var updateRidingProfileCallCount = 0
+
     func updateRidingProfile(userId: Int, request: UpdateRidingProfileRequest) async throws -> UserRidingProfileResponse {
+        updateRidingProfileCallCount += 1
         if let updateRidingProfileError { throw updateRidingProfileError }
         ridingProfile = request.routeOption
         return UserRidingProfileResponse(userId: userId, routeOption: request.routeOption)

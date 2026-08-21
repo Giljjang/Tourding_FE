@@ -29,7 +29,8 @@ enum ViewType : Hashable {
     
     case LoginView
     case OnboardingSurveyView
-    case RidingStyleSettingsView
+    /// `isTemporary`: 코스 편집에서 열면 true — 서버에 저장하지 않고 이번 경로에만 적용한다
+    case RidingStyleSettingsView(isTemporary: Bool = false)
     case RidingView(isNotNormal: Bool? = nil, // 비정상 종료일 때 true
                     isStart: Bool = false, // 바로 라이딩 시작하면 true
                     routeSource: RidingRouteSource = .draft)

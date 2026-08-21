@@ -38,6 +38,14 @@ protocol RidingProfileProviding: AnyObject {
 
     /// 세션 정리. 다음 사용자가 이어받지 않도록 값까지 버린다.
     func clear()
+
+    /// **이번 세션에만 적용할 옵션.** 서버에 저장하지 않는다.
+    ///
+    /// 코스 편집에서 연 라이딩 스타일 화면이 여기에 값을 건다 —
+    /// 마이페이지에서 여는 것과 달리 프로필을 바꾸지 않고 이번 경로에만 적용한다.
+    /// 걸려 있는 동안에는 `currentOption`이 저장된 프로필 대신 이 값을 준다.
+    /// nil을 넣으면 해제되고 저장된 프로필로 돌아간다.
+    func setSessionOverride(_ option: RouteOptionModel?)
 }
 
 @MainActor
@@ -55,6 +63,10 @@ final class RidingProfileStore: RidingProfileProviding {
     /// 다시 읽어야 하는지. **성공했을 때만** true가 된다.
     private var isFresh = false
 
+    /// 이번 세션에만 적용할 옵션. 서버에 저장하지 않으므로 캐시와 분리해 둔다 —
+    /// 섞으면 일시 옵션이 저장된 프로필인 양 `update`로 새어 나간다.
+    private var sessionOverride: RouteOptionModel?
+
     /// 진행 중인 조회. 여럿이 동시에 물어도 요청은 하나다.
     private var inFlight: Task<RouteOptionModel?, Never>?
     private var inFlightUserId: Int?
@@ -64,6 +76,9 @@ final class RidingProfileStore: RidingProfileProviding {
     }
 
     func currentOption(userId: Int) async -> RouteOptionModel? {
+        // 일시 옵션이 걸려 있으면 서버를 묻지 않는다
+        if let sessionOverride { return sessionOverride }
+
         if isFresh, let cached, cachedUserId == userId {
             return cached
         }
@@ -120,7 +135,12 @@ final class RidingProfileStore: RidingProfileProviding {
         isFresh = false
     }
 
+    func setSessionOverride(_ option: RouteOptionModel?) {
+        sessionOverride = option
+    }
+
     func clear() {
+        sessionOverride = nil
         inFlight?.cancel()
         inFlight = nil
         inFlightUserId = nil

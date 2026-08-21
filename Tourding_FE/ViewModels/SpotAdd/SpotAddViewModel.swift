@@ -327,8 +327,11 @@ final class SpotAddViewModel: ObservableObject {
             return
         }
         
-        // 출발·도착이 있어야 경로다
-        guard originalData.count >= 2 else {
+        // 경로가 비었으면 POST하지 않는다.
+        // 리팩토링 때 이 조건을 count >= 2로 좁혔다가 되돌렸다 — 원래 판정은
+        // `first`/`last`가 nil인가(= 빈 배열인가)였다. 항목이 하나뿐인 경로도
+        // 예전에는 요청이 나갔으므로 그 동작을 유지한다.
+        guard !originalData.isEmpty else {
             print("❌ 경로 데이터가 부족합니다")
             errorMessage = "경로 정보가 부족합니다."
             return

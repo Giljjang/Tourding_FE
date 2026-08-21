@@ -64,11 +64,26 @@ extension RidingViewModel {
         self.routeSource = routeSource
 
         // 자식 화면 중 하나가 라이딩 스타일 설정이다.
-        // 바꾸고 돌아왔다면 그 스타일로 경로를 다시 계산해야 한다.
-        scheduleRidingProfileLoad()
+        //
+        // **스타일이 바뀌었으면 경로를 다시 계산해야 한다.**
+        // GET /routes는 서버에 저장된 경로를 그대로 읽을 뿐이라 스타일을 바꿔도 그대로다
+        // (실측: 저장 전후의 거리·좌표 개수가 글자 하나까지 같았다).
+        // 코스 편집에서 고른 스타일은 서버에 저장조차 하지 않으므로 POST가 유일한 반영 경로다.
+        //
+        // 조회와 재계산이 순서대로 일어나야 하므로 하나의 Task로 묶는다 —
+        // 따로 띄우면 스타일을 읽기 전에 새로고침이 끝난다.
+        pendingProfileLoad?.cancel()
+        pendingProfileLoad = Task { [weak self] in
+            guard let self else { return }
 
-        Task { [weak self] in
-            await self?.refreshEditModeRouteData(routeSource: routeSource)
+            let previous = routeOption
+            await loadRidingProfile()
+
+            if routeOption != previous, await recalculateRouteWithCurrentStyle() {
+                return   // 재계산 응답을 이미 반영했다 — GET을 또 부를 이유가 없다
+            }
+
+            await refreshEditModeRouteData(routeSource: routeSource)
         }
     }
 

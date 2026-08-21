@@ -85,6 +85,39 @@ extension RidingViewModel {
         #endif
     }
 
+    /// 지금 스타일로 경로를 **다시 계산**한다. 반영에 성공하면 true.
+    ///
+    /// `GET /routes`는 저장된 경로를 읽을 뿐 재계산하지 않는다.
+    /// 스타일을 바꿔도 화면이 그대로였던 원인이 이것이다.
+    ///
+    /// 응답을 그대로 반영하므로 이어지는 GET이 필요 없다 —
+    /// POST 응답에 요약·guides·paths·locations가 모두 담겨 온다.
+    @MainActor
+    @discardableResult
+    func recalculateRouteWithCurrentStyle() async -> Bool {
+        guard let userId, routeLocation.count >= 2 else { return false }
+
+        guard let requestBody = RouteRequestBuilder.make(
+            from: routeLocation,
+            userId: userId,
+            isUsed: isUsedRoute,
+            routeOption: await profileStore.currentOption(userId: userId)
+        ) else { return false }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let bundle = try await routeRepository.postRoutes(requestBody: requestBody)
+            applyRouteBundle(bundle)
+            print("♻️ 라이딩 스타일 변경 — 경로 재계산 완료")
+            return true
+        } catch {
+            print("❌ 경로 재계산 실패: \(error)")
+            return false
+        }
+    }
+
     @MainActor
     func applyRouteBundle(_ bundle: RouteGuideResponse) {
         applyRouteSummary(bundle)

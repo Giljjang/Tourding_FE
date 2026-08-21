@@ -35,12 +35,20 @@ final class RidingStyleSettingsViewModel: ObservableObject {
     /// 테스트가 시뮬레이터 Keychain 상태에 좌우된다 — 실제로 병렬 실행에서 깨졌다.
     private let userSession: UserSessionProviding
 
+    /// 코스 편집에서 열렸는가.
+    ///
+    /// `true`면 **서버에 저장하지 않고** 이번 경로에만 적용한다(세션 오버라이드).
+    /// 마이페이지에서 열면 `false` — 프로필 자체를 바꾼다.
+    private let isTemporary: Bool
+
     init(userRepository: UserRepositoryProtocol = UserRepository(),
          userSession: UserSessionProviding = KeychainUserSession(),
-         profileStore: RidingProfileProviding? = nil) {
+         profileStore: RidingProfileProviding? = nil,
+         isTemporary: Bool = false) {
         self.userRepository = userRepository
         self.userSession = userSession
         self.injectedProfileStore = profileStore
+        self.isTemporary = isTemporary
     }
 
     /// GET /user/{id}/riding-profile 로 저장된 라이딩 스타일을 불러와 화면에 채운다.
@@ -53,13 +61,16 @@ final class RidingStyleSettingsViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
+        // 일시 모드는 **지금 적용 중인 값**을 보여준다.
+        // 서버를 직접 읽으면 방금 건 일시 옵션이 화면에서 사라진다.
+        if isTemporary, let current = await profileStore.currentOption(userId: uid) {
+            apply(current)
+            return
+        }
+
         do {
             let response = try await userRepository.getRidingProfile(userId: uid)
-            selectedBikeType = BikeType(apiValue: response.routeOption.cyclingProfile)
-            selectedSkillLevel = RidingSkillLevel(apiValue: response.routeOption.skillLevel)
-            isFastCourseEnabled = response.routeOption.fastRoute
-            isStairAvoidanceEnabled = response.routeOption.avoidSteps
-            isWaterAvoidanceEnabled = response.routeOption.avoidFords
+            apply(response.routeOption)
 
             // 이 화면은 편집기라 서버를 직접 읽는다(캐시를 보면 낡은 값 위에 저장하게 된다).
             // 대신 읽은 값을 공용 저장소에도 반영해야 한다 —
@@ -70,7 +81,16 @@ final class RidingStyleSettingsViewModel: ObservableObject {
         }
     }
 
+    private func apply(_ option: RouteOptionModel) {
+        selectedBikeType = BikeType(apiValue: option.cyclingProfile)
+        selectedSkillLevel = RidingSkillLevel(apiValue: option.skillLevel)
+        isFastCourseEnabled = option.fastRoute
+        isStairAvoidanceEnabled = option.avoidSteps
+        isWaterAvoidanceEnabled = option.avoidFords
+    }
+
     /// PUT /user/{id}/riding-profile 로 변경된 라이딩 스타일을 저장. 성공 시 true.
+    /// 코스 편집에서 열렸다면(`isTemporary`) 저장 없이 세션 오버라이드만 건다.
     @discardableResult
     func saveRidingProfile() async -> Bool {
         guard let bikeType = selectedBikeType, let skillLevel = selectedSkillLevel else { return false }
@@ -86,6 +106,13 @@ final class RidingStyleSettingsViewModel: ObservableObject {
             avoidSteps: isStairAvoidanceEnabled,
             avoidFords: isWaterAvoidanceEnabled
         )
+
+        // 코스 편집에서 왔으면 서버에 저장하지 않는다 — 이번 경로에만 적용한다
+        guard !isTemporary else {
+            profileStore.setSessionOverride(routeOption)
+            print("✅ 라이딩 스타일 일시 적용 (저장 안 함)")
+            return true
+        }
 
         isSaving = true
         defer { isSaving = false }

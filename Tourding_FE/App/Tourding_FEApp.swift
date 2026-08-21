@@ -85,8 +85,8 @@ struct Tourding_FEApp: App {
                                     OnboardingSurveyView(onComplete: {
                                         navigationManager.pop()
                                     })
-                                case .RidingStyleSettingsView:
-                                    RidingStyleSettingsView()
+                                case .RidingStyleSettingsView(let isTemporary):
+                                    RidingStyleSettingsView(isTemporary: isTemporary)
                                 case .ServiceView:
                                     ServiceView()
                                 case .RidingView(let isNotNormal, let isStart, let routeSource):
