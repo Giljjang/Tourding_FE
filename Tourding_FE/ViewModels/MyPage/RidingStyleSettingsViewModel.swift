@@ -110,7 +110,7 @@ final class RidingStyleSettingsViewModel: ObservableObject {
         // 코스 편집에서 왔으면 서버에 저장하지 않는다 — 이번 경로에만 적용한다
         guard !isTemporary else {
             profileStore.setSessionOverride(routeOption)
-            print("✅ 라이딩 스타일 일시 적용 (저장 안 함)")
+            print("✅ 라이딩 스타일 일시 적용 (저장 안 함) — \(routeOption.logDescription)")
             return true
         }
 

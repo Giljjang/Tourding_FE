@@ -79,6 +79,14 @@ extension RidingViewModel {
             let previous = routeOption
             await loadRidingProfile()
 
+            #if DEBUG
+            if routeOption != previous {
+                print("♻️ [Style] 변경 감지: \(previous?.logDescription ?? "없음") → \(routeOption?.logDescription ?? "없음")")
+            } else {
+                print("♻️ [Style] 변경 없음 — 재계산 생략 (\(routeOption?.logDescription ?? "없음"))")
+            }
+            #endif
+
             if routeOption != previous, await recalculateRouteWithCurrentStyle() {
                 return   // 재계산 응답을 이미 반영했다 — GET을 또 부를 이유가 없다
             }
