@@ -110,13 +110,9 @@ struct RecommendRouteView: View {
                 do {
                     
                     try Task.checkCancellation()
-                    await recommendRouteViewModel?.getRoutesTotalAPI()
-                    
-                    try Task.checkCancellation()
-                    await recommendRouteViewModel?.getRouteLocationAPI()
-                    
-                    try Task.checkCancellation()
-                    await recommendRouteViewModel?.getRoutePathAPI()
+                    // 요약·장소·경로선을 한 응답으로 받는다.
+                    // 셋으로 나눠 부르면 서버가 같은 경로를 세 번 계산한다.
+                    await recommendRouteViewModel?.loadRouteBundleAPI()
                     
                     try Task.checkCancellation()
                     await MainActor.run {

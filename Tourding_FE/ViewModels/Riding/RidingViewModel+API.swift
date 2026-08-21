@@ -53,12 +53,73 @@ extension RidingViewModel {
     /// 라이딩 중에는 draft가 아니라 **사용 중** 경로의 id를 들고 있어야 한다.
     @MainActor
     func applyRouteSummary(_ bundle: RouteGuideResponse) {
+        logAppliedStyle(bundle)
+
+        // 스타일 화면이 **이 경로에 적용된 값**을 보여주도록 기록한다.
+        // 유저 프로필을 보여주면 화면과 실제 경로가 어긋난다.
+        editSession.recordAppliedOption(bundle.appliedOption)
+
         routeTotal = RoutesModel(
             isUsed: bundle.isUsed,
             duration: bundle.duration,
             distance: bundle.distance,
             routeSummaryId: bundle.routeSummaryId
         )
+    }
+
+    /// 서버가 **실제로 적용한** 스타일과 그 결과 수치를 찍는다.
+    ///
+    /// 요청 본문은 `NetworkService`가 이미 통째로 찍으므로(`🔵 Request Body`),
+    /// 여기서는 응답 쪽만 본다. 두 줄을 비교하면 셋 중 어디가 문제인지 갈린다 —
+    /// 앱이 안 보냈는가 · 서버가 무시했는가 · 반영했는데 경로가 그대로인가.
+    ///
+    /// 같은 구간을 스타일만 바꿔 두 번 만들어 `[Route]` 줄의 수치를 비교하면
+    /// 경로가 실제로 달라졌는지 알 수 있다. 지도만 봐서는 티가 안 난다.
+    @MainActor
+    private func logAppliedStyle(_ bundle: RouteGuideResponse) {
+        #if DEBUG
+        print("🚴 [Style] 서버 적용 ← \(bundle.appliedOption?.logDescription ?? "없음 (디폴트로 계산됨)")")
+
+        let km = String(format: "%.2f", bundle.distance / 1000)
+        let min = Int(bundle.duration / 60)
+        let up = bundle.ascent.map { String(format: "↑%.0fm", $0) } ?? "↑-"
+        let down = bundle.descent.map { String(format: "↓%.0fm", $0) } ?? "↓-"
+        let score = bundle.preferenceScore.map { String(format: "%.2f", $0) } ?? "-"
+        print("🚴 [Route] \(km)km · \(min)분 · \(up) \(down) · 오르막 \(bundle.uphillLevel ?? "-") · 적합도 \(score) · 좌표 \(bundle.paths.count)개")
+        #endif
+    }
+
+    /// 지금 스타일로 경로를 **다시 계산**한다. 반영에 성공하면 true.
+    ///
+    /// `GET /routes`는 저장된 경로를 읽을 뿐 재계산하지 않는다.
+    /// 스타일을 바꿔도 화면이 그대로였던 원인이 이것이다.
+    ///
+    /// 응답을 그대로 반영하므로 이어지는 GET이 필요 없다 —
+    /// POST 응답에 요약·guides·paths·locations가 모두 담겨 온다.
+    @MainActor
+    @discardableResult
+    func recalculateRouteWithCurrentStyle() async -> Bool {
+        guard let userId, routeLocation.count >= 2 else { return false }
+
+        guard let requestBody = RouteRequestBuilder.make(
+            from: routeLocation,
+            userId: userId,
+            isUsed: isUsedRoute,
+            routeOption: await profileStore.effectiveOption(userId: userId, editSession: editSession)
+        ) else { return false }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let bundle = try await routeRepository.postRoutes(requestBody: requestBody)
+            applyRouteBundle(bundle)
+            print("♻️ 라이딩 스타일 변경 — 경로 재계산 완료")
+            return true
+        } catch {
+            print("❌ 경로 재계산 실패: \(error)")
+            return false
+        }
     }
 
     @MainActor
@@ -221,8 +282,8 @@ extension RidingViewModel {
             return
         }
 
-        guard let start = originalData.first,
-              let end = originalData.last else {
+        // 출발·도착이 있어야 경로다
+        guard originalData.count >= 2 else {
             print("❌ 경로 데이터가 부족합니다")
             return
         }
@@ -239,47 +300,20 @@ extension RidingViewModel {
         // 서버가 그 경로를 저장한 뒤 GET /routes/location-name이 500을 반환했다.
         // sequenceNum이 이 경로에서 항목을 식별하는 유일한 키다.
         let survivors = originalData.filter { $0.sequenceNum != selectedData.sequenceNum }
-        let remainingWayPoints = survivors.dropFirst().dropLast()
 
-        // wayPoints (0, last 제외)
-        let wayPoints = remainingWayPoints
-            .map { "\($0.lon),\($0.lat)" }
-            .joined(separator: "|")
-
-        // locateName (출발·도착 포함 전체)
-        let locateName = survivors
-            .map { $0.name }
-            .joined(separator: ",")
-
-        // typeCode (0, last 제외)
-        let typeCode = remainingWayPoints
-            .map { $0.typeCode }
-            .joined(separator: ",")
-
-        // contentIds (0, last 제외)
-        let contentids = remainingWayPoints
-            .map { $0.contentId }
-            .joined(separator: ",")
-
-        // contentTypeId (0, last 제외)
-        let contentTypeids = remainingWayPoints
-            .map { $0.contentTypeId }
-            .joined(separator: ",")
-
-        let requestBody = RequestRouteModel(
+        guard let requestBody = RouteRequestBuilder.make(
+            from: survivors,
             userId: userId,
-            start: "\(start.lon),\(start.lat)",
-            goal: "\(end.lon),\(end.lat)",
-            wayPoints: wayPoints,
-            locateName: locateName,
-            typeCode: typeCode,
-            contentId: contentids,
-            contentTypeId: contentTypeids,
-            isUsed: routeSource.isUsed
-        )
-        
-        print("requestBody.contentId: \(requestBody.contentId)")
-        
+            // 편집 중인 경로의 출처를 따른다. flag는 라이딩 여부일 뿐이라
+            // 최근 사용 경로(.recentUsed)를 편집할 때 draft를 덮어쓴다.
+            isUsed: routeSource.isUsed,
+            routeOption: await profileStore.effectiveOption(userId: userId, editSession: editSession)
+        ) else {
+            print("❌ 경로 본문을 만들 수 없습니다")
+            return
+        }
+
+
         do {
             try await routeRepository.postRoutes(requestBody: requestBody)
         } catch {
@@ -294,8 +328,8 @@ extension RidingViewModel {
             return
         }
 
-        guard let start = locationData.first,
-              let end = locationData.last else {
+        // 출발·도착이 있어야 경로다
+        guard locationData.count >= 2 else {
             print("❌ 경로 데이터가 부족합니다")
             return
         }
@@ -303,42 +337,17 @@ extension RidingViewModel {
         isLoading = true
         defer { isLoading = false }
 
-        // wayPoints (0, last 제외)
-        let middlePoints = locationData.dropFirst().dropLast()
-        let wayPointsArray = middlePoints.map { "\($0.lon),\($0.lat)" }
-        let wayPoints = wayPointsArray.joined(separator: "|")
-        
-        // locateName (모두 포함)
-        let locateNames = locationData.map { $0.name }
-        let locateName = locateNames.joined(separator: ",")
-        
-        // typeCode (0번, 마지막 제외)
-        let typeCodes = locationData.dropFirst().dropLast().map { $0.typeCode }
-        let typeCode = typeCodes.joined(separator: ",")
-        
-        // contentIds (0, last 제외)
-        let middleIds = locationData.dropFirst().dropLast()
-        let contentIdsArray = middleIds.map { "\($0.contentId)" }
-        let contentsIds = contentIdsArray.joined(separator: ",")
-        
-        // contentTypeId (0, last 제외)
-        let middleTypeIds = locationData.dropFirst().dropLast()
-        let contentTypeIdsArray = middleTypeIds.map { "\($0.contentTypeId)" }
-        let contentsTypeIds = contentTypeIdsArray.joined(separator: ",")
-        
-        let requestBody = RequestRouteModel(
+        guard let requestBody = RouteRequestBuilder.make(
+            from: locationData,
             userId: userId,
-            start: "\(start.lon),\(start.lat)",
-            goal: "\(end.lon),\(end.lat)",
-            wayPoints: wayPoints,
-            locateName: locateName,
-            typeCode: typeCode,
-            contentId: contentsIds,
-            contentTypeId: contentsTypeIds,
             // 편집 중인 경로의 출처를 따른다. flag는 라이딩 여부일 뿐이라
             // 최근 사용 경로(.recentUsed)를 편집할 때 draft를 덮어쓴다.
-            isUsed: routeSource.isUsed
-        )
+            isUsed: routeSource.isUsed,
+            routeOption: await profileStore.effectiveOption(userId: userId, editSession: editSession)
+        ) else {
+            print("❌ 경로 본문을 만들 수 없습니다")
+            return
+        }
 
         logDragDropPostBody(locationData: locationData, requestBody: requestBody)
 
@@ -371,8 +380,8 @@ extension RidingViewModel {
             return nil
         }
 
-        guard let start = locationData.first,
-              let end = locationData.last else {
+        // 출발·도착이 있어야 경로다
+        guard locationData.count >= 2 else {
             print("❌ 경로 데이터가 부족합니다")
             return nil
         }
@@ -380,43 +389,17 @@ extension RidingViewModel {
         isLoading = true
         defer { isLoading = false }
 
-        // wayPoints (0, last 제외)
-        let middlePoints = locationData.dropFirst().dropLast()
-        let wayPointsArray = middlePoints.map { "\($0.lon),\($0.lat)" }
-        let wayPoints = wayPointsArray.joined(separator: "|")
-        
-        // locateName (모두 포함)
-        let locateNames = locationData.map { $0.name }
-        let locateName = locateNames.joined(separator: ",")
-        
-        // typeCode (0번, 마지막 제외)
-        let typeCodes = locationData.dropFirst().dropLast().map { $0.typeCode }
-        let typeCode = typeCodes.joined(separator: ",")
-        
-        // contentIds (0, last 제외)
-        let middleIds = locationData.dropFirst().dropLast()
-        let contentIdsArray = middleIds.map { "\($0.contentId)" }
-        let contentsIds = contentIdsArray.joined(separator: ",")
-        
-        // contentTypeId (0, last 제외)
-        let middleTypeIds = locationData.dropFirst().dropLast()
-        let contentTypeIdsArray = middleTypeIds.map { "\($0.contentTypeId)" }
-        let contentsTypeIds = contentTypeIdsArray.joined(separator: ",")
-        
-        let requestBody = RequestRouteModel(
+        guard let requestBody = RouteRequestBuilder.make(
+            from: locationData,
             userId: userId,
-            start: "\(start.lon),\(start.lat)",
-            goal: "\(end.lon),\(end.lat)",
-            wayPoints: wayPoints,
-            locateName: locateName,
-            typeCode: typeCode,
-            contentId: contentsIds,
-            contentTypeId: contentsTypeIds,
-            isUsed: true
-        )
-        
-        print("requestBody.contentId: \(requestBody.contentId)")
-        
+            isUsed: true,
+            routeOption: await profileStore.effectiveOption(userId: userId, editSession: editSession)
+        ) else {
+            print("❌ 경로 본문을 만들 수 없습니다")
+            return nil
+        }
+
+
         do {
             let response = try await routeRepository.postRoutes(requestBody: requestBody)
             print("✅ 라이딩 시작 POST 완료 - routeSummaryId \(response.routeSummaryId)")

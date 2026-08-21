@@ -1,14 +1,13 @@
 //
-//  SpotAddRaceTests.swift
+//  DetailSpotAddRaceTests.swift
 //  Tourding_FETests
 //
-//  버그 4 재현 — "스팟을 추가했는데 리스트에도 지도에도 안 나타난다 (간혹)"
+//  버그 4의 쌍둥이 — 상세보기에서 "코스에 추가"를 누르는 경로.
 //
-//  SpotAddView.loadInitialData는 스팟 리스트를 먼저 받고 routeLocation을 나중에 받는다.
-//  리스트가 뜨는 순간 사용자는 탭할 수 있는데, 그때 routeLocation이 아직 비어 있으면
-//  postRouteAPI의 `guard let start = originalData.first` 에 걸려 POST가 아예 나가지 않는다.
-//  errorMessage는 화면 어디에도 표시되지 않아 그대로 pop되고,
-//  복귀 후 재조회는 추가되지 않은 원래 경로를 돌려준다 — 리스트·지도가 함께 빈다.
+//  DetailSpotView.onAppear도 상세 정보를 먼저 받고 getRouteLocationAPI를 나중에 부른다.
+//  상세가 그려진 순간 추가 버튼을 누를 수 있는데, 그때 routeLocation이 비어 있으면
+//  postRouteAPI의 guard에 걸려 POST가 나가지 않는다. 그대로 RidingView까지 pop되므로
+//  사용자는 추가된 줄 알지만 경로에는 없다.
 //
 
 import Foundation
@@ -16,13 +15,15 @@ import Testing
 @testable import Tourding_FE
 
 @MainActor
-struct SpotAddRaceTests {
+struct DetailSpotAddRaceTests {
 
-    private func makeViewModel(_ repository: FakeRouteRepository) -> SpotAddViewModel {
-        SpotAddViewModel(
+    private func makeViewModel(_ repository: FakeRouteRepository) -> DetailSpotViewModel {
+        DetailSpotViewModel(
             tourRepository: FakeTourRepository(),
             routeRepository: repository,
-            userSession: FakeUserSession(userId: 49)
+            userSession: FakeUserSession(userId: 49),
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository()),
+            editSession: RouteEditSession()
         )
     }
 
@@ -32,7 +33,7 @@ struct SpotAddRaceTests {
         repository.locationNames = TestRoute.startGoal
         let viewModel = makeViewModel(repository)
 
-        #expect(viewModel.routeLocation.isEmpty, "리스트만 뜬 상태를 재현한다")
+        #expect(viewModel.routeLocation.isEmpty, "상세만 뜬 상태를 재현한다")
 
         await viewModel.addSpotToRoute(TestSpot.sample)
 
@@ -45,7 +46,7 @@ struct SpotAddRaceTests {
         let repository = FakeRouteRepository()
         repository.locationNames = TestRoute.startGoal
         let viewModel = makeViewModel(repository)
-        await viewModel.getRouteLocationAPI(showsLoading: false)
+        await viewModel.getRouteLocationAPI()
         let fetchesAfterLoad = repository.capturedLocationNameRequests.count
 
         await viewModel.addSpotToRoute(TestSpot.sample)
@@ -55,7 +56,7 @@ struct SpotAddRaceTests {
                 "이미 있는 경로를 다시 받지 않는다")
     }
 
-    /// 경로 자체를 못 받으면 POST를 보내지 않고 사용자에게 알릴 근거를 남긴다
+    /// 경로 자체를 못 받으면 POST를 보내지 않고 알릴 근거를 남긴다
     @Test func addingSpotWithoutAnyRouteReportsInsteadOfSilentlyDropping() async {
         let repository = FakeRouteRepository()
         repository.locationNames = []

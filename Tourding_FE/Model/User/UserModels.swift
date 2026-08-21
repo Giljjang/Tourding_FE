@@ -37,38 +37,16 @@ struct UserInfo: Codable {
 }
 
 // MARK: - 라이딩 프로필(온보딩 설문) 요청/응답 모델
-// PUT /user/{id}/riding-profile
-struct RouteOptionDto: Codable {
-    let cyclingProfile: String
-    let fastRoute: Bool
-    let avoidSteps: Bool
-    let avoidFords: Bool
-    let skillLevel: String
-
-    init(cyclingProfile: String, fastRoute: Bool, avoidSteps: Bool, avoidFords: Bool, skillLevel: String) {
-        self.cyclingProfile = cyclingProfile
-        self.fastRoute = fastRoute
-        self.avoidSteps = avoidSteps
-        self.avoidFords = avoidFords
-        self.skillLevel = skillLevel
-    }
-
-    init(bikeType: BikeType, skillLevel: RidingSkillLevel, fastRoute: Bool, avoidSteps: Bool, avoidFords: Bool) {
-        self.init(
-            cyclingProfile: bikeType.apiValue,
-            fastRoute: fastRoute,
-            avoidSteps: avoidSteps,
-            avoidFords: avoidFords,
-            skillLevel: skillLevel.apiValue
-        )
-    }
-}
+// PUT · GET /user/{id}/riding-profile
+//
+// 옵션 타입은 `RouteOptionModel` 하나다. 예전엔 필드가 똑같은 `RouteOptionDto`가
+// 따로 있어서, 프로필에서 읽은 옵션을 POST /routes에 실으려면 변환이 필요했다.
 
 struct UpdateRidingProfileRequest: Codable {
-    let routeOption: RouteOptionDto
+    let routeOption: RouteOptionModel
 }
 
 struct UserRidingProfileResponse: Codable {
     let userId: Int
-    let routeOption: RouteOptionDto
+    let routeOption: RouteOptionModel
 }

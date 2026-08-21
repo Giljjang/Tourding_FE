@@ -21,7 +21,8 @@ struct HomeViewModelSessionTests {
         repository.locationNames = TestRoute.startTwoWaypointsGoal
         let viewModel = HomeViewModel(
             routeRepository: repository,
-            userSession: FakeUserSession(userId: 14)
+            userSession: FakeUserSession(userId: 14),
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository())
         )
 
         await viewModel.getRouteLocationAPI()
@@ -38,7 +39,8 @@ struct HomeViewModelSessionTests {
         let repository = FakeRouteRepository()
         let viewModel = HomeViewModel(
             routeRepository: repository,
-            userSession: FakeUserSession(userId: nil)
+            userSession: FakeUserSession(userId: nil),
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository())
         )
         viewModel.routeLocation = TestRoute.startTwoWaypointsGoal   // 직전 계정 데이터
 
@@ -56,7 +58,8 @@ struct HomeViewModelSessionTests {
         let repository = FakeRouteRepository()
         let viewModel = HomeViewModel(
             routeRepository: repository,
-            userSession: FakeUserSession(userId: 777_005)
+            userSession: FakeUserSession(userId: 777_005),
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository())
         )
 
         await viewModel.postRouteAPI(
@@ -72,7 +75,8 @@ struct HomeViewModelSessionTests {
         repository.routes = RoutesModel(isUsed: false, duration: 1, distance: 1)
         let viewModel = HomeViewModel(
             routeRepository: repository,
-            userSession: FakeUserSession(userId: 777_006)
+            userSession: FakeUserSession(userId: 777_006),
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository())
         )
 
         await viewModel.postRouteByNameAPI(start: "팔당대교", goal: "충주탄금대")

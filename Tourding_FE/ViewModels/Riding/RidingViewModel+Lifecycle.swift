@@ -32,8 +32,16 @@ extension RidingViewModel {
         routeSource: RidingRouteSource,
         onStartRiding: @escaping () -> Void
     ) {
+        // **비정상 종료 복구는 저장된 라이딩 경로(isUsed=true)를 이어서 간다.**
+        //
+        // 호출부는 `routeSource`를 기본값(.draft)으로 넘기고 `isNotNormal`로만 알린다.
+        // 그대로 두면 `endRiding`이 `flag`를 false로 되돌리는 순간
+        // `isUsedRoute`(`flag || routeSource.isUsed`)가 false로 떨어져
+        // **편집 대상이 draft로 바뀐다** — 경로도, 그 경로의 스타일도 딴 것이 뜬다.
+        let effectiveSource: RidingRouteSource = isNotNormal == true ? .recentUsed : routeSource
+
         // 이후 재정렬 POST·경로선 재조회·포그라운드 새로고침이 모두 이 값을 참조한다
-        self.routeSource = routeSource
+        self.routeSource = effectiveSource
 
         if let isNotNormal {
             flag = isNotNormal
@@ -43,14 +51,36 @@ extension RidingViewModel {
             onStartRiding()
         }
 
+        // **`flag`가 정해진 뒤에 기록한다.** 비정상 종료 복구는 routeSource가 draft로
+        // 들어오지만 라이딩 중이던 경로를 이어서 가므로 `isUsedRoute`는 true다.
+        // 먼저 기록하면 복구 진입에서 스팟 추가가 draft를 보게 된다.
+        //
+        // 스팟 추가·상세는 별도 ViewModel이라 여기 기록해 두지 않으면 draft를 읽고 쓴다.
+        editSession.beginEditing(isUsed: isUsedRoute)
+
         setupRidingNavigationOnAppear(locationManager: locationManager)
+
+        scheduleRidingProfileLoad()
 
         Task { [weak self] in
             await self?.loadEditModeRouteData(
                 cameraOnlyWhenNotRiding: true,
-                routeSource: routeSource
+                routeSource: effectiveSource
             )
         }
+    }
+
+    /// 편집 화면을 벗어날 때 세션을 끝낸다 — 뒤로가기와 라이딩 종료 양쪽에서 부른다.
+    ///
+    /// **일시 스타일을 걷지 않으면 다음에 홈에서 새 코스를 만들 때도 그 옵션이 적용된다.**
+    /// 진입 경로마다 초기 스타일이 다르다:
+    ///   홈 코스 만들기 · 추천 코스 → 마이페이지 프로필
+    ///   최근 경로 이어서 가기 · 비정상 종료 복구 → 그 경로의 `appliedOption`
+    /// 남은 값이 있으면 이 구분이 무너진다.
+    @MainActor
+    func finishEditSession() {
+        profileStore.setSessionOverride(nil)
+        editSession.reset()
     }
 
     @MainActor
@@ -61,8 +91,35 @@ extension RidingViewModel {
         flag = false
         self.routeSource = routeSource
 
-        Task { [weak self] in
-            await self?.refreshEditModeRouteData(routeSource: routeSource)
+        // 자식 화면 중 하나가 라이딩 스타일 설정이다.
+        //
+        // **스타일이 바뀌었으면 경로를 다시 계산해야 한다.**
+        // GET /routes는 서버에 저장된 경로를 그대로 읽을 뿐이라 스타일을 바꿔도 그대로다
+        // (실측: 저장 전후의 거리·좌표 개수가 글자 하나까지 같았다).
+        // 코스 편집에서 고른 스타일은 서버에 저장조차 하지 않으므로 POST가 유일한 반영 경로다.
+        //
+        // 조회와 재계산이 순서대로 일어나야 하므로 하나의 Task로 묶는다 —
+        // 따로 띄우면 스타일을 읽기 전에 새로고침이 끝난다.
+        pendingProfileLoad?.cancel()
+        pendingProfileLoad = Task { [weak self] in
+            guard let self else { return }
+
+            let previous = routeOption
+            await loadRidingProfile()
+
+            #if DEBUG
+            if routeOption != previous {
+                print("♻️ [Style] 변경 감지: \(previous?.logDescription ?? "없음") → \(routeOption?.logDescription ?? "없음")")
+            } else {
+                print("♻️ [Style] 변경 없음 — 재계산 생략 (\(routeOption?.logDescription ?? "없음"))")
+            }
+            #endif
+
+            if routeOption != previous, await recalculateRouteWithCurrentStyle() {
+                return   // 재계산 응답을 이미 반영했다 — GET을 또 부를 이유가 없다
+            }
+
+            await refreshEditModeRouteData(routeSource: routeSource)
         }
     }
 
@@ -255,6 +312,12 @@ extension RidingViewModel {
 
     @MainActor
     func endRiding(isStart: Bool, locationManager: LocationManager) async {
+        // **여기서 편집 세션을 끝내지 않는다.**
+        // 이 함수는 화면을 pop하지 않는다 — `flag`를 false로 되돌려 편집 모드로
+        // 돌아갈 뿐이다. 세션을 끝내면 화면은 그대로인데 스타일만 초기화돼,
+        // 라이딩을 마치고 편집으로 돌아온 사용자가 고른 값을 잃는다.
+        // 종료 판정은 `RidingView.onDisappear` + `holdsRidingEditor` 한 곳이다.
+
         // 진행 중인 편의시설 요청을 먼저 끊는다.
         // 아래 API들을 await하는 동안 뒤늦게 끝나면 지운 마커가 되살아난다.
         cancelFacilityMarkerTasks()

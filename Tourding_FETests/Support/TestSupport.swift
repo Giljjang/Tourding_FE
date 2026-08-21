@@ -10,6 +10,57 @@ import Foundation
 
 // MARK: - Fake Repositories
 
+/// 라이딩 스타일(riding-profile) 조회/저장을 관측하는 fake.
+final class FakeUserRepository: UserRepositoryProtocol {
+
+    enum FakeError: Error { case notConfigured }
+
+    /// `getRidingProfile` 호출 횟수 — 진입·복귀에서 몇 번 다시 읽는지 관측한다
+    private(set) var getRidingProfileCallCount = 0
+    private(set) var capturedProfileUserIds: [Int] = []
+
+    /// nil이 아니면 `getRidingProfile`이 이 에러를 던진다
+    var getRidingProfileError: Error?
+
+    /// `getRidingProfile`이 돌려줄 옵션
+    var ridingProfile = RouteOptionModel(
+        cyclingProfile: "ROAD", fastRoute: true,
+        avoidSteps: true, avoidFords: false, skillLevel: "INTERMEDIATE"
+    )
+
+    /// 응답이 도착하기 전에 다른 호출자를 끼워 넣는 훅.
+    /// 동시 호출이 하나의 요청으로 합쳐지는지 결정적으로 재현한다.
+    var beforeGetRidingProfile: (() async -> Void)?
+
+    func getRidingProfile(userId: Int) async throws -> UserRidingProfileResponse {
+        getRidingProfileCallCount += 1
+        capturedProfileUserIds.append(userId)
+        await beforeGetRidingProfile?()
+        if let getRidingProfileError { throw getRidingProfileError }
+        return UserRidingProfileResponse(userId: userId, routeOption: ridingProfile)
+    }
+
+    /// nil이 아니면 `updateRidingProfile`이 이 에러를 던진다
+    var updateRidingProfileError: Error?
+
+    /// PUT 호출 횟수 — 일시 옵션은 서버에 저장하지 않아야 한다
+    private(set) var updateRidingProfileCallCount = 0
+
+    func updateRidingProfile(userId: Int, request: UpdateRidingProfileRequest) async throws -> UserRidingProfileResponse {
+        updateRidingProfileCallCount += 1
+        if let updateRidingProfileError { throw updateRidingProfileError }
+        ridingProfile = request.routeOption
+        return UserRidingProfileResponse(userId: userId, routeOption: request.routeOption)
+    }
+
+    func createUser(_ request: CreateUserRequest) async throws -> CreateUserResponse {
+        throw FakeError.notConfigured
+    }
+    func deleteUser(id: Int) async throws {}
+    func revokeUser(userId: Int, authorizationCode: String) async throws {}
+}
+
+
 /// 요청을 캡처하는 spy 겸 fake.
 /// `MockRouteRepository`는 `postRoutes`의 requestBody를 버리므로 요청 검증에는 쓸 수 없다.
 final class FakeRouteRepository: RouteRepositoryProtocol {
@@ -87,8 +138,12 @@ final class FakeRouteRepository: RouteRepositoryProtocol {
     var bundle: RouteGuideResponse?
     private(set) var capturedBundleRequests: [(userId: Int, isUsed: Bool)] = []
 
+    /// nil이 아니면 `getRouteBundle`이 이 에러를 던진다
+    var bundleError: Error?
+
     func getRouteBundle(userId: Int, isUsed: Bool) async throws -> RouteGuideResponse {
         capturedBundleRequests.append((userId: userId, isUsed: isUsed))
+        if let bundleError { throw bundleError }
         guard let bundle else { throw FakeError.notConfigured }
         return bundle
     }
@@ -244,12 +299,40 @@ enum TestSpot {
 func makeTestRidingViewModel(
     repository: FakeRouteRepository = FakeRouteRepository(),
     kakaoRepository: FakeKakaoRepository = FakeKakaoRepository(),
+    profileStore: RidingProfileProviding? = nil,
+    editSession: RouteEditSessionProviding? = nil,
     userId: Int = 3
 ) -> RidingViewModel {
+    // 기본 인자에서 만들면 nonisolated 컨텍스트라 @MainActor 타입을 생성할 수 없다
+    let store = profileStore ?? RidingProfileStore(userRepository: FakeUserRepository())
     let viewModel = RidingViewModel(
         routeRepository: repository,
         kakaoRepository: kakaoRepository,
+        profileStore: store,
+        editSession: editSession ?? RouteEditSession(),
         userSession: FakeUserSession(userId: userId)
     )
     return viewModel
+}
+
+// MARK: - 동시성 게이트
+
+/// 여러 Task를 한 지점에 세워 두었다가 함께 풀어 주는 테스트용 게이트.
+/// `Task.sleep`으로 타이밍을 맞추면 느리고 불안정하다 — 여기서는 결정적이다.
+@MainActor
+final class TestGate {
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+    private var isOpen = false
+
+    func wait() async {
+        guard !isOpen else { return }
+        await withCheckedContinuation { waiters.append($0) }
+    }
+
+    func open() {
+        isOpen = true
+        let pending = waiters
+        waiters.removeAll()
+        pending.forEach { $0.resume() }
+    }
 }

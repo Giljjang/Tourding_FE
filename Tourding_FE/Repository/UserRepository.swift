@@ -56,7 +56,7 @@ final class UserRepository: UserRepositoryProtocol {
     }
     func updateRidingProfile(userId: Int, request: UpdateRidingProfileRequest) async throws -> UserRidingProfileResponse {
         guard let url = URL(string: "\(BASE_URL)/user/\(userId)/riding-profile") else {
-            throw NetworkError.invalidURL
+            throw ErrorType.invalidURL
         }
 
         var urlRequest = URLRequest(url: url)
@@ -65,13 +65,13 @@ final class UserRepository: UserRepositoryProtocol {
         urlRequest.setValue("*/*", forHTTPHeaderField: "accept")
         urlRequest.httpBody = try JSONEncoder().encode(request)
 
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        let (data, response) = try await NetworkService.session.data(for: urlRequest)
 
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw NetworkError.invalidResponse
+            throw ErrorType.invalidResponse(statusCode: -1)
         }
-        guard httpResponse.statusCode == 200 else {
-            throw NetworkError.serverError(httpResponse.statusCode)
+        if let statusError = HTTPStatusValidator.error(for: httpResponse.statusCode) {
+            throw statusError
         }
 
         return try JSONDecoder().decode(UserRidingProfileResponse.self, from: data)
@@ -79,20 +79,20 @@ final class UserRepository: UserRepositoryProtocol {
 
     func getRidingProfile(userId: Int) async throws -> UserRidingProfileResponse {
         guard let url = URL(string: "\(BASE_URL)/user/\(userId)/riding-profile") else {
-            throw NetworkError.invalidURL
+            throw ErrorType.invalidURL
         }
 
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "GET"
         urlRequest.setValue("*/*", forHTTPHeaderField: "accept")
 
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        let (data, response) = try await NetworkService.session.data(for: urlRequest)
 
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw NetworkError.invalidResponse
+            throw ErrorType.invalidResponse(statusCode: -1)
         }
-        guard httpResponse.statusCode == 200 else {
-            throw NetworkError.serverError(httpResponse.statusCode)
+        if let statusError = HTTPStatusValidator.error(for: httpResponse.statusCode) {
+            throw statusError
         }
 
         return try JSONDecoder().decode(UserRidingProfileResponse.self, from: data)

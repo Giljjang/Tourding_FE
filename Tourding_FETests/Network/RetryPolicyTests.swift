@@ -51,8 +51,9 @@ struct RetryPolicyTests {
 
     // MARK: - RecommendRouteViewModel
     //
-    // 이 두 곳이 오늘 500을 낸 바로 그 엔드포인트(/routes/location-name, /routes/path)를 부른다.
-    // 라이딩 화면만 고치면 추천 코스 화면은 계속 3번씩 때린다.
+    // 추천 코스 화면도 오늘 500을 낸 엔드포인트를 부른다.
+    // 예전엔 /routes/location-name·/routes/path를 따로 불러 재시도 지점이 둘이었고,
+    // 지금은 GET /routes 하나로 합쳐져 여기 한 곳만 남았다.
 
     private func makeRecommendViewModel(_ repository: FakeRouteRepository) -> RecommendRouteViewModel {
         RecommendRouteViewModel(
@@ -62,21 +63,24 @@ struct RetryPolicyTests {
         )
     }
 
-    @Test func recommendLocationDoesNotRetryServerError() async {
-        let repository = makeRepository(failingWith: .serverDefinedError(.internalServerError))
+    @Test func recommendBundleDoesNotRetryServerError() async {
+        let repository = FakeRouteRepository()
+        repository.bundleError = ErrorType.serverDefinedError(.internalServerError)
         let viewModel = makeRecommendViewModel(repository)
 
-        await viewModel.getRouteLocationAPI()
+        await viewModel.loadRouteBundleAPI()
 
-        #expect(repository.capturedLocationNameRequests.count == 1)
+        #expect(repository.capturedBundleRequests.count == 1, "500은 다시 걸어도 같은 답이 온다")
     }
 
-    @Test func recommendPathDoesNotRetryServerError() async {
-        let repository = makeRepository(failingWith: .serverDefinedError(.internalServerError))
+    /// 일시적 장애는 다시 건다 — 정책이 통째로 빠지지 않았는지 확인한다
+    @Test func recommendBundleRetriesTransientError() async {
+        let repository = FakeRouteRepository()
+        repository.bundleError = ErrorType.serverDefinedError(.serviceUnavailable)
         let viewModel = makeRecommendViewModel(repository)
 
-        await viewModel.getRoutePathAPI()
+        await viewModel.loadRouteBundleAPI()
 
-        #expect(repository.capturedPathRequests.count == 1)
+        #expect(repository.capturedBundleRequests.count == RetryPolicy.defaultMaxAttempts)
     }
 }

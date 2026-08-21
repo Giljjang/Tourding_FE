@@ -24,8 +24,26 @@ final class OnboardingSurveyViewModel: ObservableObject {
 
     private let userRepository: UserRepositoryProtocol
 
-    init(userRepository: UserRepositoryProtocol = UserRepository.shared) {
+    /// 저장 성공 후 캐시를 갱신할 공용 저장소.
+    ///
+    /// 기본 인자로 두면 `nonisolated` 컨텍스트에서 `@MainActor` 팩토리를 부르게 되어
+    /// 컴파일되지 않는다 — 이 화면은 `@StateObject`로 인자 없이 생성된다.
+    /// 그래서 획득을 **쓰는 시점**(@MainActor 메서드 안)으로 미룬다.
+    private var profileStore: RidingProfileProviding {
+        injectedProfileStore ?? DependencyProvider.makeRidingProfileStore()
+    }
+    private let injectedProfileStore: RidingProfileProviding?
+
+    /// `userId` 공급자. ViewModel이 `KeychainHelper`를 직접 부르면 전역 상태에 묶여
+    /// 테스트가 시뮬레이터 Keychain 상태에 좌우된다 — 실제로 병렬 실행에서 깨졌다.
+    private let userSession: UserSessionProviding
+
+    init(userRepository: UserRepositoryProtocol = UserRepository(),
+         userSession: UserSessionProviding = KeychainUserSession(),
+         profileStore: RidingProfileProviding? = nil) {
         self.userRepository = userRepository
+        self.userSession = userSession
+        self.injectedProfileStore = profileStore
     }
 
     var isCurrentStepValid: Bool {
@@ -40,12 +58,12 @@ final class OnboardingSurveyViewModel: ObservableObject {
     @discardableResult
     func submitRidingProfile() async -> Bool {
         guard let bikeType = selectedBikeType, let skillLevel = selectedSkillLevel else { return false }
-        guard let uid = KeychainHelper.loadUid() else {
+        guard let uid = userSession.userId else {
             print("❌ 라이딩 프로필 저장 실패: UID 없음")
             return false
         }
 
-        let routeOption = RouteOptionDto(
+        let routeOption = RouteOptionModel(
             bikeType: bikeType,
             skillLevel: skillLevel,
             fastRoute: isFastCourseEnabled,
@@ -61,6 +79,8 @@ final class OnboardingSurveyViewModel: ObservableObject {
                 userId: uid,
                 request: UpdateRidingProfileRequest(routeOption: routeOption)
             )
+            // 첫 경로부터 이 스타일이 적용되도록 캐시를 미리 채운다
+            profileStore.update(routeOption, userId: uid)
             print("✅ 라이딩 프로필 저장 성공")
             return true
         } catch {

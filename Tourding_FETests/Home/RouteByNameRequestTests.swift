@@ -20,7 +20,8 @@ struct RouteByNameRequestTests {
         repository.routes = RoutesModel(isUsed: false, duration: 1, distance: 1)
         let viewModel = HomeViewModel(
             routeRepository: repository,
-            userSession: FakeUserSession(userId: 7)
+            userSession: FakeUserSession(userId: 7),
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository())
         )
 
         await viewModel.postRouteByNameAPI(start: "팔당대교", goal: "충주탄금대")

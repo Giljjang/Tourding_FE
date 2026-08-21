@@ -29,7 +29,8 @@ enum ViewType : Hashable {
     
     case LoginView
     case OnboardingSurveyView
-    case RidingStyleSettingsView
+    /// `isTemporary`: 코스 편집에서 열면 true — 서버에 저장하지 않고 이번 경로에만 적용한다
+    case RidingStyleSettingsView(isTemporary: Bool = false)
     case RidingView(isNotNormal: Bool? = nil, // 비정상 종료일 때 true
                     isStart: Bool = false, // 바로 라이딩 시작하면 true
                     routeSource: RidingRouteSource = .draft)
@@ -39,6 +40,14 @@ enum ViewType : Hashable {
     case DetailSpotView(isSpotAdd: Bool, detailId: ReqDetailModel)
     case RecommendRouteView(routeName: String, description: String)
     case SpotAdditionalView
+}
+
+extension ViewType {
+    /// 코스 편집 화면인가. 진입 방식마다 연관값이 달라 케이스만 본다.
+    var isRidingEditor: Bool {
+        if case .RidingView = self { return true }
+        return false
+    }
 }
 
 final class NavigationManager: ObservableObject {
@@ -120,3 +129,13 @@ extension NavigationManager {
     }
 }
 
+extension NavigationManager {
+    /// 코스 편집 화면이 아직 스택에 있는가.
+    ///
+    /// `onDisappear`는 **자식 화면으로 push할 때도 불린다** —
+    /// 스팟 추가나 라이딩 스타일 화면으로 들어갈 때마다 편집 세션이 끝나면
+    /// "편집 중에는 일시 스타일 유지"가 성립하지 않는다. 이걸로 두 경우를 가른다.
+    var holdsRidingEditor: Bool {
+        path.contains { $0.isRidingEditor }
+    }
+}

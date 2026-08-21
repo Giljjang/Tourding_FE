@@ -21,10 +21,19 @@ final class DetailSpotViewModel: ObservableObject {
     private let routeRepository: RouteRepositoryProtocol
     private let userSession: UserSessionProviding
 
+    /// 라이딩 스타일 공급원. 경로 요청에 실을 값을 여기서 얻는다.
+    let profileStore: RidingProfileProviding
+    /// 지금 편집 중인 경로(draft / 최근 사용). 읽기·쓰기가 같은 경로를 향해야 한다.
+    let editSession: RouteEditSessionProviding
+
     init(
         tourRepository: TourRepositoryProtocol,
         routeRepository: RouteRepositoryProtocol,
-        userSession: UserSessionProviding) {
+        userSession: UserSessionProviding,
+        profileStore: RidingProfileProviding,
+        editSession: RouteEditSessionProviding) {
+            self.profileStore = profileStore
+            self.editSession = editSession
             self.tourRepository = tourRepository
             self.routeRepository = routeRepository
             self.userSession = userSession
@@ -134,7 +143,7 @@ final class DetailSpotViewModel: ObservableObject {
         }
 
         do {
-            let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: false)
+            let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: editSession.isUsed)
             routeLocation = response
             
             print("🔹routeLocation: \(routeLocation)")
@@ -175,67 +184,27 @@ final class DetailSpotViewModel: ObservableObject {
             return
         }
 
-        guard let start = originalData.first,
-              let end = originalData.last else {
+        // 경로가 비었으면 POST하지 않는다.
+        // 리팩토링 때 이 조건을 count >= 2로 좁혔다가 되돌렸다 — 원래 판정은
+        // `first`/`last`가 nil인가(= 빈 배열인가)였다. 항목이 하나뿐인 경로도
+        // 예전에는 요청이 나갔으므로 그 동작을 유지한다.
+        guard !originalData.isEmpty else {
             print("❌ originalData가 비어있거나 start/end가 없음")
             return
         }
 
-        print("🔵 start: \(start), end: \(end)")
-
-        // wayPoints (0, last 제외 + updatedData 마지막에 추가)
-        let middlePoints = originalData.dropFirst().dropLast()
-        let wayPointsArray = middlePoints.map { "\($0.lon),\($0.lat)" }
-        let updatedPoint = "\(updatedData.mapx),\(updatedData.mapy)"
-        let wayPoints = (wayPointsArray + [updatedPoint]).joined(separator: "|")
-
-        // locateName (모두 포함 + updatedData.title을 마지막 앞에 삽입)
-        var locateNames = originalData.map { $0.name }
-        if locateNames.count >= 2 {
-            locateNames.insert(updatedData.title, at: locateNames.count - 1)
-        } else {
-            locateNames.append(updatedData.title)
-        }
-        let locateName = locateNames.joined(separator: ",")
-
-        // typeCode (0, last 제외 + updatedData 마지막에 추가)
-        //
-        // wayPoints·contentId와 같은 "끝에 붙이기" 규칙이어야 한다.
-        // locateName은 도착지가 배열에 남아 있어 count-1이 "도착지 앞"이지만,
-        // 여기는 dropLast()로 도착지를 이미 뺐으므로 count-1이 "마지막 경유지 앞"이 되어
-        // 새 스팟과 마지막 경유지의 카테고리가 서로 뒤바뀐다.
-        let typeCodes = originalData.dropFirst().dropLast().map { $0.typeCode }
-        let typeCode = (typeCodes + [updatedData.typeCode]).joined(separator: ",")
-        
-        // contentId (0, last 제외 + updatedData 마지막에 추가)
-        let contentIds = originalData.dropFirst().dropLast()
-        let contentIdList = contentIds.map {
-            "\($0.contentId)"
-        }
-        let updatedContentId = "\(updatedData.contentid)"
-        let contents = (contentIdList + [updatedContentId]).joined(separator: ",")
-        
-        // contentTypeId (0, last 제외 + updatedData 마지막에 추가)
-        // 관광타입(12/14/32/39…)이 들어가는 자리다. contentId를 넣으면 안 된다.
-        let contentTypeIds = originalData.dropFirst().dropLast()
-        let contentTypeIdList = contentTypeIds.map {
-            "\($0.contentTypeId)"
-        }
-        let updatedContentTypeId = "\(updatedData.contenttypeid)"
-        let contentTypes = (contentTypeIdList + [updatedContentTypeId]).joined(separator: ",")
-
-        let requestBody = RequestRouteModel(
+        let updatedRoute = RouteRequestBuilder.insertingSpotBeforeGoal(updatedData, into: originalData)
+        guard let requestBody = RouteRequestBuilder.make(
+            from: updatedRoute,
             userId: userId,
-            start: "\(start.lon),\(start.lat)",
-            goal: "\(end.lon),\(end.lat)",
-            wayPoints: wayPoints,
-            locateName: locateName,
-            typeCode: typeCode,
-            contentId: contents,
-            contentTypeId: contentTypes,
-            isUsed: false
-        )
-        
+            isUsed: editSession.isUsed,
+            routeOption: await profileStore.effectiveOption(userId: userId, editSession: editSession)
+        ) else {
+            print("❌ 경로 본문을 만들 수 없습니다")
+            return
+        }
+
+
         do {
             print("🔵 API 호출 시작")
             try await routeRepository.postRoutes(requestBody: requestBody)

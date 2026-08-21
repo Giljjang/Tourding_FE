@@ -60,27 +60,10 @@ struct RidingView: View {
                 NMapView(ridingViewModel: ridingViewModel, userLocationManager: locationManager)
                     .ignoresSafeArea(edges: .top)
                 
-                // 라이딩 중일 때 터치 감지 레이어
-                if ridingViewModel.flag && locationManager.isLocationTrackingEnabled {
-                    Color.clear
-                        .ignoresSafeArea(edges: .top)
-                        .contentShape(Rectangle())
-                        .gesture(
-                            SimultaneousGesture(
-                                TapGesture()
-                                    .onEnded { _ in
-                                        print("지도 탭 감지 (SwiftUI)")
-                                        locationManager.handleScreenTouch()
-                                    },
-                                DragGesture(minimumDistance: 0)
-                                    .onChanged { _ in
-                                        print("지도 드래그 감지 (SwiftUI)")
-                                        locationManager.handleScreenTouch()
-                                    }
-                            )
-                        )
-                }
-                
+                // 지도 터치 감지는 MapViewController가 NMFMapViewCameraDelegate로 한다.
+                // 예전에는 여기에 투명 레이어를 얹었는데, ZStack에서 NMapView의 형제라
+                // 터치를 가로채 첫 드래그에 지도가 밀리지 않았다.
+
                 if currentPosition == .large {
                     Color.black.opacity(0.3)
                         .ignoresSafeArea()
@@ -194,6 +177,15 @@ struct RidingView: View {
         } // : GeometryReader
         .ignoresSafeArea()
         .navigationBarBackButtonHidden()
+        .onDisappear {
+            // 자식 화면(스팟 추가·라이딩 스타일)으로 들어간 경우엔 편집 창이 살아 있다.
+            // 스택에서 빠진 경우에만 세션을 끝낸다 —
+            // 뒤로가기 버튼과 라이딩 종료에도 걸어 두었지만,
+            // 시스템 스와이프 백처럼 버튼을 거치지 않는 경로가 있다.
+            if !navigationManager.holdsRidingEditor {
+                ridingViewModel.finishEditSession()
+            }
+        }
         .onAppear {
             ridingViewModel.configureLocationManager(locationManager)
             checkAndRequestLocationPermission()
@@ -285,6 +277,8 @@ struct RidingView: View {
     private var backButton: some View {
         Button(action:{
             if !ridingViewModel.flag {
+                // 세션 종료는 onDisappear가 스택을 보고 판정한다 — 여기서 부르지 않는다.
+                // 판정이 두 곳이면 "화면이 사라졌는가"의 기준이 갈린다.
                 navigationManager.pop()
             } else {
                 wasLastRunNormal = true
@@ -361,6 +355,7 @@ struct RidingView: View {
             .cornerRadius(12)
             .shadow(color: .black.opacity(0.02), radius: 10, x: 0, y: 6)
         }
+        .dynamicTypeSize(...Self.toolbarTypeSizeLimit)
         .position(x: 110, y:SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : toiletButton
     
@@ -385,6 +380,7 @@ struct RidingView: View {
             .cornerRadius(12)
             .shadow(color: .black.opacity(0.02), radius: 10, x: 0, y: 6)
         }
+        .dynamicTypeSize(...Self.toolbarTypeSizeLimit)
         .position(x: 208, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : csButton
     
@@ -410,8 +406,20 @@ struct RidingView: View {
                     .strokeBorder(Self.aiBorderGradient, lineWidth: 1)
             )
         }
+        .dynamicTypeSize(...Self.toolbarTypeSizeLimit)
         .position(x: 316, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : AICourseEditButton
+
+    /// 라이딩 중 상단 툴바(화장실·편의점·AI 코스수정) 글자 크기 상한.
+    ///
+    /// 세 버튼은 한 줄에 나란히 놓이는데 iPhone SE(375pt)에서 오른쪽 여유가 **3.65pt**뿐이다.
+    /// `Font.custom(_:size:)`은 iOS 14부터 Dynamic Type에 자동으로 스케일되므로,
+    /// 텍스트 크기를 한 단계(xLarge)만 키워도 세 텍스트가 약 16pt 늘어 서로 겹친다.
+    /// iPhone 13은 390pt라 18.65pt가 남아 버틴다 — 그래서 SE에서만 드러났다.
+    ///
+    /// 버튼·글자 크기는 그대로 두고 **키우지만 않도록** 상한을 건다.
+    /// (실측: Pretendard-Medium 14pt 기준 버튼폭 88.30 / 88.30 / 110.70, 합계 287.29pt)
+    private static let toolbarTypeSizeLimit = DynamicTypeSize.large
 
     /// AI 코스수정 버튼 테두리 — Figma GRADIENT_LINEAR (2774:17889)
     ///

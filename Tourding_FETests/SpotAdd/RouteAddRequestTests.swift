@@ -63,7 +63,9 @@ struct RouteAddRequestTests {
         SpotAddViewModel(
             tourRepository: FakeTourRepository(),
             routeRepository: repository,
-            userSession: FakeUserSession(userId: 14)
+            userSession: FakeUserSession(userId: 14),
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository()),
+            editSession: RouteEditSession()
         )
     }
 
@@ -71,7 +73,9 @@ struct RouteAddRequestTests {
         DetailSpotViewModel(
             tourRepository: FakeTourRepository(),
             routeRepository: repository,
-            userSession: FakeUserSession(userId: 14)
+            userSession: FakeUserSession(userId: 14),
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository()),
+            editSession: RouteEditSession()
         )
     }
 
@@ -145,7 +149,12 @@ struct RouteAddRequestTests {
         #expect(fields(body.contentTypeId) == ["14", "28", "39"])
     }
 
-    /// 두 화면이 같은 본문을 만들어야 한다 — 진입 경로에 따라 결과가 달라지면 안 된다
+    /// 두 화면이 같은 본문을 만들어야 한다 — 진입 경로에 따라 결과가 달라지면 안 된다.
+    ///
+    /// **필드를 나열하지 않고 본문 전체를 비교한다.** 예전엔 5개만 봐서
+    /// `start`·`goal`·`userId`·`isUsed`가 어긋나도 통과했다.
+    /// 전체 비교면 새 필드(`routeOption` 등)가 늘어도 자동으로 잠긴다 —
+    /// 조립부가 두 곳에 복붙돼 있는 한 이 테스트가 유일한 동치 보장이다.
     @Test func bothEntryPointsProduceIdenticalRequestBody() async {
         let spotAddRepo = FakeRouteRepository()
         let detailRepo = FakeRouteRepository()
@@ -159,11 +168,7 @@ struct RouteAddRequestTests {
               let fromDetail = detailRepo.capturedPostRoutes.last else {
             Issue.record("POST /routes가 전송되지 않았다"); return
         }
-        #expect(fromSpotAdd.wayPoints == fromDetail.wayPoints)
-        #expect(fromSpotAdd.locateName == fromDetail.locateName)
-        #expect(fromSpotAdd.typeCode == fromDetail.typeCode)
-        #expect(fromSpotAdd.contentId == fromDetail.contentId)
-        #expect(fromSpotAdd.contentTypeId == fromDetail.contentTypeId)
+        #expect(fromSpotAdd == fromDetail)
     }
 
     // MARK: - 오류 3 — 좌표 규약 고정

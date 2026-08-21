@@ -29,7 +29,7 @@ struct SheetContentView: View {
             Divider()
                 .frame(maxWidth:.infinity)
                 .frame(height:1)
-                .foregroundColor(.gray1)
+                .overlay(Color.gray1)
                 .padding(.horizontal, 16)
             //                .padding(.bottom, 20)
             
@@ -139,32 +139,37 @@ struct SheetContentView: View {
                         sessionId: UUID()
                     ))
                 }) {
-                    Image("icon_plus")
-                    Text("스팟 추가")
-                        .foregroundColor(ridingViewModel.routeLocation.isEmpty ? .gray3 : .gray6)
-                        .font(.pretendardSemiBold(size: 16))
+                    HStack(spacing: 0) {
+                        Image("icon_plus")
+                            .frame(width: 24, height: 24, alignment: .center)
+                        
+                        Text("스팟 추가")
+                            .foregroundColor(ridingViewModel.routeLocation.isEmpty ? .gray3 : .gray6)
+                            .font(.pretendardSemiBold(size: 16))
+                    }//:HStack
                 }
                 .disabled(ridingViewModel.routeLocation.isEmpty)
                 .padding(.top, 1)
-                .padding(.trailing, 16)
+                .padding(.trailing, 15)
             } // : HStack
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.bottom, 17)
             
             // 소요시간
-            HStack {
+            HStack(spacing:0){
                 Image("icon_time-required")
-                    .padding(.trailing, 3)
+                    .padding(.trailing, 5)
                 
                 Text("소요 시간")
                     .foregroundColor(.gray4)
                     .font(.pretendardMedium(size: 16))
                     .padding(.trailing, 8)
+                    .frame(height: 24)
                 
                 if let time =  ridingViewModel.routeTotal?.duration {
                     Text(RidingViewModel.formatSecondsToHoursMinutes(time))
-                        .foregroundColor(.main)
-                        .font(.pretendardMedium(size: 16))
+                        .foregroundColor(.gray5)
+                        .font(.pretendardMedium(size: 15))
                 }
                 
             } // : HStack
@@ -172,22 +177,45 @@ struct SheetContentView: View {
             .padding(.bottom, 6)
             
             // 코스 길이
-            HStack {
+            HStack(spacing:0){
                 Image("icon_total-distance")
-                    .padding(.trailing, 3)
+                    .padding(.trailing, 5)
                 
                 Text("코스 길이")
                     .foregroundColor(.gray4)
                     .font(.pretendardMedium(size: 16))
                     .padding(.trailing, 8)
+                    .frame(height: 24)
                 
                 if let distance =  ridingViewModel.routeTotal?.distance {
                     Text(RidingViewModel.formatDistance(distance))
-                        .foregroundColor(.main)
-                        .font(.pretendardMedium(size: 16))
+                        .foregroundColor(.gray5)
+                        .font(.pretendardMedium(size: 15))
                 }
                 
             } // : HStack
+            .padding(.leading, 16)
+            .padding(.bottom, 6)
+            
+            // 라이딩 스타일
+            Button(action:{
+                // 라이딩 스타일 클릭시 라이딩 설정 페이지로 이동
+                // 코스 편집에서 여는 스타일은 저장하지 않는다 — 이번 경로에만 적용
+                navigationManager.push(.RidingStyleSettingsView(isTemporary: true))
+            }){
+                HStack(spacing: 0) {
+                    Image("icon_bike")
+                        .padding(.trailing, 5)
+                    
+                    Text("라이딩 스타일")
+                        .foregroundColor(.gray4)
+                        .font(.pretendardMedium(size: 16))
+                        .frame(height: 24)
+                    
+                    Image("icon_chevron-right-mini")
+                } // : HStack
+                
+            } //: Button
             .padding(.leading, 16)
             
         } // : VStack

@@ -10,7 +10,12 @@ import SwiftUI
 struct RidingStyleSettingsView: View {
     @EnvironmentObject var navigationManager: NavigationManager
     @EnvironmentObject var modalManager: ModalManager
-    @StateObject private var viewModel = RidingStyleSettingsViewModel()
+    @StateObject private var viewModel: RidingStyleSettingsViewModel
+
+    /// 코스 편집에서 열면 저장하지 않고 이번 경로에만 적용한다
+    init(isTemporary: Bool = false) {
+        _viewModel = StateObject(wrappedValue: RidingStyleSettingsViewModel(isTemporary: isTemporary))
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -27,6 +32,8 @@ struct RidingStyleSettingsView: View {
                     }
 
                     Divider()
+                        .frame(height: 1)
+                        .overlay(Color.gray1)
 
                     section(title: "라이딩 숙련도") {
                         RidingStylePillRow(
@@ -37,6 +44,7 @@ struct RidingStyleSettingsView: View {
                     }
 
                     Divider()
+                        .overlay(Color.gray1)
 
                     RidingStyleToggleRow(
                         title: "빠른 코스",
@@ -45,6 +53,8 @@ struct RidingStyleSettingsView: View {
                     )
 
                     Divider()
+                        .frame(height: 1)
+                        .overlay(Color.gray1)
 
                     RidingStyleToggleRow(
                         title: "계단 회피",
@@ -53,6 +63,8 @@ struct RidingStyleSettingsView: View {
                     )
 
                     Divider()
+                        .frame(height: 1)
+                        .overlay(Color.gray1)
 
                     RidingStyleToggleRow(
                         title: "물길 회피",

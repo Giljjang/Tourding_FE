@@ -21,8 +21,21 @@ class LoginViewModel: NSObject, ObservableObject {
     
     private let userRepository: UserRepositoryProtocol
     
-    init(userRepository: UserRepositoryProtocol = UserRepository()) {
+    /// 라이딩 스타일 캐시. 세션을 지울 때 함께 비운다.
+    private var profileStore: RidingProfileProviding {
+        injectedProfileStore ?? DependencyProvider.makeRidingProfileStore()
+    }
+    private let injectedProfileStore: RidingProfileProviding?
+
+    /// 편집 세션도 함께 비운다 — 다음 사용자가 남의 최근 경로를 건드리면 안 된다
+    private var editSession: RouteEditSessionProviding {
+        DependencyProvider.makeRouteEditSession()
+    }
+
+    init(userRepository: UserRepositoryProtocol = UserRepository(),
+         profileStore: RidingProfileProviding? = nil) {
         self.userRepository = userRepository
+        self.injectedProfileStore = profileStore
         super.init()
         checkExistingLogin()
     }
@@ -344,6 +357,10 @@ class LoginViewModel: NSObject, ObservableObject {
         // 공통 로그아웃 처리 — 세션 흔적을 한 번에 지운다.
         // 개별 삭제로 흩어져 있으면 provider 분기 하나가 빠질 때 자동 재로그인이 살아난다.
         KeychainHelper.clearSession()
+        // 라이딩 스타일은 메모리 캐시라 Keychain을 지워도 남는다.
+        // 온보딩은 저장만 하고 조회하지 않으므로 다음 계정에게 넘어갈 수 있다.
+        profileStore.clear()
+        editSession.reset()
         isLoggedIn = false
         userNickname = "홍길동"
         userEmail = "Tourding@example.com"
@@ -403,6 +420,10 @@ class LoginViewModel: NSObject, ObservableObject {
                 // 3. 로컬 데이터 정리
                 KeychainHelper.deleteOnboardingCompleted()
                 KeychainHelper.clearSession()
+        // 라이딩 스타일은 메모리 캐시라 Keychain을 지워도 남는다.
+        // 온보딩은 저장만 하고 조회하지 않으므로 다음 계정에게 넘어갈 수 있다.
+        profileStore.clear()
+        editSession.reset()
 
                 await MainActor.run {
                     isLoggedIn = false
@@ -440,6 +461,10 @@ class LoginViewModel: NSObject, ObservableObject {
                 // loginProvider도 삭제하여 로그인 상태 해제
                 KeychainHelper.deleteOnboardingCompleted()
                 KeychainHelper.clearSession()
+        // 라이딩 스타일은 메모리 캐시라 Keychain을 지워도 남는다.
+        // 온보딩은 저장만 하고 조회하지 않으므로 다음 계정에게 넘어갈 수 있다.
+        profileStore.clear()
+        editSession.reset()
 
                 await MainActor.run {
                     isLoggedIn = false
