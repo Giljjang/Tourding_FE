@@ -304,8 +304,11 @@ extension RidingViewModel {
 
     @MainActor
     func endRiding(isStart: Bool, locationManager: LocationManager) async {
-        // 편집 세션을 먼저 끝낸다 — 일시 스타일이 다음 코스 만들기로 새면 안 된다
-        finishEditSession()
+        // **여기서 편집 세션을 끝내지 않는다.**
+        // 이 함수는 화면을 pop하지 않는다 — `flag`를 false로 되돌려 편집 모드로
+        // 돌아갈 뿐이다. 세션을 끝내면 화면은 그대로인데 스타일만 초기화돼,
+        // 라이딩을 마치고 편집으로 돌아온 사용자가 고른 값을 잃는다.
+        // 종료 판정은 `RidingView.onDisappear` + `holdsRidingEditor` 한 곳이다.
 
         // 진행 중인 편의시설 요청을 먼저 끊는다.
         // 아래 API들을 await하는 동안 뒤늦게 끝나면 지운 마커가 되살아난다.

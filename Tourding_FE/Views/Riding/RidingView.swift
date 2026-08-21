@@ -277,9 +277,8 @@ struct RidingView: View {
     private var backButton: some View {
         Button(action:{
             if !ridingViewModel.flag {
-                // 일시 스타일과 편집 대상 정보를 비운다 —
-                // 남기면 다음에 홈에서 새 코스를 만들 때도 그 옵션이 적용된다
-                ridingViewModel.finishEditSession()
+                // 세션 종료는 onDisappear가 스택을 보고 판정한다 — 여기서 부르지 않는다.
+                // 판정이 두 곳이면 "화면이 사라졌는가"의 기준이 갈린다.
                 navigationManager.pop()
             } else {
                 wasLastRunNormal = true

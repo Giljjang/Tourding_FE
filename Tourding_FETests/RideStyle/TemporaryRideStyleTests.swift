@@ -279,4 +279,20 @@ struct TemporaryRideStyleTests {
 
         #expect(repository.capturedPostRoutes.isEmpty)
     }
+
+    /// **라이딩을 끝내도 편집 화면에 남아 있으면 스타일은 유지된다.**
+    ///
+    /// `endRiding`은 화면을 pop하지 않는다 — `flag`를 false로 되돌려 편집 모드로
+    /// 돌아갈 뿐이다. 여기서 세션을 끝내면 화면은 그대로인데 스타일만 초기화된다.
+    /// 세션 종료는 **NavigationStack에서 코스 편집이 빠질 때** 판정한다.
+    @Test func endingRideKeepsTemporaryStyleWhileEditorStaysOpen() async {
+        let (store, _) = storeHolding(saved)
+        let riding = makeTestRidingViewModel(profileStore: store, userId: 49)
+        store.setSessionOverride(temporary)
+
+        await riding.endRiding(isStart: false, locationManager: LocationManager())
+
+        #expect(await store.currentOption(userId: 49) == temporary,
+                "라이딩만 끝났을 뿐 편집 창은 살아 있다")
+    }
 }
