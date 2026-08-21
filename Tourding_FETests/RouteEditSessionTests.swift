@@ -239,9 +239,11 @@ struct RouteEditSessionTests {
 
     // MARK: - 스타일 화면이 그 값을 보여준다
 
-    /// **핵심** — 편집 중인 경로의 스타일을 보여준다. 유저 프로필이 아니다.
+    /// **핵심** — 최근 경로를 이어서 갈 때는 그 경로의 스타일을 보여준다.
+    /// 유저 프로필이 아니다.
     @Test func styleScreenShowsRouteAppliedOptionNotProfile() async {
         let session = RouteEditSession()
+        session.beginEditing(isUsed: true)   // 최근 경로 이어서 가기
         session.recordAppliedOption(
             RouteOptionModel(cyclingProfile: "cycling-electric", fastRoute: true,
                              avoidSteps: true, avoidFords: true, skillLevel: "BEGINNER")
@@ -290,6 +292,7 @@ struct RouteEditSessionTests {
     /// 마이페이지에서 연 화면은 언제나 유저 프로필이다 — 경로와 무관하다
     @Test func myPageStyleScreenAlwaysShowsProfile() async {
         let session = RouteEditSession()
+        session.beginEditing(isUsed: true)
         session.recordAppliedOption(
             RouteOptionModel(cyclingProfile: "cycling-electric", fastRoute: true,
                              avoidSteps: true, avoidFords: true, skillLevel: "BEGINNER")
@@ -310,5 +313,96 @@ struct RouteEditSessionTests {
 
         #expect(viewModel.selectedBikeType == .normal, "프로필 값")
         #expect(userRepository.getRidingProfileCallCount == 1)
+    }
+
+    // MARK: - 진입 경로별 초기 스타일
+
+    /// **홈에서 새 코스를 만들면 마이페이지 프로필을 쓴다.**
+    /// draft는 아직 "이어서 가는 경로"가 아니다 — 직전에 다른 경로를 보며 남은
+    /// `appliedOption`이 있어도 그건 이 경로의 값이 아니다.
+    @Test func draftEntryUsesProfileEvenWhenAppliedOptionLingers() async {
+        let session = RouteEditSession()
+        session.beginEditing(isUsed: false)                       // 홈·추천 = draft
+        session.recordAppliedOption(
+            RouteOptionModel(cyclingProfile: "cycling-electric", fastRoute: true,
+                             avoidSteps: true, avoidFords: true, skillLevel: "BEGINNER")
+        )
+        let userRepository = FakeUserRepository()
+        userRepository.ridingProfile = RouteOptionModel(
+            cyclingProfile: "cycling-regular", fastRoute: false,
+            avoidSteps: false, avoidFords: false, skillLevel: "PRO"
+        )
+        let viewModel = RidingStyleSettingsViewModel(
+            userRepository: userRepository,
+            userSession: FakeUserSession(userId: 49),
+            profileStore: SpyProfileStore(),
+            editSession: session,
+            isTemporary: true
+        )
+
+        await viewModel.loadRidingProfile()
+
+        #expect(viewModel.selectedBikeType == .normal, "마이페이지 프로필")
+        #expect(userRepository.getRidingProfileCallCount == 1)
+    }
+
+    /// **비정상 종료 복구는 그 경로를 이어서 간다** — routeSource는 draft로 오지만
+    /// `flag`로 라이딩 중이 되므로 `isUsed=true` 경로를 읽는다.
+    /// 세션에도 그 값이 기록돼야 스팟 추가와 스타일 화면이 같은 경로를 본다.
+    @Test func abnormalRecoveryRecordsUsedRoute() {
+        let session = RouteEditSession()
+        let viewModel = makeTestRidingViewModel(editSession: session)
+
+        viewModel.handleInitialEntry(
+            locationManager: LocationManager(),
+            isNotNormal: true,          // 비정상 종료 복구
+            isStart: true,
+            routeSource: .draft,        // 호출부가 기본값으로 넘긴다
+            onStartRiding: {}
+        )
+
+        #expect(session.isUsed == true, "복구는 저장된 라이딩 경로를 이어서 간다")
+    }
+
+    // MARK: - 편집 세션 종료
+
+    /// **화면을 벗어나면 일시 스타일이 걷힌다.**
+    ///
+    /// 남겨두면 다음에 홈에서 새 코스를 만들 때 이전 일시 옵션이 그대로 적용된다 —
+    /// "홈은 무조건 마이페이지 프로필"이라는 규칙이 깨진다.
+    @Test func finishingEditSessionClearsTemporaryStyle() async {
+        let userRepository = FakeUserRepository()
+        userRepository.ridingProfile = RouteOptionModel(
+            cyclingProfile: "cycling-regular", fastRoute: false,
+            avoidSteps: false, avoidFords: false, skillLevel: "PRO"
+        )
+        let store = RidingProfileStore(userRepository: userRepository)
+        let session = RouteEditSession()
+        let viewModel = makeTestRidingViewModel(profileStore: store, editSession: session)
+        store.setSessionOverride(
+            RouteOptionModel(cyclingProfile: "cycling-mountain", fastRoute: true,
+                             avoidSteps: true, avoidFords: true, skillLevel: "BEGINNER")
+        )
+
+        viewModel.finishEditSession()
+
+        #expect(await store.currentOption(userId: 49)?.cyclingProfile == "cycling-regular",
+                "일시 옵션이 걷히고 저장된 프로필로 돌아간다")
+    }
+
+    /// 편집 대상 정보도 함께 비운다 — 다음 진입이 남은 값을 물려받으면 안 된다
+    @Test func finishingEditSessionClearsRouteContext() {
+        let session = RouteEditSession()
+        session.beginEditing(isUsed: true)
+        session.recordAppliedOption(
+            RouteOptionModel(cyclingProfile: "P", fastRoute: true,
+                             avoidSteps: true, avoidFords: true, skillLevel: "S")
+        )
+        let viewModel = makeTestRidingViewModel(editSession: session)
+
+        viewModel.finishEditSession()
+
+        #expect(session.isUsed == false)
+        #expect(session.appliedOption == nil)
     }
 }

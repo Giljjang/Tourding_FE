@@ -69,13 +69,18 @@ final class RidingStyleSettingsViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        // 코스 편집에서 열었다면 **이 경로에 실제로 적용된 스타일**을 보여준다.
-        // 최근 경로를 이어서 갈 때 유저 프로필을 보여주면 화면과 경로가 어긋난다.
+        // **이어서 가는 경로일 때만** 그 경로에 적용된 스타일을 보여준다.
+        //
+        //   최근 경로 이어서 가기 · 비정상 종료 복구 → 경로의 `appliedOption`
+        //   홈 코스 만들기 · 추천 코스(draft)        → 마이페이지 프로필
+        //
+        // draft는 아직 "이어서 가는 경로"가 아니다. 직전에 다른 경로를 보며 남은
+        // `appliedOption`이 있어도 그건 이 경로의 값이 아니다.
         //
         // 걸어둔 일시 옵션 자체를 다시 보여주지는 않는다 —
         // 그러면 "일시"가 아니라 누적 설정이 된다. 재계산까지 끝났다면
         // 그 값이 곧 경로의 `appliedOption`이라 여기서 자연스럽게 반영된다.
-        if isTemporary, let applied = editSession.appliedOption {
+        if isTemporary, editSession.isUsed, let applied = editSession.appliedOption {
             apply(applied)
             return
         }

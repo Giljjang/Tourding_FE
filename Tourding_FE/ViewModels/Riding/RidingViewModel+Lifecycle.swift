@@ -35,9 +35,6 @@ extension RidingViewModel {
         // 이후 재정렬 POST·경로선 재조회·포그라운드 새로고침이 모두 이 값을 참조한다
         self.routeSource = routeSource
 
-        // 스팟 추가·상세는 별도 ViewModel이라 여기 기록해 두지 않으면 draft를 읽고 쓴다
-        editSession.beginEditing(isUsed: routeSource.isUsed)
-
         if let isNotNormal {
             flag = isNotNormal
             print("🔄 비정상 종료 감지 - 라이딩 모드로 복구")
@@ -45,6 +42,13 @@ extension RidingViewModel {
         } else if isStart {
             onStartRiding()
         }
+
+        // **`flag`가 정해진 뒤에 기록한다.** 비정상 종료 복구는 routeSource가 draft로
+        // 들어오지만 라이딩 중이던 경로를 이어서 가므로 `isUsedRoute`는 true다.
+        // 먼저 기록하면 복구 진입에서 스팟 추가가 draft를 보게 된다.
+        //
+        // 스팟 추가·상세는 별도 ViewModel이라 여기 기록해 두지 않으면 draft를 읽고 쓴다.
+        editSession.beginEditing(isUsed: isUsedRoute)
 
         setupRidingNavigationOnAppear(locationManager: locationManager)
 
@@ -56,6 +60,19 @@ extension RidingViewModel {
                 routeSource: routeSource
             )
         }
+    }
+
+    /// 편집 화면을 벗어날 때 세션을 끝낸다 — 뒤로가기와 라이딩 종료 양쪽에서 부른다.
+    ///
+    /// **일시 스타일을 걷지 않으면 다음에 홈에서 새 코스를 만들 때도 그 옵션이 적용된다.**
+    /// 진입 경로마다 초기 스타일이 다르다:
+    ///   홈 코스 만들기 · 추천 코스 → 마이페이지 프로필
+    ///   최근 경로 이어서 가기 · 비정상 종료 복구 → 그 경로의 `appliedOption`
+    /// 남은 값이 있으면 이 구분이 무너진다.
+    @MainActor
+    func finishEditSession() {
+        profileStore.setSessionOverride(nil)
+        editSession.reset()
     }
 
     @MainActor
@@ -287,6 +304,9 @@ extension RidingViewModel {
 
     @MainActor
     func endRiding(isStart: Bool, locationManager: LocationManager) async {
+        // 편집 세션을 먼저 끝낸다 — 일시 스타일이 다음 코스 만들기로 새면 안 된다
+        finishEditSession()
+
         // 진행 중인 편의시설 요청을 먼저 끊는다.
         // 아래 API들을 await하는 동안 뒤늦게 끝나면 지운 마커가 되살아난다.
         cancelFacilityMarkerTasks()

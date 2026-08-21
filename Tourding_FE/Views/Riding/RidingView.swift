@@ -268,6 +268,9 @@ struct RidingView: View {
     private var backButton: some View {
         Button(action:{
             if !ridingViewModel.flag {
+                // 일시 스타일과 편집 대상 정보를 비운다 —
+                // 남기면 다음에 홈에서 새 코스를 만들 때도 그 옵션이 적용된다
+                ridingViewModel.finishEditSession()
                 navigationManager.pop()
             } else {
                 wasLastRunNormal = true
