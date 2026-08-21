@@ -177,6 +177,15 @@ struct RidingView: View {
         } // : GeometryReader
         .ignoresSafeArea()
         .navigationBarBackButtonHidden()
+        .onDisappear {
+            // 자식 화면(스팟 추가·라이딩 스타일)으로 들어간 경우엔 편집 창이 살아 있다.
+            // 스택에서 빠진 경우에만 세션을 끝낸다 —
+            // 뒤로가기 버튼과 라이딩 종료에도 걸어 두었지만,
+            // 시스템 스와이프 백처럼 버튼을 거치지 않는 경로가 있다.
+            if !navigationManager.holdsRidingEditor {
+                ridingViewModel.finishEditSession()
+            }
+        }
         .onAppear {
             ridingViewModel.configureLocationManager(locationManager)
             checkAndRequestLocationPermission()

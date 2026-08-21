@@ -42,6 +42,14 @@ enum ViewType : Hashable {
     case SpotAdditionalView
 }
 
+extension ViewType {
+    /// 코스 편집 화면인가. 진입 방식마다 연관값이 달라 케이스만 본다.
+    var isRidingEditor: Bool {
+        if case .RidingView = self { return true }
+        return false
+    }
+}
+
 final class NavigationManager: ObservableObject {
     @Published var path: [ViewType] = [] // 탭바 X -> stack
     @Published var currentTab: ViewType = .HomeView // 탭바 O 상태관리
@@ -121,3 +129,13 @@ extension NavigationManager {
     }
 }
 
+extension NavigationManager {
+    /// 코스 편집 화면이 아직 스택에 있는가.
+    ///
+    /// `onDisappear`는 **자식 화면으로 push할 때도 불린다** —
+    /// 스팟 추가나 라이딩 스타일 화면으로 들어갈 때마다 편집 세션이 끝나면
+    /// "편집 중에는 일시 스타일 유지"가 성립하지 않는다. 이걸로 두 경우를 가른다.
+    var holdsRidingEditor: Bool {
+        path.contains { $0.isRidingEditor }
+    }
+}
