@@ -55,6 +55,10 @@ extension RidingViewModel {
     func applyRouteSummary(_ bundle: RouteGuideResponse) {
         logAppliedStyle(bundle)
 
+        // 스타일 화면이 **이 경로에 적용된 값**을 보여주도록 기록한다.
+        // 유저 프로필을 보여주면 화면과 실제 경로가 어긋난다.
+        editSession.recordAppliedOption(bundle.appliedOption)
+
         routeTotal = RoutesModel(
             isUsed: bundle.isUsed,
             duration: bundle.duration,

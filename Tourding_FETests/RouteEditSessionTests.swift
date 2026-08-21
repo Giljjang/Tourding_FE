@@ -181,4 +181,134 @@ struct RouteEditSessionTests {
 
         #expect(repository.capturedPostRoutes.last?.isUsed == true)
     }
+
+    // MARK: - 편집 중인 경로에 적용된 스타일
+
+    /// **최근 경로를 이어서 갈 때는 그 경로에 실제로 적용된 스타일을 보여줘야 한다.**
+    ///
+    /// 최근 경로는 이미 어떤 스타일로 계산돼 저장돼 있다(`appliedOption`).
+    /// 유저 프로필을 보여주면 화면과 실제 경로가 어긋난다 —
+    /// 실측 로그에서 경로는 `cycling-electric`인데 화면은 프로필의 `cycling-regular`였다.
+    @Test func recordsAppliedOptionOfTheRouteBeingEdited() {
+        let session = RouteEditSession()
+        let applied = RouteOptionModel(
+            cyclingProfile: "cycling-electric", fastRoute: true,
+            avoidSteps: true, avoidFords: true, skillLevel: "BEGINNER"
+        )
+
+        session.recordAppliedOption(applied)
+
+        #expect(session.appliedOption == applied)
+    }
+
+    /// 서버가 안 내려주면 알 수 없다 — 그때는 유저 프로필로 폴백한다
+    @Test func appliedOptionStartsEmpty() {
+        #expect(RouteEditSession().appliedOption == nil)
+    }
+
+    @Test func resetClearsAppliedOption() {
+        let session = RouteEditSession()
+        session.recordAppliedOption(
+            RouteOptionModel(cyclingProfile: "P", fastRoute: true,
+                             avoidSteps: true, avoidFords: true, skillLevel: "S")
+        )
+
+        session.reset()
+
+        #expect(session.appliedOption == nil)
+    }
+
+    /// 경로를 읽을 때마다 기록된다 — 편집 화면이 번들을 반영하는 지점이 유일한 출처다
+    @Test func applyingRouteBundleRecordsAppliedOption() {
+        let session = RouteEditSession()
+        let viewModel = makeTestRidingViewModel(editSession: session)
+        let applied = RouteOptionModel(
+            cyclingProfile: "cycling-electric", fastRoute: true,
+            avoidSteps: true, avoidFords: true, skillLevel: "BEGINNER"
+        )
+        var bundle = RouteGuideResponse(
+            routeSummaryId: 60, isUsed: true, duration: 100, distance: 200,
+            guides: [], paths: [], locations: []
+        )
+        bundle.appliedOption = applied
+
+        viewModel.applyRouteBundle(bundle)
+
+        #expect(session.appliedOption == applied)
+    }
+
+    // MARK: - 스타일 화면이 그 값을 보여준다
+
+    /// **핵심** — 편집 중인 경로의 스타일을 보여준다. 유저 프로필이 아니다.
+    @Test func styleScreenShowsRouteAppliedOptionNotProfile() async {
+        let session = RouteEditSession()
+        session.recordAppliedOption(
+            RouteOptionModel(cyclingProfile: "cycling-electric", fastRoute: true,
+                             avoidSteps: true, avoidFords: true, skillLevel: "BEGINNER")
+        )
+        let userRepository = FakeUserRepository()
+        userRepository.ridingProfile = RouteOptionModel(
+            cyclingProfile: "cycling-regular", fastRoute: false,
+            avoidSteps: false, avoidFords: false, skillLevel: "PRO"
+        )
+        let viewModel = RidingStyleSettingsViewModel(
+            userRepository: userRepository,
+            userSession: FakeUserSession(userId: 49),
+            profileStore: SpyProfileStore(),
+            editSession: session,
+            isTemporary: true
+        )
+
+        await viewModel.loadRidingProfile()
+
+        #expect(viewModel.selectedBikeType == .electric, "경로에 적용된 값")
+        #expect(viewModel.selectedSkillLevel == .beginner)
+        #expect(userRepository.getRidingProfileCallCount == 0, "경로 값을 알면 프로필을 묻지 않는다")
+    }
+
+    /// 경로에 적용된 값이 없으면(서버가 안 내려줌) 유저 프로필로 폴백한다
+    @Test func styleScreenFallsBackToProfileWhenRouteHasNoOption() async {
+        let userRepository = FakeUserRepository()
+        userRepository.ridingProfile = RouteOptionModel(
+            cyclingProfile: "cycling-regular", fastRoute: false,
+            avoidSteps: false, avoidFords: false, skillLevel: "PRO"
+        )
+        let viewModel = RidingStyleSettingsViewModel(
+            userRepository: userRepository,
+            userSession: FakeUserSession(userId: 49),
+            profileStore: SpyProfileStore(),
+            editSession: RouteEditSession(),
+            isTemporary: true
+        )
+
+        await viewModel.loadRidingProfile()
+
+        #expect(viewModel.selectedBikeType == .normal)
+        #expect(userRepository.getRidingProfileCallCount == 1)
+    }
+
+    /// 마이페이지에서 연 화면은 언제나 유저 프로필이다 — 경로와 무관하다
+    @Test func myPageStyleScreenAlwaysShowsProfile() async {
+        let session = RouteEditSession()
+        session.recordAppliedOption(
+            RouteOptionModel(cyclingProfile: "cycling-electric", fastRoute: true,
+                             avoidSteps: true, avoidFords: true, skillLevel: "BEGINNER")
+        )
+        let userRepository = FakeUserRepository()
+        userRepository.ridingProfile = RouteOptionModel(
+            cyclingProfile: "cycling-regular", fastRoute: false,
+            avoidSteps: false, avoidFords: false, skillLevel: "PRO"
+        )
+        let viewModel = RidingStyleSettingsViewModel(
+            userRepository: userRepository,
+            userSession: FakeUserSession(userId: 49),
+            profileStore: SpyProfileStore(),
+            editSession: session
+        )
+
+        await viewModel.loadRidingProfile()
+
+        #expect(viewModel.selectedBikeType == .normal, "프로필 값")
+        #expect(userRepository.getRidingProfileCallCount == 1)
+    }
 }

@@ -41,10 +41,18 @@ final class RidingStyleSettingsViewModel: ObservableObject {
     /// 마이페이지에서 열면 `false` — 프로필 자체를 바꾼다.
     private let isTemporary: Bool
 
+    /// 편집 중인 경로 정보. 일시 모드에서 이 경로에 적용된 스타일을 우선 보여준다.
+    private let injectedEditSession: RouteEditSessionProviding?
+    private var editSession: RouteEditSessionProviding {
+        injectedEditSession ?? DependencyProvider.makeRouteEditSession()
+    }
+
     init(userRepository: UserRepositoryProtocol = UserRepository(),
          userSession: UserSessionProviding = KeychainUserSession(),
          profileStore: RidingProfileProviding? = nil,
+         editSession: RouteEditSessionProviding? = nil,
          isTemporary: Bool = false) {
+        self.injectedEditSession = editSession
         self.userRepository = userRepository
         self.userSession = userSession
         self.injectedProfileStore = profileStore
@@ -61,10 +69,17 @@ final class RidingStyleSettingsViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        // **일시 모드에서도 서버에 저장된 값을 읽는다.**
-        // 이전에 걸어둔 일시 옵션을 다시 보여주면 "일시"가 아니라 누적 설정이 되어,
-        // 마이페이지에 저장된 진짜 프로필이 무엇인지 화면에서 확인할 수 없게 된다.
-        // 일시 옵션은 화면을 연 그 동안만 유효하다.
+        // 코스 편집에서 열었다면 **이 경로에 실제로 적용된 스타일**을 보여준다.
+        // 최근 경로를 이어서 갈 때 유저 프로필을 보여주면 화면과 경로가 어긋난다.
+        //
+        // 걸어둔 일시 옵션 자체를 다시 보여주지는 않는다 —
+        // 그러면 "일시"가 아니라 누적 설정이 된다. 재계산까지 끝났다면
+        // 그 값이 곧 경로의 `appliedOption`이라 여기서 자연스럽게 반영된다.
+        if isTemporary, let applied = editSession.appliedOption {
+            apply(applied)
+            return
+        }
+
         do {
             let response = try await userRepository.getRidingProfile(userId: uid)
             apply(response.routeOption)
