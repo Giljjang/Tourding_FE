@@ -33,7 +33,7 @@ Tourding_FE/
 ├── ViewModels/Riding/      +API, +RouteReorder, +Lifecycle, +LocationTracking, +Utils, NMap/
 ├── Views/Riding/           RidingView, NMap/, BottomSheet/, RouteLocationDropDelegate
 ├── Extension/              Color+Hex, Font+CustomFont
-├── Utils/                  RouteRequestBuilder, RidingProfileStore, FixtureLoader, MockAPIConfiguration, SafeAreaUtils
+├── Utils/                  RouteRequestBuilder, RidingProfileStore, RouteEditSession, FixtureLoader, MockAPIConfiguration, SafeAreaUtils
 └── Resources/Fixtures/     서버 캡처 JSON
 ```
 
@@ -325,6 +325,11 @@ GET은 앱 실행당 한 번이다.
 만드는 경로(라이딩 시작·DnD·삭제·스팟추가)가 모두 같은 스타일을 쓴다.
 `clear()`(로그아웃)에서 함께 지워진다.
 
+**스타일 화면은 열 때마다 서버 값에서 다시 시작한다.**
+일시 모드에서도 `GET`으로 저장된 프로필을 읽는다 — 이전에 걸어둔 일시 옵션을
+다시 보여주면 "일시"가 아니라 누적 설정이 되고, 마이페이지에 저장된 진짜 값이
+무엇인지 화면에서 확인할 수 없게 된다.
+
 **저장하지 않는 옵션은 `POST`로만 반영된다.**
 `GET /routes`는 서버에 저장된 경로를 그대로 읽을 뿐 재계산하지 않는다 —
 실측 로그에서 스타일을 바꾸고 돌아와도 거리·좌표 개수가 **글자 하나까지 같았다**.
@@ -348,6 +353,17 @@ GET은 앱 실행당 한 번이다.
 라이딩 중(`flag`)에는 읽지 않는다.
 
 회귀 방지 테스트: `RidingProfileStoreTests`, `RouteOptionWiringTests`, `RouteOptionContractTests`
+
+**"어느 경로를 편집 중인가"는 `RouteEditSession` 하나로 공유한다.**
+라이딩 편집은 draft일 수도, 최근 사용 경로일 수도 있다(`RidingRouteSource`).
+스팟 추가·상세는 **별도 ViewModel이라 그 사실을 모르고 항상 draft를 읽고 썼다** —
+최근 경로를 편집하며 스팟을 추가하면 draft에 저장돼 화면에 나타나지 않았다.
+실측 로그에서 `POST isUsed:false 경유지 5개` 직후 `GET isUsed=true → 경유지 2개`로 드러났다.
+
+진입 경로가 여럿이라(`DestinationSearchView`를 거치기도 한다) `ViewType`으로 나르면
+중간 화면까지 값을 이어야 한다. `handleInitialEntry`가 `beginEditing(isUsed:)`로 기록하고
+스팟 추가·상세가 읽는다. 로그아웃 시 `reset()`.
+**새로 경로를 읽거나 쓰는 화면을 만들면 이 값을 따를 것.**
 
 **번들 반영은 `applyRouteBundle` / `applyGuideMarkers` 두 함수로만 한다.**
 `POST /routes`·`GET /routes`·AI 경로 재설정이 모두 같은 `RouteGuideResponse`를 돌려주므로
@@ -545,7 +561,7 @@ xcodebuild test -scheme Tourding_FE \
     진단 로그를 먼저 넣었으면 한 번에 끝났을 일이다
   - 빈 catch 2건, 죽은 코드 5건(+`onMapTap` 배선 전부) 정리
 
-- [x] **라이딩 스타일을 경로 요청에 반영 (TDD)** — 테스트 305개, 스킵 0
+- [x] **라이딩 스타일을 경로 요청에 반영 (TDD)** — 테스트 302개, 스킵 0
   - **전제가 틀렸던 것을 바로잡음** — 서버가 `routeOption` 없이도 저장된 프로필을 쓸 거라 보고
     라이딩 화면 3곳에만 실었다. 실제로는 **디폴트로 계산**한다.
     스팟추가·상세·홈(routes)·홈(by-name) 네 곳에서 사용자 설정이 무시되고 있었다
@@ -555,6 +571,9 @@ xcodebuild test -scheme Tourding_FE \
     그 값이 다음 로그인 계정에게 넘어갔다. 세션 정리 3곳에 `clear()`도 배선
   - 라이딩 스타일·온보딩 VM의 `KeychainHelper` 직접 호출을 `UserSessionProviding`으로 교체
     — 프로젝트 규칙 위반이었고, 실제로 병렬 테스트에서 전역 Keychain 간섭으로 깨졌다
+  - **스팟 추가가 엉뚱한 경로에 저장되던 문제** — 편집 화면은 최근 경로(`isUsed=true`)를,
+    스팟 추가는 draft를 읽고 썼다. 추가한 경유지가 draft에 갇혀 화면에 안 보이고
+    재계산에서도 빠졌다. `RouteEditSession`으로 편집 대상을 공유해 해소
   - **코스 편집의 스타일은 저장하지 않는 일시 옵션** — 마이페이지와 같은 화면이지만
     `isTemporary`로 갈린다. 저장하지 않으므로 `POST` 재계산이 유일한 반영 경로다
   - **복귀 시 재계산 누락** — `GET`만 불러 저장된 옛 경로를 읽었다.

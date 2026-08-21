@@ -22,7 +22,8 @@ struct DetailSpotAddRaceTests {
             tourRepository: FakeTourRepository(),
             routeRepository: repository,
             userSession: FakeUserSession(userId: 49),
-            profileStore: RidingProfileStore(userRepository: FakeUserRepository())
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository()),
+            editSession: RouteEditSession()
         )
     }
 

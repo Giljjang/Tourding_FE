@@ -64,7 +64,8 @@ struct RouteAddRequestTests {
             tourRepository: FakeTourRepository(),
             routeRepository: repository,
             userSession: FakeUserSession(userId: 14),
-            profileStore: RidingProfileStore(userRepository: FakeUserRepository())
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository()),
+            editSession: RouteEditSession()
         )
     }
 
@@ -73,7 +74,8 @@ struct RouteAddRequestTests {
             tourRepository: FakeTourRepository(),
             routeRepository: repository,
             userSession: FakeUserSession(userId: 14),
-            profileStore: RidingProfileStore(userRepository: FakeUserRepository())
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository()),
+            editSession: RouteEditSession()
         )
     }
 

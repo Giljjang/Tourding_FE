@@ -300,6 +300,7 @@ func makeTestRidingViewModel(
     repository: FakeRouteRepository = FakeRouteRepository(),
     kakaoRepository: FakeKakaoRepository = FakeKakaoRepository(),
     profileStore: RidingProfileProviding? = nil,
+    editSession: RouteEditSessionProviding? = nil,
     userId: Int = 3
 ) -> RidingViewModel {
     // 기본 인자에서 만들면 nonisolated 컨텍스트라 @MainActor 타입을 생성할 수 없다
@@ -308,6 +309,7 @@ func makeTestRidingViewModel(
         routeRepository: repository,
         kakaoRepository: kakaoRepository,
         profileStore: store,
+        editSession: editSession ?? RouteEditSession(),
         userSession: FakeUserSession(userId: userId)
     )
     return viewModel

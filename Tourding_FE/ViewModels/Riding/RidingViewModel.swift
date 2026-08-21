@@ -80,6 +80,9 @@ final class RidingViewModel: ObservableObject {
     let kakaoRepository: KakaoRepositoryProtocol
     let profileStore: RidingProfileProviding
 
+    /// 지금 편집 중인 경로를 스팟 추가·상세 화면과 공유한다
+    let editSession: RouteEditSessionProviding
+
     /// 화면이 마지막으로 확인한 라이딩 스타일.
     ///
     /// **요청에 싣는 값은 여기가 아니라 POST 직전에 `profileStore`에서 읽는다.**
@@ -109,11 +112,13 @@ final class RidingViewModel: ObservableObject {
     init(routeRepository: RouteRepositoryProtocol,
          kakaoRepository: KakaoRepositoryProtocol,
          profileStore: RidingProfileProviding,
+         editSession: RouteEditSessionProviding,
          userSession: UserSessionProviding
     ) {
         self.routeRepository = routeRepository
         self.kakaoRepository = kakaoRepository
         self.profileStore = profileStore
+        self.editSession = editSession
         self.userSession = userSession
         self.userId = userSession.userId
     }

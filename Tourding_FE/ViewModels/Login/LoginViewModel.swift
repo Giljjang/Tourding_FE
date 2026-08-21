@@ -27,6 +27,11 @@ class LoginViewModel: NSObject, ObservableObject {
     }
     private let injectedProfileStore: RidingProfileProviding?
 
+    /// 편집 세션도 함께 비운다 — 다음 사용자가 남의 최근 경로를 건드리면 안 된다
+    private var editSession: RouteEditSessionProviding {
+        DependencyProvider.makeRouteEditSession()
+    }
+
     init(userRepository: UserRepositoryProtocol = UserRepository(),
          profileStore: RidingProfileProviding? = nil) {
         self.userRepository = userRepository
@@ -355,6 +360,7 @@ class LoginViewModel: NSObject, ObservableObject {
         // 라이딩 스타일은 메모리 캐시라 Keychain을 지워도 남는다.
         // 온보딩은 저장만 하고 조회하지 않으므로 다음 계정에게 넘어갈 수 있다.
         profileStore.clear()
+        editSession.reset()
         isLoggedIn = false
         userNickname = "홍길동"
         userEmail = "Tourding@example.com"
@@ -417,6 +423,7 @@ class LoginViewModel: NSObject, ObservableObject {
         // 라이딩 스타일은 메모리 캐시라 Keychain을 지워도 남는다.
         // 온보딩은 저장만 하고 조회하지 않으므로 다음 계정에게 넘어갈 수 있다.
         profileStore.clear()
+        editSession.reset()
 
                 await MainActor.run {
                     isLoggedIn = false
@@ -457,6 +464,7 @@ class LoginViewModel: NSObject, ObservableObject {
         // 라이딩 스타일은 메모리 캐시라 Keychain을 지워도 남는다.
         // 온보딩은 저장만 하고 조회하지 않으므로 다음 계정에게 넘어갈 수 있다.
         profileStore.clear()
+        editSession.reset()
 
                 await MainActor.run {
                     isLoggedIn = false

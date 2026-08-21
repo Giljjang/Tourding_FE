@@ -22,6 +22,7 @@ struct UserSessionInjectionTests {
             routeRepository: repository,
             kakaoRepository: FakeKakaoRepository(),
             profileStore: RidingProfileStore(userRepository: FakeUserRepository()),
+            editSession: RouteEditSession(),
             userSession: FakeUserSession(userId: 777_001)
         )
 
@@ -36,6 +37,7 @@ struct UserSessionInjectionTests {
             routeRepository: repository,
             kakaoRepository: FakeKakaoRepository(),
             profileStore: RidingProfileStore(userRepository: FakeUserRepository()),
+            editSession: RouteEditSession(),
             userSession: FakeUserSession(userId: nil)
         )
 
@@ -50,7 +52,8 @@ struct UserSessionInjectionTests {
             tourRepository: FakeTourRepository(),
             routeRepository: repository,
             userSession: FakeUserSession(userId: 777_003),
-            profileStore: RidingProfileStore(userRepository: FakeUserRepository())
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository()),
+            editSession: RouteEditSession()
         )
 
         await viewModel.postRouteAPI(originalData: TestRoute.startGoal, updatedData: TestSpot.sample)
@@ -64,7 +67,8 @@ struct UserSessionInjectionTests {
             tourRepository: FakeTourRepository(),
             routeRepository: repository,
             userSession: FakeUserSession(userId: nil),
-            profileStore: RidingProfileStore(userRepository: FakeUserRepository())
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository()),
+            editSession: RouteEditSession()
         )
 
         await viewModel.postRouteAPI(originalData: TestRoute.startGoal, updatedData: TestSpot.sample)
@@ -77,7 +81,8 @@ struct UserSessionInjectionTests {
             tourRepository: FakeTourRepository(),
             routeRepository: FakeRouteRepository(),
             userSession: FakeUserSession(userId: 777_002),
-            profileStore: RidingProfileStore(userRepository: FakeUserRepository())
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository()),
+            editSession: RouteEditSession()
         )
 
         #expect(viewModel.userId == 777_002)
@@ -88,7 +93,8 @@ struct UserSessionInjectionTests {
             tourRepository: FakeTourRepository(),
             routeRepository: FakeRouteRepository(),
             userSession: FakeUserSession(userId: nil),
-            profileStore: RidingProfileStore(userRepository: FakeUserRepository())
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository()),
+            editSession: RouteEditSession()
         )
 
         #expect(viewModel.userId == nil)

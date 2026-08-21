@@ -18,7 +18,8 @@ struct DetailSpotViewModelLoadingStateTests {
             tourRepository: FakeTourRepository(),
             routeRepository: FakeRouteRepository(),
             userSession: FakeUserSession(userId: userId),
-            profileStore: RidingProfileStore(userRepository: FakeUserRepository())
+            profileStore: RidingProfileStore(userRepository: FakeUserRepository()),
+            editSession: RouteEditSession()
         )
     }
 

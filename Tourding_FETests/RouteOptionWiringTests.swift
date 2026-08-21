@@ -79,7 +79,8 @@ struct RouteOptionWiringTests {
             tourRepository: FakeTourRepository(),
             routeRepository: repository,
             userSession: FakeUserSession(userId: 49),
-            profileStore: loadedStore(road)
+            profileStore: loadedStore(road),
+            editSession: RouteEditSession()
         )
 
         await viewModel.postRouteAPI(originalData: route, updatedData: newSpot)
@@ -95,7 +96,8 @@ struct RouteOptionWiringTests {
             tourRepository: FakeTourRepository(),
             routeRepository: repository,
             userSession: FakeUserSession(userId: 49),
-            profileStore: loadedStore(road)
+            profileStore: loadedStore(road),
+            editSession: RouteEditSession()
         )
 
         await viewModel.postRouteAPI(originalData: route, updatedData: newSpot)
@@ -234,11 +236,13 @@ struct RouteOptionWiringTests {
 
         let spotAdd = SpotAddViewModel(
             tourRepository: FakeTourRepository(), routeRepository: repository,
-            userSession: FakeUserSession(userId: 49), profileStore: store
+            userSession: FakeUserSession(userId: 49), profileStore: store,
+            editSession: RouteEditSession()
         )
         let detail = DetailSpotViewModel(
             tourRepository: FakeTourRepository(), routeRepository: repository,
-            userSession: FakeUserSession(userId: 49), profileStore: store
+            userSession: FakeUserSession(userId: 49), profileStore: store,
+            editSession: RouteEditSession()
         )
         let home = HomeViewModel(
             routeRepository: repository,

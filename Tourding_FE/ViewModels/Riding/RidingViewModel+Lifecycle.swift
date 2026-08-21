@@ -35,6 +35,9 @@ extension RidingViewModel {
         // 이후 재정렬 POST·경로선 재조회·포그라운드 새로고침이 모두 이 값을 참조한다
         self.routeSource = routeSource
 
+        // 스팟 추가·상세는 별도 ViewModel이라 여기 기록해 두지 않으면 draft를 읽고 쓴다
+        editSession.beginEditing(isUsed: routeSource.isUsed)
+
         if let isNotNormal {
             flag = isNotNormal
             print("🔄 비정상 종료 감지 - 라이딩 모드로 복구")

@@ -61,13 +61,10 @@ final class RidingStyleSettingsViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        // 일시 모드는 **지금 적용 중인 값**을 보여준다.
-        // 서버를 직접 읽으면 방금 건 일시 옵션이 화면에서 사라진다.
-        if isTemporary, let current = await profileStore.currentOption(userId: uid) {
-            apply(current)
-            return
-        }
-
+        // **일시 모드에서도 서버에 저장된 값을 읽는다.**
+        // 이전에 걸어둔 일시 옵션을 다시 보여주면 "일시"가 아니라 누적 설정이 되어,
+        // 마이페이지에 저장된 진짜 프로필이 무엇인지 화면에서 확인할 수 없게 된다.
+        // 일시 옵션은 화면을 연 그 동안만 유효하다.
         do {
             let response = try await userRepository.getRidingProfile(userId: uid)
             apply(response.routeOption)

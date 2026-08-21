@@ -39,13 +39,17 @@ final class SpotAddViewModel: ObservableObject {
 
     /// 라이딩 스타일 공급원. 경로 요청에 실을 값을 여기서 얻는다.
     let profileStore: RidingProfileProviding
+    /// 지금 편집 중인 경로(draft / 최근 사용). 읽기·쓰기가 같은 경로를 향해야 한다.
+    let editSession: RouteEditSessionProviding
 
     init(
         tourRepository: TourRepositoryProtocol,
         routeRepository: RouteRepositoryProtocol,
         userSession: UserSessionProviding,
-        profileStore: RidingProfileProviding) {
+        profileStore: RidingProfileProviding,
+        editSession: RouteEditSessionProviding) {
             self.profileStore = profileStore
+            self.editSession = editSession
             self.tourRepository = tourRepository
             self.routeRepository = routeRepository
             self.userSession = userSession
@@ -290,7 +294,7 @@ final class SpotAddViewModel: ObservableObject {
         }
 
         do {
-            let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: false)
+            let response = try await routeRepository.getRoutesLocationName(userId: userId, isUsed: editSession.isUsed)
             routeLocation = response
         } catch {
             print("GET ERROR: /routes/location-name \(error)")
@@ -345,7 +349,7 @@ final class SpotAddViewModel: ObservableObject {
         guard let requestBody = RouteRequestBuilder.make(
             from: updatedRoute,
             userId: userId,
-            isUsed: false,
+            isUsed: editSession.isUsed,
             routeOption: await profileStore.currentOption(userId: userId)
         ) else {
             print("❌ 경로 본문을 만들 수 없습니다")
