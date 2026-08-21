@@ -65,7 +65,7 @@ final class UserRepository: UserRepositoryProtocol {
         urlRequest.setValue("*/*", forHTTPHeaderField: "accept")
         urlRequest.httpBody = try JSONEncoder().encode(request)
 
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        let (data, response) = try await NetworkService.session.data(for: urlRequest)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ErrorType.invalidResponse(statusCode: -1)
@@ -86,7 +86,7 @@ final class UserRepository: UserRepositoryProtocol {
         urlRequest.httpMethod = "GET"
         urlRequest.setValue("*/*", forHTTPHeaderField: "accept")
 
-        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+        let (data, response) = try await NetworkService.session.data(for: urlRequest)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ErrorType.invalidResponse(statusCode: -1)
