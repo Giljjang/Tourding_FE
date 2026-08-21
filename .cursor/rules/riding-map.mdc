@@ -80,6 +80,11 @@ API/Mock → RidingViewModel+API → @Published pathCoordinates
 다음 GPS 갱신(3m)에 카메라가 도로 스냅된다.
 
 **카메라를 따라붙게 하는 코드는 전부 `followUser(on:to:)`를 거칠 것** — `moveCamera` 직접 호출 금지.
+
+**사용자가 지도를 민 것은 `NMFMapViewCameraDelegate`로 감지한다.**
+`reason == NMFMapChangedByGesture`만 추적을 끈다 (`isUserGesture(cameraChangeReason:)`).
+지도 위에 투명 레이어를 얹지 마라 — 터치를 가로채 첫 드래그가 먹지 않고,
+우리 코드의 이동과 사용자 제스처를 구분할 수 없다.
 세 곳이 각자 판정하다 세 곳 모두 `flag`로 잘못 판정한 것이 이 버그였다.
 
 추적이 꺼져도 `userMovementThreshold`(3m) 이상 움직이면 `resumeTrackingIfStopped()`가 되켠다.
@@ -136,8 +141,6 @@ VC에 저장 프로퍼티를 되살리면 스트림이 두 벌 돈다.
 
 - `RidingView.onChange(currentPosition)` 카메라 이동 오케스트레이션 — ViewModel 이전 검토
   (값 매핑은 `LocationManager.cameraPivot(for:)`로 이미 옮겼다)
-- 지도 터치 감지 레이어 — 추적 중에만 존재하고 지도 위에 얹혀 있어, 첫 드래그가
-  추적만 끄고 지도는 밀리지 않는다
 - 마커 재그리기 — `MarkerManager.addMarkers`가 `clearMarkers()`로 시작해 매번 전량 재생성.
   선행: 아이콘 동일성 판정 (`numberMarker(_:)`가 호출마다 새 이미지를 만든다)
 

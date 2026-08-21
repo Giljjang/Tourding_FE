@@ -173,6 +173,15 @@ strong으로 잡으면 화면을 떠난 뒤에도 `MapViewController`와 그 `CL
 호출부에서 `moveCamera`를 직접 부르면 판정이 복제된다 — 세 곳이 각자 판정하다
 세 곳 모두 `flag`로 잘못 판정한 것이 이 버그였다.
 
+**사용자가 지도를 민 것은 `NMFMapViewCameraDelegate`로 감지한다** —
+`cameraWillChangeByReason:`의 `reason`이 `NMFMapChangedByGesture`인지 본다.
+판정은 `LocationManager.isUserGesture(cameraChangeReason:)` 한 곳.
+
+지도 위에 투명 레이어를 얹지 마라. 예전 방식이 그랬는데, ZStack에서 `NMapView`의
+형제라 터치를 가로채 **첫 드래그에 지도가 밀리지 않았다**(두 번 밀어야 했다).
+게다가 레이어는 우리 코드의 카메라 이동과 사용자 제스처를 구분할 수 없다 —
+`reason`은 구분해준다(`Developer` / `Gesture` / `Location` / `Control`).
+
 추적이 꺼져도 사용자가 `userMovementThreshold`(3m) 이상 움직이면
 `resumeTrackingIfStopped()`가 자동으로 되켠다. 상태 전이는 `beginTracking()` 한 곳에 있다.
 
@@ -205,7 +214,7 @@ strong으로 잡으면 화면을 떠난 뒤에도 `MapViewController`와 그 `CL
 **바텀시트 높이는 편집·라이딩 양쪽에서 피봇에 반영한다** — `syncCameraPivot(for:)`.
 편집에서 빠뜨리면 "내 위치로 이동" 버튼이 시트 높이를 무시한다.
 
-회귀 방지 테스트: `CameraFollowTests`, `CameraPivotTests`, `RidingStartZoomTests`
+회귀 방지 테스트: `CameraFollowTests`, `CameraPivotTests`, `RidingStartZoomTests`, `MapGestureDetectionTests`
 
 ### 방위(heading) 판정 (중요)
 
@@ -250,9 +259,7 @@ NMap의 heading은 **진북 기준**이라 `magneticHeading`을 그대로 넣으
 
 1. **바텀시트 카메라 피봇** — 값 매핑은 `LocationManager.cameraPivot(for:)`로 옮겼으나,
    `RidingView.onChange(currentPosition)`의 카메라 이동 오케스트레이션은 아직 View에 있다
-2. **지도 터치 감지 레이어** — 추적 중에만 존재하고 지도 위에 얹혀 있어, 첫 드래그가
-   추적만 끄고 지도는 밀리지 않는다 (`RidingView`의 투명 제스처 레이어)
-4. **마커 재그리기** — 경로선은 `PathManager.isSameSequence`로 가드했지만
+2. **마커 재그리기** — 경로선은 `PathManager.isSameSequence`로 가드했지만
    `MarkerManager.addMarkers`는 여전히 `clearMarkers()`로 시작해 매번 전량 재생성한다.
    가드를 걸려면 아이콘 동일성 판정이 먼저다 — `MarkerIcons.numberMarker(_:)`가
    호출마다 `UIView`를 렌더링해 새 `NMFOverlayImage`를 만든다

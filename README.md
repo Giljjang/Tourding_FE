@@ -284,7 +284,7 @@ xcodebuild test -scheme Tourding_FE \
   -derivedDataPath /tmp/TourdingDD
 ```
 
-현재 **215개 통과 / 스킵 0**. 기능 추가·버그 수정·리팩토링 모두 실패하는 테스트를 먼저
+현재 **220개 통과 / 스킵 0**. 기능 추가·버그 수정·리팩토링 모두 실패하는 테스트를 먼저
 작성하는 TDD로 진행합니다.
 
 자세한 개발 가이드는 [`CLAUDE.md`](CLAUDE.md)를 참고하세요.
