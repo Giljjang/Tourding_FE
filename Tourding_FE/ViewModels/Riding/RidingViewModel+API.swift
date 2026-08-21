@@ -53,12 +53,36 @@ extension RidingViewModel {
     /// 라이딩 중에는 draft가 아니라 **사용 중** 경로의 id를 들고 있어야 한다.
     @MainActor
     func applyRouteSummary(_ bundle: RouteGuideResponse) {
+        logAppliedStyle(bundle)
+
         routeTotal = RoutesModel(
             isUsed: bundle.isUsed,
             duration: bundle.duration,
             distance: bundle.distance,
             routeSummaryId: bundle.routeSummaryId
         )
+    }
+
+    /// 서버가 **실제로 적용한** 스타일과 그 결과 수치를 찍는다.
+    ///
+    /// 요청 본문은 `NetworkService`가 이미 통째로 찍으므로(`🔵 Request Body`),
+    /// 여기서는 응답 쪽만 본다. 두 줄을 비교하면 셋 중 어디가 문제인지 갈린다 —
+    /// 앱이 안 보냈는가 · 서버가 무시했는가 · 반영했는데 경로가 그대로인가.
+    ///
+    /// 같은 구간을 스타일만 바꿔 두 번 만들어 `[Route]` 줄의 수치를 비교하면
+    /// 경로가 실제로 달라졌는지 알 수 있다. 지도만 봐서는 티가 안 난다.
+    @MainActor
+    private func logAppliedStyle(_ bundle: RouteGuideResponse) {
+        #if DEBUG
+        print("🚴 [Style] 서버 적용 ← \(bundle.appliedOption?.logDescription ?? "없음 (디폴트로 계산됨)")")
+
+        let km = String(format: "%.2f", bundle.distance / 1000)
+        let min = Int(bundle.duration / 60)
+        let up = bundle.ascent.map { String(format: "↑%.0fm", $0) } ?? "↑-"
+        let down = bundle.descent.map { String(format: "↓%.0fm", $0) } ?? "↓-"
+        let score = bundle.preferenceScore.map { String(format: "%.2f", $0) } ?? "-"
+        print("🚴 [Route] \(km)km · \(min)분 · \(up) \(down) · 오르막 \(bundle.uphillLevel ?? "-") · 적합도 \(score) · 좌표 \(bundle.paths.count)개")
+        #endif
     }
 
     @MainActor

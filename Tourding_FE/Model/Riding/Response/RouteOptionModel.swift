@@ -33,3 +33,18 @@ extension RouteOptionModel {
         )
     }
 }
+
+extension RouteOptionModel {
+    /// 콘솔 대조용 한 줄 표기.
+    ///
+    /// 라이딩 스타일이 경로에 반영되는지는 **지도만 봐서는 알기 어렵다.**
+    /// 보낸 옵션과 서버가 돌려준 `appliedOption`을 이 형식으로 나란히 찍어 비교한다.
+    var logDescription: String {
+        let toggles = [
+            "빠른\(fastRoute ? "O" : "X")",
+            "계단회피\(avoidSteps ? "O" : "X")",
+            "물길회피\(avoidFords ? "O" : "X")"
+        ].joined(separator: " ")
+        return "\(cyclingProfile) / \(skillLevel) / \(toggles)"
+    }
+}

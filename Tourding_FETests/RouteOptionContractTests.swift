@@ -144,4 +144,29 @@ struct RouteOptionContractTests {
 
         #expect(response.routeSummaryId == 60)
     }
+
+    // MARK: - 진단 표기
+
+    /// 콘솔에서 "보낸 스타일"과 "서버가 적용한 스타일"을 눈으로 대조하기 위한 한 줄 표기.
+    /// 라이딩 스타일이 경로에 반영되는지는 이 두 줄을 비교해야 알 수 있다 —
+    /// 지도만 봐서는 차이가 잘 드러나지 않는다.
+    @Test func logDescriptionShowsEveryOption() {
+        let text = sampleOption.logDescription
+
+        #expect(text.contains("ROAD"))
+        #expect(text.contains("INTERMEDIATE"))
+        #expect(text.contains("빠른"))
+        #expect(text.contains("계단"))
+        #expect(text.contains("물길"))
+    }
+
+    /// 켬/끔이 구분돼야 대조가 된다
+    @Test func logDescriptionDistinguishesToggles() {
+        let allOn = RouteOptionModel(cyclingProfile: "P", fastRoute: true,
+                                     avoidSteps: true, avoidFords: true, skillLevel: "S")
+        let allOff = RouteOptionModel(cyclingProfile: "P", fastRoute: false,
+                                      avoidSteps: false, avoidFords: false, skillLevel: "S")
+
+        #expect(allOn.logDescription != allOff.logDescription)
+    }
 }
