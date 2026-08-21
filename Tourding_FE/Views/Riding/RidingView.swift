@@ -344,6 +344,7 @@ struct RidingView: View {
             .cornerRadius(12)
             .shadow(color: .black.opacity(0.02), radius: 10, x: 0, y: 6)
         }
+        .dynamicTypeSize(...Self.toolbarTypeSizeLimit)
         .position(x: 110, y:SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : toiletButton
     
@@ -368,6 +369,7 @@ struct RidingView: View {
             .cornerRadius(12)
             .shadow(color: .black.opacity(0.02), radius: 10, x: 0, y: 6)
         }
+        .dynamicTypeSize(...Self.toolbarTypeSizeLimit)
         .position(x: 208, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : csButton
     
@@ -393,8 +395,20 @@ struct RidingView: View {
                     .strokeBorder(Self.aiBorderGradient, lineWidth: 1)
             )
         }
+        .dynamicTypeSize(...Self.toolbarTypeSizeLimit)
         .position(x: 316, y: SafeAreaUtils.getMultipliedSafeArea(topSafeArea: topSafeArea))
     } // : AICourseEditButton
+
+    /// 라이딩 중 상단 툴바(화장실·편의점·AI 코스수정) 글자 크기 상한.
+    ///
+    /// 세 버튼은 한 줄에 나란히 놓이는데 iPhone SE(375pt)에서 오른쪽 여유가 **3.65pt**뿐이다.
+    /// `Font.custom(_:size:)`은 iOS 14부터 Dynamic Type에 자동으로 스케일되므로,
+    /// 텍스트 크기를 한 단계(xLarge)만 키워도 세 텍스트가 약 16pt 늘어 서로 겹친다.
+    /// iPhone 13은 390pt라 18.65pt가 남아 버틴다 — 그래서 SE에서만 드러났다.
+    ///
+    /// 버튼·글자 크기는 그대로 두고 **키우지만 않도록** 상한을 건다.
+    /// (실측: Pretendard-Medium 14pt 기준 버튼폭 88.30 / 88.30 / 110.70, 합계 287.29pt)
+    private static let toolbarTypeSizeLimit = DynamicTypeSize.large
 
     /// AI 코스수정 버튼 테두리 — Figma GRADIENT_LINEAR (2774:17889)
     ///
