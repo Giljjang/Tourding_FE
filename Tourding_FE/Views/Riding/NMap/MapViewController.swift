@@ -84,6 +84,10 @@ final class MapViewController: UIViewController {
         if let mapView = mapView {
             view.addSubview(mapView)
             setupManagers()
+            // 사용자가 지도를 미는 것을 여기서 감지한다.
+            // 예전에는 지도 위에 투명 레이어를 얹었는데, 그 레이어가 터치를 가로채
+            // 첫 드래그에 지도가 밀리지 않았다.
+            mapView.mapView.addCameraDelegate(delegate: self)
         } else {
             print("❌ mapView 초기화 실패")
         }
@@ -235,3 +239,18 @@ final class MapViewController: UIViewController {
     }
 }
 
+// MARK: - NMFMapViewCameraDelegate
+
+extension MapViewController: NMFMapViewCameraDelegate {
+
+    /// 사용자가 지도를 움직이기 시작하면 카메라 추적을 끈다.
+    ///
+    /// `reason`이 우리 코드의 이동(`Developer`)과 사용자 제스처(`Gesture`)를 갈라주므로,
+    /// `followUser`가 3m마다 옮기는 카메라를 사용자 조작으로 오인하지 않는다.
+    /// 판정은 `LocationManager.isUserGesture(cameraChangeReason:)` 한 곳에 있다.
+    func mapView(_ mapView: NMFMapView, cameraWillChangeByReason reason: Int, animated: Bool) {
+        guard LocationManager.isUserGesture(cameraChangeReason: reason) else { return }
+
+        userLocationManager?.handleScreenTouch()
+    }
+}

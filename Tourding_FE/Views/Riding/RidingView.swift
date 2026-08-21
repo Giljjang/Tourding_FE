@@ -60,27 +60,10 @@ struct RidingView: View {
                 NMapView(ridingViewModel: ridingViewModel, userLocationManager: locationManager)
                     .ignoresSafeArea(edges: .top)
                 
-                // 라이딩 중일 때 터치 감지 레이어
-                if ridingViewModel.flag && locationManager.isLocationTrackingEnabled {
-                    Color.clear
-                        .ignoresSafeArea(edges: .top)
-                        .contentShape(Rectangle())
-                        .gesture(
-                            SimultaneousGesture(
-                                TapGesture()
-                                    .onEnded { _ in
-                                        print("지도 탭 감지 (SwiftUI)")
-                                        locationManager.handleScreenTouch()
-                                    },
-                                DragGesture(minimumDistance: 0)
-                                    .onChanged { _ in
-                                        print("지도 드래그 감지 (SwiftUI)")
-                                        locationManager.handleScreenTouch()
-                                    }
-                            )
-                        )
-                }
-                
+                // 지도 터치 감지는 MapViewController가 NMFMapViewCameraDelegate로 한다.
+                // 예전에는 여기에 투명 레이어를 얹었는데, ZStack에서 NMapView의 형제라
+                // 터치를 가로채 첫 드래그에 지도가 밀리지 않았다.
+
                 if currentPosition == .large {
                     Color.black.opacity(0.3)
                         .ignoresSafeArea()

@@ -241,6 +241,17 @@ final class LocationManager: NSObject, ObservableObject {
         locationOverlay.heading = CGFloat(adjustedHeading)
     }
     
+    /// 이 카메라 변경이 **사용자가 직접 지도를 움직인 것**인가.
+    ///
+    /// `followUser`는 위치 갱신마다(3m) 카메라를 옮긴다. 그걸 사용자 조작으로 오인하면
+    /// 추적이 켜지자마자 스스로 꺼진다 — NMap이 주는 `reason`이 그 둘을 갈라준다.
+    ///
+    /// 지도 컨트롤(줌 버튼·나침반)은 제외한다. 줌 조정은 "다른 곳을 보겠다"가 아니라
+    /// "지금 보는 곳을 더 크게"에 가깝다고 판단했다 (`MapGestureDetectionTests`가 고정).
+    static func isUserGesture(cameraChangeReason reason: Int) -> Bool {
+        reason == NMFMapChangedByGesture
+    }
+
     // MARK: - Camera Zoom
 
     /// 네비게이션 모드에 들어가는 경로.
